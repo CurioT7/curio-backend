@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
-const { hashPassword } = require("../../utils/passwords");
+const { hashPassword } = require("../utils/passwords");
 
 //create user schema for reddit user
 const userSchema = new mongoose.Schema({
