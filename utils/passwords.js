@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-export async function hashPassword(password) {
+async function hashPassword(password) {
     try{
         if (!password) {
             throw new Error("Password is required");
@@ -19,4 +19,17 @@ export async function hashPassword(password) {
 
 }
 
-module.exports = { hashPassword };
+async function comparePassword(password, hashedPassword) {
+    try {
+        if (!password || !hashedPassword) {
+            throw new Error("Password and hashed password are required");
+        }
+        const isMatch = await bcrypt.compare(password, hashedPassword);
+        return isMatch;
+    }
+    catch (error) {
+        throw new Error(error);
+    }
+}
+
+module.exports = { hashPassword, comparePassword };
