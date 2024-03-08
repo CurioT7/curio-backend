@@ -32,5 +32,8 @@ app.get("/", (req, res) => {
     res.send("Hello World");
 });
 
+
 app.use(express.json());
+
+//define routes
 app.use("/api", userRouter);
