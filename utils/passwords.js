@@ -13,10 +13,6 @@ async function hashPassword(password) {
     catch (error) {
         throw new Error(error);
     }
-  
-
-
-
 }
 
 async function comparePassword(password, hashedPassword) {

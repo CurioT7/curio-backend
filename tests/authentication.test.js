@@ -29,17 +29,17 @@ const User = require('../models/user');
 //     });
   
 
-//     // Creating a new user with all required fields should successfully save to the database.
-//     it('should successfully save a new user with all required fields', async () => {
-//         const newUser = new User({
-//           username: 'testuser',
-//           email: 'testuser@example.com',
-//           password: 'password123'
-//         });
-//         const savedUser = await newUser.save();
-//         expect(savedUser._id).toBeDefined();
-//         expect(savedUser.username).toBe(newUser.username);
-//         expect(savedUser.email).toBe(newUser.email);
-//         expect(savedUser.password).toBe(newUser.password);
-//         });
+    // Creating a new user with all required fields should successfully save to the database.
+    it('should successfully save a new user with all required fields', async () => {
+        const newUser = new User({
+          username: 'testuser',
+          email: 'testuser@example.com',
+          password: 'password123'
+        });
+        const savedUser = await newUser.save();
+        expect(savedUser._id).toBeDefined();
+        expect(savedUser.username).toBe(newUser.username);
+        expect(savedUser.email).toBe(newUser.email);
+        expect(savedUser.password).toBe(newUser.password);
+        });
 
