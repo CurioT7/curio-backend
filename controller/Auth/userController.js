@@ -3,9 +3,12 @@ const { validationResult } = require("express-validator");
 const User = require("../../models/user");
 const brypt = require("bcrypt");
 require("dotenv").config();
+require("../../passport/passport.js");
+
 
 const { generateToken } = require("../../utils/tokens");
 const { hashPassword, comparePassword } = require("../../utils/passwords");
+const { resetPassword, getUsername } = require("../../utils/mails");
 
 //check if user exists
 async function userExist(req, res) {
@@ -87,28 +90,42 @@ async function forgotPassword(req, res) {
       message: "User not found",
     });
   }
+  //generate token
+  const token = await generateToken(user._id);
 
-  //TODO send email to user with reset link
-
-  //return success message
-  return res.status(200).json({
-    success: true,
-    message:
-      "You'll get a password reset email if the address you provided has been verified.",
-  });
+  //send email to user
+  try {
+    await resetPassword(email, token);
+    return res.status(200).json({
+      success: true,
+      message:
+        "You'll get an email with a link to reset your password if the address you provided has been verified.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 }
 
 async function forgotUsername(req, res) {
   const { email } = req.body;
 
-  //TODO send email to user after verifying email
-
-  //return success message
-  return res.status(200).json({
-    success: true,
-    message:
-      "You'll get an email with your username if the address you provided has been verified.",
-  });
+  //send email to user
+  try {
+    await getUsername(email);
+    return res.status(200).json({
+      success: true,
+      message:
+        "You'll get an email with your username if the address you provided has been verified.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 }
 
 module.exports = { userExist, signUp, login, forgotPassword, forgotUsername };
