@@ -12,7 +12,6 @@ const Schema = mongoose.Schema;
  * @type {Schema}
  */
 const postSchema = new Schema({
-  // Schema fields definitions
   title: {
     type: String,
     required: true,

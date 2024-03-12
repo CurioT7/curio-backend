@@ -1,46 +1,42 @@
-// Test with a user that has no posts.
-it("should return an empty array when the user has no posts", async () => {
+// Successfully retrieve all posts made by a specific user
+it("should retrieve all posts made by a specific user", async () => {
   const req = { params: { username: "testUser" } };
-  const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn(),
-  };
+  const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
   const next = jest.fn();
+  const dataType = "posts";
 
-  // Mock User.findOne to return null
-  jest.spyOn(User, "findOne").mockResolvedValue(null);
+  const user = { username: "testUser" };
+  User.findOne = jest.fn().mockResolvedValue(user);
+
+  const posts = [{ title: "Post 1" }, { title: "Post 2" }];
+  Post.find = jest.fn().mockResolvedValue(posts);
 
   const profileController = new ProfileController();
-  await profileController.getPostsByUser(req, res, next);
+  await profileController.getDataByUser(req, res, next, dataType);
 
   expect(User.findOne).toHaveBeenCalledWith({ username: "testUser" });
-  expect(res.status).toHaveBeenCalledWith(404);
-  expect(res.json).toHaveBeenCalledWith({
-    success: false,
-    message: "User not found",
-  });
+  expect(Post.find).toHaveBeenCalledWith({ authorName: "testUser" });
+  expect(res.status).toHaveBeenCalledWith(200);
+  expect(res.json).toHaveBeenCalledWith(posts);
 });
-    // Retrieves all posts made by a specific user.
-    it('should retrieve all posts made by a specific user', async () => {
+    // Successfully retrieve all comments made by a specific user
+    it('should retrieve all comments made by a specific user', async () => {
       const req = { params: { username: 'testUser' } };
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
       const next = jest.fn();
+      const dataType = 'comments';
 
-      // Mock User.findOne
-      jest.spyOn(User, 'findOne').mockResolvedValue({ username: 'testUser' });
+      const user = { username: 'testUser' };
+      User.findOne = jest.fn().mockResolvedValue(user);
 
-      // Mock Post.find
-      jest.spyOn(Post, 'find').mockResolvedValue([{ title: 'Post 1' }, { title: 'Post 2' }]);
+      const comments = [{ text: 'Comment 1' }, { text: 'Comment 2' }];
+      Comment.find = jest.fn().mockResolvedValue(comments);
 
       const profileController = new ProfileController();
-      await profileController.getPostsByUser(req, res, next);
+      await profileController.getDataByUser(req, res, next, dataType);
 
       expect(User.findOne).toHaveBeenCalledWith({ username: 'testUser' });
-      expect(Post.find).toHaveBeenCalledWith({ authorName: 'testUser' });
+      expect(Comment.find).toHaveBeenCalledWith({ authorName: 'testUser' });
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith([{ title: 'Post 1' }, { title: 'Post 2' }]);
+      expect(res.json).toHaveBeenCalledWith(comments);
     });
-    

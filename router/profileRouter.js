@@ -21,4 +21,14 @@ const profileController = new ProfileController();
  */
 router.get("/:username/submitted", profileController.getPostsByUser);
 
+/**
+ * Route serving retrieval of comments made by a specific user.
+ * @name GET /:username/comments
+ * @function
+ * @inner
+ * @param {string} path - Express path.
+ * @param {callback} middleware - Express middleware.
+ */
+router.get("/:username/comments", profileController.getCommentsByUser);
+
 module.exports = router;
