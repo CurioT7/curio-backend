@@ -63,6 +63,51 @@ class ProfileController {
   getCommentsByUser = async (req, res, next) => {
     await this.getDataByUser(req, res, next, "comments");
   };
+
+  /**
+   * Retrieves all upvoted posts and comments by a specific user.
+   * This method aggregates upvoted posts and comments into a single response.
+   * @param {Object} req - The request object.
+   * @param {Object} res - The response object.
+   * @param {Function} next - The next middleware function in the stack.
+   */
+  getUpvotedContent = async (req, res, next) => {
+    try {
+      const { username } = req.params;
+      const user = await User.findOne({ username });
+
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+
+      // Separate queries for posts and comments based on upvotes array
+      const upvotedPostIds = user.upvotes
+        .filter((vote) => vote.itemType === "Post")
+        .map((vote) => vote.itemId);
+      const upvotedCommentIds = user.upvotes
+        .filter((vote) => vote.itemType === "Comment")
+        .map((vote) => vote.itemId);
+
+      const upvotedPosts = await Post.find({ _id: { $in: upvotedPostIds } });
+      const upvotedComments = await Comment.find({
+        _id: { $in: upvotedCommentIds },
+      });
+
+      res.status(200).json({
+        upvotedPosts,
+        upvotedComments,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        success: false,
+        message: "Server Error",
+        error: error.message,
+      });
+    }
+  };
 }
 
 module.exports = ProfileController;

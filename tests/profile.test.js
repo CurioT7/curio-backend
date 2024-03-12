@@ -40,3 +40,29 @@ it("should retrieve all posts made by a specific user", async () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(comments);
     });
+        // Successfully retrieve upvoted posts and comments by a specific user
+    it('should retrieve upvoted posts and comments by a specific user when user exists', async () => {
+      const req = { params: { username: 'testUser' } };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+
+      const user = { username: 'testUser', upvotes: [{ itemType: 'Post', itemId: 'post1' }, { itemType: 'Comment', itemId: 'comment1' }] };
+      User.findOne = jest.fn().mockResolvedValue(user);
+
+      const posts = [{ title: 'Post 1' }];
+      const comments = [{ text: 'Comment 1' }];
+      Post.find = jest.fn().mockResolvedValue(posts);
+      Comment.find = jest.fn().mockResolvedValue(comments);
+
+      const profileController = new ProfileController();
+      await profileController.getUpvotedContent(req, res, next);
+
+      expect(User.findOne).toHaveBeenCalledWith({ username: 'testUser' });
+      expect(Post.find).toHaveBeenCalledWith({ _id: { $in: ['post1'] } });
+      expect(Comment.find).toHaveBeenCalledWith({ _id: { $in: ['comment1'] } });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        upvotedPosts: posts,
+        upvotedComments: comments,
+      });
+    });

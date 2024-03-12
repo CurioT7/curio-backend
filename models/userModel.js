@@ -10,10 +10,13 @@ const userSchema = new Schema({
     type: String,
     required: true,
     unique: true,
+    index: true,
   },
   email: {
     type: String,
     required: true,
+    unique: true,
+    index: true,
   },
   password: {
     type: String,
@@ -36,9 +39,12 @@ const userSchema = new Schema({
   bio: {
     type: String,
   },
-  socialLinks: {
-    type: String,
-  },
+  socialLinks: [
+    {
+      platform: String,
+      url: String,
+    },
+  ],
   displayName: {
     type: String,
   },
@@ -60,14 +66,30 @@ const userSchema = new Schema({
   ],
   upvotes: [
     {
-      type: Schema.Types.ObjectId,
-      ref: "Post",
+      itemId: {
+        type: Schema.Types.ObjectId,
+        required: true,
+      },
+      itemType: {
+        type: String,
+        required: true,
+        default: 0,
+        enum: ["Post", "Comment"],
+      },
     },
   ],
   downvotes: [
     {
-      type: Schema.Types.ObjectId,
-      ref: "Post",
+      itemId: {
+        type: Schema.Types.ObjectId,
+        required: true,
+      },
+      itemType: {
+        type: String,
+        required: true,
+        default: 0,
+        enum: ["Post", "Comment"],
+      },
     },
   ],
   followers: [

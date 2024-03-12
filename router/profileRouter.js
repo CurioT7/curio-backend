@@ -31,4 +31,15 @@ router.get("/:username/submitted", profileController.getPostsByUser);
  */
 router.get("/:username/comments", profileController.getCommentsByUser);
 
+/**
+ * Route serving retrieval of upvoted comments and posts made by a specific user.
+ * @name GET /:username/upvoted
+ * @function
+ * @inner
+ * @param {string} path - Express path.
+ * @param {callback} middleware - Express middleware.
+ */
+router.get("/:username/upvoted", profileController.getUpvotedContent);
+
+
 module.exports = router;
