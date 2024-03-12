@@ -1,8 +1,18 @@
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const User = require("../models/user");
-const mongoose = require("mongoose");
+const { webSignup } = require("../controller/Auth/webSocialsController");
 
 module.exports = function (passport) {
+  passport.serializeUser((user, done) => {
+    done(null, user.id); // Serialize the user ID into the session
+  });
+
+  passport.deserializeUser((id, done) => {
+    User.findById(id, (err, user) => {
+      done(err, user); // Deserialize the user object from the user ID
+    });
+  });
+
   passport.use(
     new GoogleStrategy(
       {
@@ -12,30 +22,27 @@ module.exports = function (passport) {
         scope: ["email", "profile"],
       },
 
-      //TODO Change this -> webSignup, add type(facebook, google, etc.)
       async (accessToken, refreshToken, profile, done) => {
-        const newUser = {
-          googleId: profile.id,
-          displayName: profile.displayName,
-          firstName: profile.name.givenName,
-          lastName: profile.name.familyName,
-          image: profile.photos[0].value,
-        };
-
-        try {
-          let user = await User.findOne({ googleId: profile.id });
-
-          if (user) {
-            done(null, user);
-          } else {
-            user = await User.create(newUser);
-            done(null, user);
+        if (!profile) {
+          return done(null, false);
+        }
+        let socialMediaType = "google";
+        let user = await User.findOne({ email: profile.emails[0].value });
+        if (user) {
+          // If user exists, sign in
+          return done(null, user);
+        } else {
+          // If user does not exist, sign up
+          try {
+            user = await webSignup(profile, socialMediaType);
+            return done(null, user);
+          } catch (error) {
+            return done(error, false);
           }
-        } catch (err) {
-          console.error(err);
-          done(err, false); // Pass error to done callback
         }
       }
     )
   );
+
+  // TODO: Add Facebook Strategy
 };

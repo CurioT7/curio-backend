@@ -1,0 +1,32 @@
+const express = require("express");
+require("dotenv").config();
+const User = require("../../models/user");
+const generator = require("generate-password");
+const jwt = require("jsonwebtoken");
+const { generatePassword } = require("../../utils/passwords");
+
+async function webSignup(userInfo, socialMediaType) {
+  try {
+    var password = generatePassword();
+    var newUser = {
+      firstName: userInfo.name.givenName,
+      lastName: userInfo.name.familyName,
+      username: userInfo.name.givenName,
+      email: userInfo.emails[0].value,
+      password: password,
+      socialMediaType: socialMediaType,
+      isVerified: true,
+    };
+    if (socialMediaType === "google") {
+      newUser.googleId = userInfo.id;
+    } else if (socialMediaType === "facebook") {
+      newUser.facebookId = userInfo.id;
+    } else {
+      throw new Error("Invalid social media type");
+    }
+  } catch (err) {
+    throw new Error(err);
+  }
+}
+
+module.exports = { webSignup };
