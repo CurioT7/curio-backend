@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 const express = require("express");
 const userRouter = require("./router/userRouter");
+const indentityRouter = require("./router/settings/identityRouter")
 
 const app = express();
 
@@ -34,3 +35,6 @@ app.get("/", (req, res) => {
 
 app.use(express.json());
 app.use("/api", userRouter);
+
+
+app.use("/api/settings", indentityRouter);

@@ -20,6 +20,16 @@ const userSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    gender:
+    {
+        type: String,
+        required: false
+    },
+    language:
+    {
+        type: String,
+        required: false
     }
 });
 
