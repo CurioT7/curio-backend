@@ -1,3 +1,8 @@
+/**
+ * @file This file contains the user controller functions for authentication.
+ * @module Auth/userController
+ */
+
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const User = require("../../models/user");
@@ -6,10 +11,17 @@ require("dotenv").config();
 require("../../passport/passport.js");
 
 const { generateToken } = require("../../utils/tokens");
-const { hashPassword, comparePassword } = require("../../utils/passwords");
+const { comparePassword } = require("../../utils/passwords");
 const { resetPassword, getUsername } = require("../../utils/mails");
 
-//check if user exists
+/**
+ * Checks if a user with the given username already exists.
+ * @async
+ * @function userExist
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response object.
+ */
 async function userExist(req, res) {
   const { username } = req.body;
   const user = await User.findOne({ username });
@@ -24,6 +36,15 @@ async function userExist(req, res) {
     message: "Username is available",
   });
 }
+
+/**
+ * Creates a new user with the provided username, email, and password.
+ * @async
+ * @function signUp
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response object.
+ */
 
 async function signUp(req, res) {
   const errors = validationResult(req);
@@ -55,6 +76,15 @@ async function signUp(req, res) {
   }
 }
 
+/**
+ * Logs in a user with the provided username and password.
+ * @async
+ * @function login
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response object.
+ */
+
 async function login(req, res) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -78,13 +108,22 @@ async function login(req, res) {
     });
   }
   //generate token
-  const token = await generateToken(user._id);
+  const accessToken = await generateToken(user._id);
   return res.status(200).json({
     success: true,
     message: "Login successful",
-    token,
+    accessToken,
   });
 }
+
+/**
+ * Sends a reset password email to the user with the provided username and email.
+ * @async
+ * @function forgotPassword
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response object.
+ */
 
 async function forgotPassword(req, res) {
   const { username, email } = req.body;
@@ -114,6 +153,15 @@ async function forgotPassword(req, res) {
     });
   }
 }
+
+/**
+ * Sends an email to the user with the provided email containing their username.
+ * @async
+ * @function forgotUsername
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response object.
+ */
 
 async function forgotUsername(req, res) {
   const { email } = req.body;

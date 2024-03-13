@@ -4,6 +4,16 @@ const User = require("../../models/user");
 const generator = require("generate-password");
 const jwt = require("jsonwebtoken");
 const { generatePassword } = require("../../utils/passwords");
+const { generateToken } = require("../../utils/tokens");
+
+/**
+ * Sign up a user using web authentication with social media.
+ *
+ * @param {Object} userInfo - The user information object.
+ * @param {string} socialMediaType - The social media type used for authentication.
+ * @returns {Promise<void>} - A promise that resolves when the user is created successfully.
+ * @throws {Error} - If there is an error creating the user.
+ */
 
 async function webSignup(userInfo, socialMediaType) {
   try {
@@ -19,8 +29,6 @@ async function webSignup(userInfo, socialMediaType) {
     };
     if (socialMediaType === "google") {
       newUser.googleId = userInfo.id;
-    } else if (socialMediaType === "facebook") {
-      newUser.facebookId = userInfo.id;
     }
     await User.create(newUser);
   } catch (err) {
@@ -28,15 +36,16 @@ async function webSignup(userInfo, socialMediaType) {
   }
 }
 
+/**
+ * Generate a JWT token for the user.
+ * @param {string} userId - The user ID.
+ * @returns {Promise<string>} - A promise that resolves with the JWT token.
+ */
+
 // Define the callback handler function
-const googleCallbackHandler = (req, res) => {
+const googleCallbackHandler = async (req, res) => {
   // Generate JWT token
-  const tokenPayload = {
-    userId: req.user._id,
-  };
-  const accessToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
-    expiresIn: "24h",
-  });
+  const accessToken = await generateToken(req.user._id);
 
   // Send the access token and user information back to the client
   res.status(200).json({
