@@ -32,6 +32,13 @@ async function signUp(req, res) {
   }
   const { username, email, password } = req.body;
   try {
+    let userExist = await User.findOne({ username });
+    if (userExist) {
+      return res.status(409).json({
+        success: false,
+        message: "Username already exists",
+      });
+    }
     const user = new User({ username, email, password });
     //save user to database
     await user.save();
