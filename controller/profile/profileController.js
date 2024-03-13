@@ -65,13 +65,15 @@ class ProfileController {
   };
 
   /**
-   * Retrieves all upvoted posts and comments by a specific user.
-   * This method aggregates upvoted posts and comments into a single response.
+   * Retrieves content voted by a user based on the specified vote type.
+   * @async
    * @param {Object} req - The request object.
    * @param {Object} res - The response object.
-   * @param {Function} next - The next middleware function in the stack.
+   * @param {Function} next - The next middleware function.
+   * @param {string} voteType - The type of vote ("upvotes" or "downvotes").
+   * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
-  getUpvotedContent = async (req, res, next) => {
+  getVotedContent = async (req, res, next, voteType) => {
     try {
       const { username } = req.params;
       const user = await User.findOne({ username });
@@ -82,22 +84,29 @@ class ProfileController {
           .json({ success: false, message: "User not found" });
       }
 
-      // Separate queries for posts and comments based on upvotes array
-      const upvotedPostIds = user.upvotes
-        .filter((vote) => vote.itemType === "Post")
-        .map((vote) => vote.itemId);
-      const upvotedCommentIds = user.upvotes
-        .filter((vote) => vote.itemType === "Comment")
+      let filterFunction;
+      if (voteType === "upvotes") {
+        filterFunction = (vote) =>
+          vote.itemType === "Post" || vote.itemType === "Comment";
+      } else if (voteType === "downvotes") {
+        filterFunction = (vote) =>
+          vote.itemType === "Post" || vote.itemType === "Comment";
+      } else {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid vote type" });
+      }
+
+      const votedIds = user[voteType]
+        .filter(filterFunction)
         .map((vote) => vote.itemId);
 
-      const upvotedPosts = await Post.find({ _id: { $in: upvotedPostIds } });
-      const upvotedComments = await Comment.find({
-        _id: { $in: upvotedCommentIds },
-      });
+      const votedPosts = await Post.find({ _id: { $in: votedIds } });
+      const votedComments = await Comment.find({ _id: { $in: votedIds } });
 
       res.status(200).json({
-        upvotedPosts,
-        upvotedComments,
+        votedPosts,
+        votedComments,
       });
     } catch (error) {
       console.error(error);
@@ -107,6 +116,28 @@ class ProfileController {
         error: error.message,
       });
     }
+  };
+
+  /**
+   * Retrieves all upvoted posts and comments by a specific user.
+   * @param {Object} req - The request object containing parameters and the request body.
+   * @param {Object} res - The response object used to return data or messages.
+   * @param {Function} next - The next middleware function in the stack.
+   * @async
+   */
+  getUpvotedContent = async (req, res, next) => {
+    await this.getVotedContent(req, res, next, "upvotes");
+  };
+
+  /**
+   * Retrieves all downvoted posts and comments by a specific user.
+   * @param {Object} req - The request object containing parameters and the request body.
+   * @param {Object} res - The response object used to return data or messages.
+   * @param {Function} next - The next middleware function in the stack.
+   * @async
+   */
+  getDownvotedContent = async (req, res, next) => {
+    await this.getVotedContent(req, res, next, "downvotes");
   };
 }
 

@@ -41,5 +41,14 @@ router.get("/:username/comments", profileController.getCommentsByUser);
  */
 router.get("/:username/upvoted", profileController.getUpvotedContent);
 
+/**
+ * Route serving retrieval of downvoted comments and posts made by a specific user.
+ * @name GET /:username/downvoted
+ * @function
+ * @inner
+ * @param {string} path - Express path.
+ * @param {callback} middleware - Express middleware.
+ */
+router.get("/:username/downvoted", profileController.getDownvotedContent);
 
 module.exports = router;
