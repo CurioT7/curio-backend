@@ -38,3 +38,4 @@ app.use("/api", userRouter);
 
 
 app.use("/api/settings", indentityRouter);
+app.use("/api", userRouter);
