@@ -10,8 +10,8 @@ async function webSignup(userInfo, socialMediaType) {
     var password = generatePassword();
     var newUser = {
       firstName: userInfo.name.givenName,
-      lastName: userInfo.name.familyName,
-      username: userInfo.name.givenName,
+      //username is given name and random generated number
+      username: `${userInfo.name.givenName}${Math.floor(Math.random() * 1000)}`,
       email: userInfo.emails[0].value,
       password: password,
       socialMediaType: socialMediaType,
