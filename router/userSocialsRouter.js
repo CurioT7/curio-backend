@@ -1,19 +1,23 @@
 const express = require("express");
 const passport = require("passport");
-
-
+const webSocialsController = require("../controller/Auth/webSocialsController");
 const router = express.Router();
 
-router.get("/google", passport.authenticate("google"), (req, res) => {
-  res.status(200).json({ message: "Redirecting to google" });
-});
+// Google Auth web
 
 router.get(
-  "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
-  (req, res) => {
-    res.status(200).json({ message: "Redirecting to google callback" });
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] }),
+  () => {
+    res.send({ title: "User logging in" });
   }
+);
+
+// Google Auth web callback, redirected to after google login
+router.get(
+  "/auth/google/callback",
+  passport.authenticate("google"),
+  webSocialsController.googleCallbackHandler
 );
 
 module.exports = router;

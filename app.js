@@ -4,7 +4,6 @@ const express = require("express");
 const userRouter = require("./router/userRouter");
 const userSocialsRouter = require("./router/userSocialsRouter");
 const session = require("express-session");
-const { ensureAuth, ensureGuest } = require("./middlewares/auth");
 const passport = require("passport");
 require("./passport/passport")(passport);
 
@@ -41,11 +40,6 @@ app.use(passport.session());
 
 app.get("/", (req, res) => {
   res.send("Hello World");
-});
-
-// test
-app.get("/auth/protected", ensureAuth, (req, res) => {
-  res.send("Protected route");
 });
 
 app.use(express.json());

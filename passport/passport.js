@@ -7,10 +7,13 @@ module.exports = function (passport) {
     done(null, user.id); // Serialize the user ID into the session
   });
 
-  passport.deserializeUser((id, done) => {
-    User.findById(id, (err, user) => {
-      done(err, user); // Deserialize the user object from the user ID
-    });
+  passport.deserializeUser(async (id, done) => {
+    try {
+      const user = await User.findById(id);
+      done(null, user); // Deserialize the user object from the user ID
+    } catch (error) {
+      done(error, false);
+    }
   });
 
   passport.use(
@@ -18,7 +21,7 @@ module.exports = function (passport) {
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: "http://localhost:3000/api/google/callback",
+        callbackURL: "http://localhost:3000/api/auth/google/callback",
         scope: ["email", "profile"],
       },
 

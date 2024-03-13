@@ -5,7 +5,6 @@ const brypt = require("bcrypt");
 require("dotenv").config();
 require("../../passport/passport.js");
 
-
 const { generateToken } = require("../../utils/tokens");
 const { hashPassword, comparePassword } = require("../../utils/passwords");
 const { resetPassword, getUsername } = require("../../utils/mails");
@@ -60,7 +59,7 @@ async function login(req, res) {
   if (!user) {
     return res.status(404).json({
       success: false,
-      message: "User not found",
+      message: "Invalid credentials, check username or password",
     });
   }
   //compare password
@@ -68,7 +67,7 @@ async function login(req, res) {
   if (!isMatch) {
     return res.status(401).json({
       success: false,
-      message: "Invalid credentials",
+      message: "Invalid credentials, check username or password",
     });
   }
   //generate token
