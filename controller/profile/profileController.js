@@ -8,33 +8,30 @@ const Subreddit = require("../../models/subredditModel");
  * and voting information specific to a user.
  */
 class ProfileController {
-  /**
-   * Retrieves either posts or comments made by a specific user, based on the dataType parameter.
-   * @param {Object} req - The request object, containing URL parameters.
-   * @param {Object} res - The response object used to return data or messages.
-   * @param {Function} next - The next middleware function in the stack.
-   * @param {String} dataType - Specifies the type of data to retrieve: "posts" or "comments".
-   * @async
-   */
-  getDataByUser = async (req, res, next, dataType) => {
+  async findUserByUsername(username) {
+    const user = await User.findOne({ username });
+    if (!user) {
+      throw new Error("User not found");
+    }
+    return user;
+  }
+  async fetchPostsByUsername(username) {
+    const posts = await Post.find({ authorName: username });
+    return posts;
+  }
+
+  async fetchCommentsByUsername(username) {
+    const comments = await Comment.find({ authorName: username });
+    return comments;
+  }
+
+  // Route handlers that utilize the fetching functions and handle responses
+  getPostsByUser = async (req, res, next) => {
     try {
       const { username } = req.params;
-      const user = await User.findOne({ username });
-      // Checks if user exists.
-      if (!user) {
-        return res
-          .status(404)
-          .json({ success: false, message: "User not found" });
-      }
-
-      let data;
-      if (dataType === "posts") {
-        data = await Post.find({ authorName: username });
-      } else if (dataType === "comments") {
-        data = await Comment.find({ authorName: username });
-      }
-
-      res.status(200).json(data);
+      const user = await this.findUserByUsername(username);
+      const posts = await this.fetchPostsByUsername(username);
+      res.status(200).json(posts);
     } catch (error) {
       console.error(error);
       res.status(500).json({
@@ -45,18 +42,20 @@ class ProfileController {
     }
   };
 
-  /**
-   * Wrapper for getDataByUser to specifically fetch posts.
-   */
-  getPostsByUser = async (req, res, next) => {
-    await this.getDataByUser(req, res, next, "posts");
-  };
-
-  /**
-   * Wrapper for getDataByUser to specifically fetch comments.
-   */
   getCommentsByUser = async (req, res, next) => {
-    await this.getDataByUser(req, res, next, "comments");
+    try {
+      const { username } = req.params;
+      const user = await this.findUserByUsername(username);
+      const comments = await this.fetchCommentsByUsername(username);
+      res.status(200).json(comments);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        success: false,
+        message: "Server Error",
+        error: error.message,
+      });
+    }
   };
 
   /**
@@ -70,13 +69,7 @@ class ProfileController {
   getVotedContent = async (req, res, next, voteType) => {
     try {
       const { username } = req.params;
-      const user = await User.findOne({ username });
-
-      if (!user || typeof user !== "string") {
-        return res
-          .status(404)
-          .json({ success: false, message: "User not found" });
-      }
+      const user = await this.findUserByUsername(username);
 
       let filterFunction;
       if (voteType === "upvotes") {
@@ -136,13 +129,8 @@ class ProfileController {
   getAboutInformation = async (req, res, next) => {
     try {
       const { username } = req.params;
-      const user = await User.findOne({ username: username });
-      if (!user) {
-        return res.status(404).json({
-          sucess: false,
-          message: "user not found",
-        });
-      }
+      const user = await this.findUserByUsername(username);
+
       // Aggregate information about the user.
       const followersCount = user.followers.length;
       const followingCount = user.followings.length;
@@ -166,14 +154,14 @@ class ProfileController {
       });
 
       // Calculate karma from posts and comments.
-      const userPosts = await Post.find({ authorName: username });
+      const userPosts = await this.fetchPostsByUsername(username);
       let postKarma = 0;
 
       for (const post of userPosts) {
         postKarma += post.karma;
       }
 
-      const userComments = await Comment.find({ authorName: username });
+      const userComments = await this.fetchCommentsByUsername(username);
       let commentKarma = 0;
 
       for (const comment of userComments) {
@@ -181,19 +169,19 @@ class ProfileController {
       }
       // Respond with aggregated user information.
       res.status(200).json({
-          banner,
-          bio,
-          cakeDay,
-          commentKarma,
-          displayName,
-          followersCount,
-          followingCount,
-          goldReceived,
-          isOver18,
-          moderatedSubreddits,
-          postKarma,
-          profilePicture,
-          socialLinks,
+        banner,
+        bio,
+        cakeDay,
+        commentKarma,
+        displayName,
+        followersCount,
+        followingCount,
+        goldReceived,
+        isOver18,
+        moderatedSubreddits,
+        postKarma,
+        profilePicture,
+        socialLinks,
       });
     } catch (error) {
       console.error("Error fetching followers:", error);
