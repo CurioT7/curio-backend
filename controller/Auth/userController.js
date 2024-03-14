@@ -12,7 +12,11 @@ require("../../passport/passport.js");
 
 const { generateToken, verifyToken } = require("../../utils/tokens");
 const { comparePassword } = require("../../utils/passwords");
-const { resetPasswordMail, getUsername } = require("../../utils/mails");
+const {
+  resetPasswordMail,
+  getUsername,
+  sendVerificationMail,
+} = require("../../utils/mails");
 
 /**
  * Checks if a user with the given username already exists.
@@ -67,9 +71,14 @@ async function signUp(req, res) {
         message: "Username already exists",
       });
     }
-    const user = new User({ username, email, password });
+    const user = new User({ username, email, password, isVerified: false });
     //save user to database
     await user.save();
+
+    //TODO send verification email
+    const token = await generateToken(user._id);
+    await sendVerificationMail(email, token);
+
     //status
     return res.status(201).json({
       success: true,

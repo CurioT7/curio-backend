@@ -76,4 +76,21 @@ async function getUsername(email) {
   await sendMail(mailOptions);
 }
 
-module.exports = { resetPasswordMail, getUsername };
+//send verification email
+async function sendVerificationMail(email, token) {
+  let mailOptions = {
+    from: process.env.EMAIL,
+    to: email,
+    subject: "Email Verification",
+    html: `<h1>Email Verification</h1> 
+        <p> Click <a href="http://localhost:3000/verify-email/${token}">here</a> to verify your email</p>`,
+  };
+  await sendMail(mailOptions);
+}
+
+module.exports = {
+  resetPasswordMail,
+  getUsername,
+  sendVerificationMail,
+  sendMail,
+};
