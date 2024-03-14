@@ -33,7 +33,7 @@ async function sendMail(mailOptions) {
 @params: token - token to reset password
 */
 
-async function resetPasswordMail(email, token){
+async function resetPasswordMail(email, token) {
   //check if user exists
   const user = await User.findOne({ email });
   if (!user) {
