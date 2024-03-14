@@ -53,6 +53,13 @@ async function signUp(req, res) {
   }
   const { username, email, password } = req.body;
   try {
+    let emailExist = await User.findOne({ email });
+    if (emailExist) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already exists",
+      });
+    }
     let userExist = await User.findOne({ username });
     if (userExist) {
       return res.status(409).json({
