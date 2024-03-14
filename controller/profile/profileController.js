@@ -8,6 +8,12 @@ const Subreddit = require("../../models/subredditModel");
  * and voting information specific to a user.
  */
 class ProfileController {
+  /**
+   * Finds a user by their username.
+   * @param {string} username - The username of the user to find.
+   * @returns {Promise<Object>} A Promise that resolves to the user object if found.
+   * @throws {Error} Throws an error if the user is not found.
+   */
   async findUserByUsername(username) {
     const user = await User.findOne({ username });
     if (!user) {
@@ -15,46 +21,76 @@ class ProfileController {
     }
     return user;
   }
+
+  /**
+   * Handles server errors by logging them and sending an error response.
+   * @param {Object} res - The response object.
+   * @param {Error} error - The error object representing the server error.
+   */
+  handleServerError = (res, error) => {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  };
+
+  /**
+   * Fetches posts made by a specific user.
+   * @param {string} username - The username of the user whose posts are to be fetched.
+   * @returns {Promise<Array>} A Promise that resolves to an array of posts made by the user.
+   */
   async fetchPostsByUsername(username) {
     const posts = await Post.find({ authorName: username });
     return posts;
   }
 
+  /**
+   * Fetches comments made by a specific user.
+   * @param {string} username - The username of the user whose comments are to be fetched.
+   * @returns {Promise<Array>} A Promise that resolves to an array of comments made by the user.
+   */
   async fetchCommentsByUsername(username) {
     const comments = await Comment.find({ authorName: username });
     return comments;
   }
 
-  // Route handlers that utilize the fetching functions and handle responses
+  /**
+   * Retrieves posts made by a specific user.
+   * @param {Object} req - The request object.
+   * @param {Object} res - The response object.
+   * @param {Function} next - The next middleware function.
+   * @returns {Promise<void>} A Promise that resolves once the operation is complete.
+   */
   getPostsByUser = async (req, res, next) => {
     try {
       const { username } = req.params;
       const user = await this.findUserByUsername(username);
+      // Fetch posts by the user
       const posts = await this.fetchPostsByUsername(username);
       res.status(200).json(posts);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({
-        success: false,
-        message: "Server Error",
-        error: error.message,
-      });
+      this.handleServerError(res, error);
     }
   };
 
+  /**
+   * Retrieves comments made by a specific user.
+   * @param {Object} req - The request object.
+   * @param {Object} res - The response object.
+   * @param {Function} next - The next middleware function.
+   * @returns {Promise<void>} A Promise that resolves once the operation is complete.
+   */
   getCommentsByUser = async (req, res, next) => {
     try {
       const { username } = req.params;
       const user = await this.findUserByUsername(username);
+      // Fetch comments by the user
       const comments = await this.fetchCommentsByUsername(username);
       res.status(200).json(comments);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({
-        success: false,
-        message: "Server Error",
-        error: error.message,
-      });
+      this.handleServerError(res, error);
     }
   };
 
@@ -96,12 +132,7 @@ class ProfileController {
         votedComments,
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({
-        success: false,
-        message: "Server Error",
-        error: error.message,
-      });
+      this.handleServerError(res, error);
     }
   };
 
@@ -184,8 +215,30 @@ class ProfileController {
         socialLinks,
       });
     } catch (error) {
-      console.error("Error fetching followers:", error);
-      res.status(500).json({ message: "Internal server error" });
+      this.handleServerError(res, error);
+    }
+  };
+
+  /**
+   * Retrieves overview information about a user including their posts and comments.
+   * @param {Object} req - The request object.
+   * @param {Object} res - The response object.
+   * @param {Function} next - The next middleware function.
+   * @returns {Promise<void>} A Promise that resolves once the operation is complete.
+   */
+  getOverviewInformation = async (req, res, next) => {
+    try {
+      const { username } = req.params;
+      const user = await this.findUserByUsername(username);
+      // Get all posts and comments by the user
+      const userPosts = await this.fetchPostsByUsername(username);
+      const userComments = await this.fetchCommentsByUsername(username);
+      res.status(200).json({
+        userPosts,
+        userComments,
+      });
+    } catch (error) {
+      this.handleServerError(res, error);
     }
   };
 }

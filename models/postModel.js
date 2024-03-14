@@ -46,10 +46,11 @@ const postSchema = new Schema({
   authorName: {
     type: String,
     required: true,
-  },
-  authorID: {
-    type: Schema.Types.ObjectId,
     ref: "User",
+  },
+  views: {
+    type: Number,
+    default: 0,
   },
   createdAt: {
     type: Date,

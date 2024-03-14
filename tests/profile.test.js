@@ -143,3 +143,33 @@ it("should retrieve upvoted content by calling the getVotedContent method with t
         moderatedSubreddits: [{ name: 'Subreddit 1' }, { name: 'Subreddit 2' }],
       });
     });
+        // Successfully retrieve overview information about a user including their posts and comments
+    it('should retrieve overview information about a user including their posts and comments', async () => {
+      // Arrange
+      const profileController = new ProfileController();
+      const req = { params: { username: "testUser" } };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+
+      // Mock the findUserByUsername method
+      profileController.findUserByUsername = jest.fn().mockResolvedValue({ username: "testUser" });
+
+      // Mock the fetchPostsByUsername method
+      profileController.fetchPostsByUsername = jest.fn().mockResolvedValue([{ title: "Post 1" }, { title: "Post 2" }]);
+
+      // Mock the fetchCommentsByUsername method
+      profileController.fetchCommentsByUsername = jest.fn().mockResolvedValue([{ text: "Comment 1" }, { text: "Comment 2" }]);
+
+      // Act
+      await profileController.getOverviewInformation(req, res, next);
+
+      // Assert
+      expect(profileController.findUserByUsername).toHaveBeenCalledWith("testUser");
+      expect(profileController.fetchPostsByUsername).toHaveBeenCalledWith("testUser");
+      expect(profileController.fetchCommentsByUsername).toHaveBeenCalledWith("testUser");
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        userPosts: [{ title: "Post 1" }, { title: "Post 2" }],
+        userComments: [{ text: "Comment 1" }, { text: "Comment 2" }],
+      });
+    });

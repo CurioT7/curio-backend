@@ -62,4 +62,13 @@ router.get("/:username/downvoted", profileController.getDownvotedContent);
  */
 router.get("/:username/about", profileController.getAboutInformation);
 
+/**
+ * Route handler for fetching overview information about a user.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ * @returns {void} This function sends a response with overview information about the user.
+ */
+router.get("/:username/overview", profileController.getOverviewInformation);
+
 module.exports = router;
