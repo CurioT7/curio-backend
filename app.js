@@ -34,7 +34,6 @@ app.get("/", (req, res) => {
 });
 
 app.use(express.json());
-app.use("/api", userRouter);
 
 
 app.use("/api/settings", indentityRouter);
