@@ -51,4 +51,15 @@ router.get("/:username/upvoted", profileController.getUpvotedContent);
  */
 router.get("/:username/downvoted", profileController.getDownvotedContent);
 
+/**
+ * Get information about a user.
+ * @param {Object} req - The request object.
+ * @param {Object} req.params - The parameters sent with the request.
+ * @param {string} req.params.username - The username of the user to get information about.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ * @returns {Object} Information about the user.
+ */
+router.get("/:username/about", profileController.getAboutInformation);
+
 module.exports = router;

@@ -94,3 +94,52 @@ it("should retrieve upvoted content by calling the getVotedContent method with t
     votedComments: [],
   });
 }, 20000);
+    // Successfully retrieve detailed profile information about a user
+    it('should retrieve detailed profile information about a user', async () => {
+      // Mock dependencies
+      const req = { params: { username: 'testUser' } };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+      const User = require('../../models/userModel');
+      const Post = require('../../models/postModel');
+      const Comment = require('../../models/commentModel');
+      const Subreddit = require('../../models/subredditModel');
+      const userMockData = {
+        followers: ['follower1', 'follower2'],
+        followings: ['following1', 'following2'],
+        goldAmount: 10,
+        cakeDay: '2022-01-01',
+        socialLinks: ['link1', 'link2'],
+        bio: 'Test bio',
+        displayName: 'Test User',
+        banner: 'banner.jpg',
+        subreddits: [
+          { subreddit: 'subreddit1', role: 'moderator' },
+          { subreddit: 'subreddit2', role: 'member' },
+        ],
+      };
+      User.findOne = jest.fn().mockResolvedValue(userMockData);
+      Post.find = jest.fn().mockResolvedValue([{ title: 'Test Post 1', karma: 10 }, { title: 'Test Post 2', karma: 5 }]);
+      Comment.find = jest.fn().mockResolvedValue([{ text: 'Test Comment 1', karma: 3 }, { text: 'Test Comment 2', karma: 7 }]);
+      Subreddit.find = jest.fn().mockResolvedValue([{ name: 'Subreddit 1' }, { name: 'Subreddit 2' }]);
+
+      // Initialize and invoke ProfileController
+      const profileController = new ProfileController();
+      await profileController.getAboutInformation(req, res, next);
+
+      // Assertions
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        followersCount: 2,
+        followingCount: 2,
+        goldRecieved: 10,
+        cakeDay: '2022-01-01',
+        postKarma: 15,
+        commentKarma: 10,
+        socialLinks: ['link1', 'link2'],
+        bio: 'Test bio',
+        displayName: 'Test User',
+        banner: 'banner.jpg',
+        moderatedSubreddits: [{ name: 'Subreddit 1' }, { name: 'Subreddit 2' }],
+      });
+    });

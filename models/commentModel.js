@@ -9,7 +9,20 @@ const Schema = mongoose.Schema;
 
 /**
  * Schema definition for a comment.
- * @type {Schema}
+ * @typedef {Object} CommentSchema
+ * @property {string} content - The content of the comment.
+ * @property {string} authorName - The name of the author of the comment.
+ * @property {mongoose.Types.ObjectId} authorID - The ID of the author of the comment.
+ * @property {Date} createdAt - The date and time when the comment was created.
+ * @property {number} upvotes - The number of upvotes the comment has received.
+ * @property {number} downvotes - The number of downvotes the comment has received.
+ * @property {mongoose.Types.ObjectId} linkedPost - The ID of the post to which the comment is linked.
+ * @property {number} awards - The number of awards the comment has received.
+ */
+
+/**
+ * Schema definition for a comment.
+ * @type {CommentSchema}
  */
 const commentSchema = new Schema({
   content: {
@@ -40,14 +53,14 @@ const commentSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Post",
   },
-  karma: {
-    type: Number,
-    default: 0,
-  },
   awards: {
     type: Number,
     default: 0,
   },
+});
+// Define a virtual property to calculate karma
+commentSchema.virtual("karma").get(function () {
+  return this.upvotes - this.downvotes;
 });
 
 /**

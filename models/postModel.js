@@ -1,6 +1,6 @@
 /**
  * Defines the schema for the Post model in the database.
- * @module PostModel
+ * @module postModel
  * @requires mongoose
  */
 
@@ -9,7 +9,30 @@ const Schema = mongoose.Schema;
 
 /**
  * Schema definition for a post.
- * @type {Schema}
+ * @typedef {Object} PostSchema
+ * @property {string} title - The title of the post.
+ * @property {string} content - The content of the post.
+ * @property {string} authorName - The name of the author of the post.
+ * @property {mongoose.Types.ObjectId} authorID - The ID of the author of the post.
+ * @property {Date} createdAt - The date and time when the post was created.
+ * @property {number} upvotes - The number of upvotes the post has received.
+ * @property {number} downvotes - The number of downvotes the post has received.
+ * @property {mongoose.Types.ObjectId} belongsTo - The ID of the subreddit to which the post belongs.
+ * @property {mongoose.Types.ObjectId[]} comments - An array of comment IDs associated with the post.
+ * @property {number} shares - The number of shares the post has received.
+ * @property {boolean} isNSFW - Indicates whether the post is Not Safe For Work (NSFW).
+ * @property {boolean} isSpoiler - Indicates whether the post contains spoilers.
+ * @property {boolean} isOC - Indicates whether the post is Original Content (OC).
+ * @property {boolean} isCrosspost - Indicates whether the post is a crosspost.
+ * @property {number} awards - The number of awards the post has received.
+ * @property {string} media - The media associated with the post (e.g., image or video URL).
+ * @property {string} link - The external link associated with the post.
+ * @property {boolean} isDraft - Indicates whether the post is a draft.
+ */
+
+/**
+ * Schema definition for a post.
+ * @type {PostSchema}
  */
 const postSchema = new Schema({
   title: {
@@ -70,10 +93,6 @@ const postSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  karma: {
-    type: Number,
-    default: 0,
-  },
   awards: {
     type: Number,
     default: 0,
@@ -88,6 +107,10 @@ const postSchema = new Schema({
     type: Boolean,
     default: false,
   },
+});
+// Define a virtual property to calculate karma
+postSchema.virtual("karma").get(function () {
+  return this.upvotes - this.downvotes;
 });
 
 /**
