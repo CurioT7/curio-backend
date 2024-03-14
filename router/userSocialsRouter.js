@@ -1,6 +1,6 @@
 const express = require("express");
 const passport = require("passport");
-const webSocialsController = require("../controller/Auth/webSocialsController");
+const webSocialsController = require("../controller/Auth/SocialsController");
 const router = express.Router();
 
 // Google Auth web

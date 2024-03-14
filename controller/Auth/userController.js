@@ -10,9 +10,9 @@ const brypt = require("bcrypt");
 require("dotenv").config();
 require("../../passport/passport.js");
 
-const { generateToken } = require("../../utils/tokens");
+const { generateToken, verifyToken } = require("../../utils/tokens");
 const { comparePassword } = require("../../utils/passwords");
-const { resetPassword, getUsername } = require("../../utils/mails");
+const { resetPasswordMail, getUsername } = require("../../utils/mails");
 
 /**
  * Checks if a user with the given username already exists.
@@ -140,7 +140,7 @@ async function forgotPassword(req, res) {
 
   //send email to user
   try {
-    await resetPassword(email, token);
+    await resetPasswordMail(email, token);
     return res.status(200).json({
       success: true,
       message:
@@ -182,4 +182,50 @@ async function forgotUsername(req, res) {
   }
 }
 
-module.exports = { userExist, signUp, login, forgotPassword, forgotUsername };
+async function resetPassword(req, res) {
+  const { password } = req.body;
+  const { token } = req.params;
+  //decode token
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token",
+    });
+  }
+  const user = await User.findOne({ _id: decoded.userId });
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  console.log(password);
+  console.log(user.password);
+
+  //compare passwords
+  const isMatch = await comparePassword(password, user.password);
+  if (isMatch) {
+    return res.status(400).json({
+      success: false,
+      message: "New password cannot be the same as the old password",
+    });
+  }
+
+  user.password = password;
+  await user.save();
+  return res.status(200).json({
+    success: true,
+    message: "Password reset successful",
+  });
+}
+
+module.exports = {
+  userExist,
+  signUp,
+  login,
+  forgotPassword,
+  forgotUsername,
+  resetPassword,
+};

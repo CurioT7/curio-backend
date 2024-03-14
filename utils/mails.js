@@ -33,7 +33,7 @@ async function sendMail(mailOptions) {
 @params: token - token to reset password
 */
 
-async function resetPassword(email, token) {
+async function resetPasswordMail(email, token){
   //check if user exists
   const user = await User.findOne({ email });
   if (!user) {
@@ -76,4 +76,4 @@ async function getUsername(email) {
   await sendMail(mailOptions);
 }
 
-module.exports = { resetPassword, getUsername };
+module.exports = { resetPasswordMail, getUsername };

@@ -1,6 +1,6 @@
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const User = require("../models/user");
-const { webSignup } = require("../controller/Auth/webSocialsController");
+const { webSignup } = require("../controller/Auth/SocialsController");
 
 module.exports = function (passport) {
   passport.serializeUser((user, done) => {
@@ -46,6 +46,4 @@ module.exports = function (passport) {
       }
     )
   );
-
-  // TODO: Add Facebook Strategy
 };
