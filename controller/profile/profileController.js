@@ -146,12 +146,14 @@ class ProfileController {
       // Aggregate information about the user.
       const followersCount = user.followers.length;
       const followingCount = user.followings.length;
-      const goldRecieved = user.goldAmount;
+      const goldReceived = user.goldAmount;
       const cakeDay = user.cakeDay;
       const socialLinks = user.socialLinks;
       const bio = user.bio;
       const displayName = user.displayName;
       const banner = user.banner;
+      const profilePicture = user.profilePicture;
+      const isOver18 = user.isOver18;
 
       // Extract subreddit IDs where the user is a moderator
       const moderatedSubredditIds = user.subreddits
@@ -179,17 +181,19 @@ class ProfileController {
       }
       // Respond with aggregated user information.
       res.status(200).json({
-        followersCount,
-        followingCount,
-        goldRecieved,
-        cakeDay,
-        postKarma,
-        commentKarma,
-        socialLinks,
-        bio,
-        displayName,
-        banner,
-        moderatedSubreddits,
+          banner,
+          bio,
+          cakeDay,
+          commentKarma,
+          displayName,
+          followersCount,
+          followingCount,
+          goldReceived,
+          isOver18,
+          moderatedSubreddits,
+          postKarma,
+          profilePicture,
+          socialLinks,
       });
     } catch (error) {
       console.error("Error fetching followers:", error);

@@ -63,7 +63,7 @@ const userSchema = new Schema({
   banner: {
     type: String,
   },
-  profilePic: {
+  profilePicture: {
     type: String,
   },
   bio: {
@@ -78,7 +78,7 @@ const userSchema = new Schema({
   displayName: {
     type: String,
   },
-  isover18: {
+  isOver18: {
     type: Boolean,
     default: false,
   },
