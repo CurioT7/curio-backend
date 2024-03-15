@@ -1,24 +1,24 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const { hashPassword } = require("../utils/passwords");
+const Schema = mongoose.Schema;
 
-const memberSchema = new mongoose.Schema({
-    communityId: {
-      type: String ,
-      ref: "Community"
-    }
-  });
 const moderatorSchema = new mongoose.Schema({
-    communityId: {
-      type: String,
-      ref: "Community"
-    },
-    role: {
-      type: String,
-      enum: ["creator", "moderator"]
-    },
-  });
-
+  communityName: {
+    type: String,
+    ref: "Subredddit",
+  },
+  role: {
+    type: String,
+    enum: ["creator", "moderator"],
+  },
+});
+const memberSchema = new mongoose.Schema({
+  communityName: {
+    type: String,
+    ref: "Subredddit",
+  },
+});
 //create user schema for reddit user
 const userSchema = new mongoose.Schema({
     username: {
@@ -38,37 +38,66 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }, 
+    communityName: {
+      type: String,
+      defualt: "tata"
+    },
     avatar: {
         type: String,
         default: "default.jpg"
     },
     about: {
         type: String,
+        default: ""
       },
-    friendRequestToMe: {
-        type: String,
-          ref: "User"
-    },
-    friendRequestFromMe: 
-    {
-      type: String,
-          ref: "User"
-    },
     friend: 
     {
       type: String,
       ref: "User"
     },
-    member:
-    {
-      type: memberSchema,
-    },
-      
-    moderators: 
-    {
-      type: moderatorSchema,
-    }
+    followers: [
+      {
+        type: String,
+      },
+    ],
+    followings: [
+      {
+        type: String,
+      },
+    ],
+    subreddits: [
+      {
+        subreddit: {
+          type: Schema.Types.ObjectId,
+          ref: "Subreddit",
+        },
+        role: {
+          type: String,
+          enum: ["moderator", "admin"],
+          default: "member",
+        },
+      },
+    ],
+    countSubreddits: [
+      {
+        type: String,
+      },
+    ],
 
+    member: [
+      {
+        type: memberSchema,
+      },
+    ],
+    moderators: [
+      {
+        type: moderatorSchema,
+      },
+    ],
+    over18: {
+      type: Boolean,
+      default: true,
+    }
 });
 
   
