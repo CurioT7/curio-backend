@@ -38,7 +38,7 @@ async function createSub(req, res) {
     }
 
     // Add user to the subreddit
-    const updateUser = await userServiceRequest.addUserToSubbreddit(user, result.response._id); // Pass the subreddit ID from the response
+    const updateUser = await userServiceRequest.addUserToSubbreddit(user, result.response.name); // Pass the subreddit name from the response
     if (!updateUser.status) {
       return res.status(500).json({
         status: "failed",

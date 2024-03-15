@@ -22,17 +22,15 @@ const moderatorSchema = mongoose.Schema({
 
 //create user schema for reddit user
 const subredditSchema = new Schema({
-  _id:{
-    type:String
-  },
+ 
   name: {
     type: String,
-    // required: true,
+     required: true,
     unique: true,
   },
   description: {
     type: String,
-    // required: true,
+     required: true,
   },
   createdAt: {
     type: Date,

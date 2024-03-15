@@ -17,19 +17,30 @@ class CommunityService extends Service {
    * @function
    */
   availableSubreddit = async (subreddit) => {
-    var subReddit = await this.getOne({ _id : subreddit });
-    if (subReddit) {
-      return {
-        state: false,
-        subreddit: subReddit,
-      };
-    } else {
-      return {
-        state: true,
-        subreddit: null,
-      };
+    try {
+        const subReddit = await this.getOne({ name: subreddit });
+        if (subReddit) {
+            return {
+                state: false,
+                subreddit: subReddit.name,
+            };
+        } else {
+            return {
+                state: true,
+                subreddit: null,
+            };
+        }
+    } catch (error) {
+        console.error("Error checking subreddit availability:", error);
+        return {
+            state: false,
+            subreddit: null,
+            error: "An error occurred while checking subreddit availability",
+        };
     }
-  };
+};
+
+
   /**
      * invite user to be moderator in subreddit
      * @param {string} subreddit
@@ -37,7 +48,7 @@ class CommunityService extends Service {
      * @function
      */
   inviteModerator = async (subreddit, moderator) => {
-    const doc = await this.getOne({ _id: subreddit });
+    const doc = await this.getOne({ name: subreddit });
     doc.invitedModerators.push(moderator);
     await doc.save();
   };
@@ -48,7 +59,7 @@ class CommunityService extends Service {
      * @function
      */
   deInviteModerator = async (subreddit, moderator) => {
-    const doc = await this.getOne({ _id: subreddit });
+    const doc = await this.getOne({ name: subreddit });
     doc.invitedModerators = doc.invitedModerators.filter(
       (el) => el != moderator
     );
@@ -63,7 +74,7 @@ class CommunityService extends Service {
    */
   isInvited = async (subreddit, user) => {
     const invitedModerators = (
-      await this.getOne({ _id: subreddit, select: "invitedModerators" })
+      await this.getOne({ name: subreddit, select: "invitedModerators" })
     ).invitedModerators;
     return invitedModerators.includes(user);
   };
@@ -84,16 +95,17 @@ class CommunityService extends Service {
 
     // Create the subreddit
     const moderator = {
-      userID: username,
+      username: username,
       role: "creator",
     };
     const memInComm = {
-      userID: username,
+      username: username,
     };
     const newSubreddit = {
-      _id: subredditName,
-      over18: data.over18,
-      privacyType: data.type,
+      name: subredditName,
+      isOver18: data.over18,
+      description:data.description,
+      isPrivate: data.type,
       moderators: [moderator],
       members: [memInComm],
     };
