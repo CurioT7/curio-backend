@@ -7,7 +7,7 @@ class Service {
       this.model = model;
     }
   
-    getOne = (query) => {
+    getOne = async (query) => {
       let fields = "";
       let populate = "";
       if (query.select) {
@@ -32,7 +32,9 @@ class Service {
     updateOne = (query, update, options = {}) => {
         return this.model.findOneAndUpdate(query, update, options).exec();
     };
-    
+    insert = (data) => {
+      return this.model.create(data);
+    };
   }
   module.exports = Service;
   
