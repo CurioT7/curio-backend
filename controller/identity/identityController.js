@@ -44,6 +44,10 @@ async function getUserPreferences(req, res) {
     .populate({
       path: 'block.username', // Populate username details in blocked users
       select: 'username' // Only select username from User model in blocked users
+    })
+    .populate({
+      path: 'mute.username', // Populate username details in muted users
+      select: 'username' // Only select username from User model in muted users
     });
     
     
@@ -77,7 +81,23 @@ async function updateUserPreferences(req, res) {
     mute,
     viewMutedCommunities,
     adultContent,
-    autoplayMedia, } = req.body;
+    autoplayMedia,
+    communityThemes,
+    communityContentSort,
+    globalContentView,
+    rememberPerCommunity,
+    openPostsInNewTab, 
+    mentions, 
+    comments,
+    upvotes, 
+    replies,
+    newFollowers,
+    invitations,
+    postsYouFollow,
+    newFollowerEmail,
+    chatRequestEmail,
+    unsubscribeFromAllEmails
+   } = req.body;
    try {
     const user = await User.findOne({username});
     if (!user) {
@@ -85,7 +105,7 @@ async function updateUserPreferences(req, res) {
     }
 
     const preferences = await UserPreferences.findOneAndUpdate(
-      { user: user._id },
+      { username},
       {
         displayName,
         about,
@@ -101,12 +121,28 @@ async function updateUserPreferences(req, res) {
         mute,
         viewMutedCommunities,
         adultContent,
-        autoplayMedia
+        autoplayMedia,
+        communityThemes,
+        communityContentSort,
+        globalContentView,
+        rememberPerCommunity,
+        openPostsInNewTab,
+        mentions,
+        comments,
+        upvotes,
+        replies,
+        newFollowers,
+        invitations,
+        postsYouFollow,
+        newFollowerEmail,
+        chatRequestEmail,
+        unsubscribeFromAllEmails,
       },
       { new: true, upsert: true }
     );
 
     res.json(preferences);
+    preferences.save();
 
   } catch (error) {
     console.error(error);

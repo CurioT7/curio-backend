@@ -6,6 +6,15 @@ const userPreferencesSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  gender: { 
+    type: String,
+    enum : ["woman", "man", "non-binary", "i prefer not to say"]
+  },
+  language: {
+    type: String,
+    enum :["de", "en", "es", "fr", "it", "ja", "ko", "nl", "pl", "pt", "ru", "zh", "zh-TW"],
+    default: "en"
+  },
   displayName: {
     type: String,
   },
