@@ -2,7 +2,8 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 const express = require("express");
 const userRouter = require("./router/userRouter");
-
+const subredditRouter = require("./router/subredditRouter");
+const friendsRoute = require("./router/friendsRoute");
 const app = express();
 
 // Connect to database
@@ -34,3 +35,7 @@ app.get("/", (req, res) => {
 
 app.use(express.json());
 app.use("/api", userRouter);
+app.use("/api", subredditRouter);
+app.use("/api", friendsRoute);
+
+
