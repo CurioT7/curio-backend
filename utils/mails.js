@@ -83,7 +83,7 @@ async function sendVerificationMail(email, token) {
     to: email,
     subject: "Email Verification",
     html: `<h1>Email Verification</h1> 
-        <p> Click <a href="http://localhost:3000/verify-email/${token}">here</a> to verify your email</p>`,
+        <p> Click <a href="http://localhost:3000/api/auth/verify_email/${token}">here</a> to verify your email</p>`,
   };
   await sendMail(mailOptions);
 }

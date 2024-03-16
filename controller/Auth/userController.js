@@ -75,7 +75,7 @@ async function signUp(req, res) {
     //save user to database
     await user.save();
 
-    //TODO send verification email
+    //send verification email
     const token = await generateToken(user._id);
     await sendVerificationMail(email, token);
 
@@ -198,6 +198,15 @@ async function forgotUsername(req, res) {
   }
 }
 
+/**
+ * Resets the user's password using the provided token.
+ * @async
+ * @function resetPassword
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response object.
+ * @throws {Error} - The error message.
+ */
 async function resetPassword(req, res) {
   const { password } = req.body;
   const { token } = req.params;
@@ -237,6 +246,173 @@ async function resetPassword(req, res) {
   });
 }
 
+async function changePassword(req, res) {
+  const { password } = req.body;
+  const { oldPassword } = req.body;
+  const token = req.headers.authorization.split(" ")[1];
+  //decode token
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token",
+    });
+  }
+  const user = await User.findOne({ _id: decoded.userId });
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+  const isMatch = await comparePassword(oldPassword, user.password);
+  if (!isMatch) {
+    return res.status(400).json({
+      success: false,
+      message: "Old password is incorrect",
+    });
+  }
+  user.password = password;
+  await user.save();
+  return res.status(200).json({
+    success: true,
+    message: "Password change successful",
+  });
+}
+
+//change Email
+/**
+ * Changes the user's email address.
+ * @async
+ * @function changeEmail
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response object.
+ * @throws {Error} - The error message.
+ */
+
+async function changeEmail(req, res) {
+  const { email, password } = req.body;
+  const token = req.headers.authorization.split(" ")[1];
+  //decode token
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token",
+    });
+  }
+  const user = await User.findOne({ _id: decoded.userId });
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+  const isMatch = await comparePassword(password, user.password);
+  if (!isMatch) {
+    return res.status(400).json({
+      success: false,
+      message: "Password is incorrect",
+    });
+  }
+
+  user.email = email;
+  await user.save();
+  //send verification email
+  try {
+    const newToken = await generateToken(user._id);
+    await sendVerificationMail(email, newToken);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+  return res.status(200).json({
+    success: true,
+    message: "Email change successful, please verify your new email address",
+  });
+}
+
+//verify email
+/**
+ * Verifies the user's email address using the provided token.
+ * @async
+ * @function verifyEmail
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response object.
+ * @throws {Error} - The error message.
+ */
+async function verifyEmail(req, res) {
+  const token = req.params.token;
+  //decode token
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token",
+    });
+  }
+  const user = await User.findOne({ _id: decoded.userId });
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+  user.isVerified = true;
+  await user.save();
+  return res.status(200).json({
+    success: true,
+    message: "Email verified successfully",
+  });
+}
+
+//resend verification email
+/**
+ * Resends a verification email to the user.
+ * @async
+ * @function resendVerification
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response object.
+ */
+
+async function resendVerification(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  //decode token
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token",
+    });
+  }
+  const user = await User.findOne({ _id: decoded.userId });
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+  //send verification email
+  try {
+    const newToken = await generateToken(user._id);
+    await sendVerificationMail(user.email, newToken);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+  return res.status(200).json({
+    success: true,
+    message: "Verification email sent successfully",
+  });
+}
+
 module.exports = {
   userExist,
   signUp,
@@ -244,4 +420,8 @@ module.exports = {
   forgotPassword,
   forgotUsername,
   resetPassword,
+  changePassword,
+  changeEmail,
+  verifyEmail,
+  resendVerification,
 };
