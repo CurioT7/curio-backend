@@ -1,8 +1,19 @@
-require("dotenv").config();
+/**
+ * @file This file contains the identity controller function and other user settings functions.
+ * @module identity/identutyController
+ */
+
 const User = require("../../models/user");
 const UserPreferences = require("../../models/userPreferences");
+require("dotenv").config();
 
-// this function returns the user's information
+
+/**
+ * @description Fetches user information based on the provided username.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+
 async function getMe(req, res) {
   const {username} = req.body;
 
@@ -31,7 +42,11 @@ async function getMe(req, res) {
 };
 
 
-// this function returns the user's preferences
+/**
+ * @description Fetches user preferences based on the provided username.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 async function getUserPreferences(req, res) {
   const {username} = req.body;
   try {
@@ -62,8 +77,12 @@ async function getUserPreferences(req, res) {
   }
 };
 
+/**
+ * @description Updates user preferences based on the provided username and preferences data.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 
-// this function updates the user's preferences
 async function updateUserPreferences(req, res) {
   const {username} = req.body;
   const {
@@ -141,7 +160,7 @@ async function updateUserPreferences(req, res) {
       { new: true, upsert: true }
     );
 
-    res.json(preferences);
+    res.json({ preferences, message: 'User preferences updated successfully' });
     preferences.save();
 
   } catch (error) {

@@ -1,8 +1,18 @@
-require("dotenv").config();
+/**
+ * @file This file contains controller functions related to user actions.
+ * @module user/blockUserController
+ */
+
 const User = require("../../models/user");
 const block = require('../../models/block');
+require("dotenv").config();
 
 
+/**
+ * @description Blocks a user based on the provided username to block.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 async function blockUser(req, res) {
   const {usernameToBlock} = req.body;
 
