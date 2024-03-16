@@ -31,16 +31,56 @@ class UserService extends Service {
  * @param {String} (communityName)
  * @function
  */
- followSubreddits = async (username, communityName) => {
-  await this.updateOne(
+ async followSubreddits(username, communityName) {
+  try {
+    // Update the user model
+    await User.findOneAndUpdate(
       { username: username },
       {
-          $addToSet: {
-            countSubreddits: communityName,
+        $addToSet: {
+          subreddits: {
+            subreddit: communityName,
+            role: "member", // Assuming the user is a member when they follow a subreddit
           },
+        },
       }
-  )
-};
+    );
+
+    // Update the members schema
+    await this.updateOne(
+      { username: username },
+      {
+        $addToSet: {
+          member: {
+            subreddit: communityName,
+          },
+        },
+      }
+    );
+    await Community.findOneAndUpdate(
+      { name: communityName },
+      {
+        $addToSet: {
+          members: { username: username },
+        },
+      }
+    );
+
+
+    return {
+      status: true,
+      response: "Subreddit followed successfully",
+      communityName: communityName,
+    };
+  } catch (error) {
+    console.error("Error following subreddit:", error);
+    return {
+      status: false,
+      error: "Failed to follow subreddit",
+    };
+  }
+}
+
 
 /**
  * delete friend of user 
@@ -48,16 +88,50 @@ class UserService extends Service {
  * @param {String} (communityName)
  * @function
  */
-unFollowSubreddits = async (username, communityName) => {
-  await this.updateOne(
-    { username: username },
-    {
-      $pull: {
-        countSubreddits: communityName,
-      },
-    }
-  );
-};
+async unFollowSubreddits(username, communityName) {
+  try {
+    // Update the user model
+    await User.findOneAndUpdate(
+      { username: username },
+      {
+        $pull: {
+          subreddits: { subreddit: communityName },
+        },
+      }
+    );
+
+    // Update the members schema
+    await this.updateOne(
+      { username: username },
+      {
+        $pull: {
+          member: { subreddit: communityName },
+        },
+      }
+    );
+    await Community.findOneAndUpdate(
+      { name: communityName },
+      {
+        $pull: {
+          members: { username: username },
+        },
+      }
+    );
+
+    return {
+      status: true,
+      response: "Subreddit unfollowed successfully",
+      communityName: communityName,
+    };
+  } catch (error) {
+    console.error("Error unfollowing subreddit:", error);
+    return {
+      status: false,
+      error: "Failed to unfollow subreddit",
+    };
+  }
+}
+
   /**
  * add friend of user
  * @param {String} (username)
@@ -81,6 +155,7 @@ unFollowSubreddits = async (username, communityName) => {
             },
         }
     );
+    
   };
 
   /**

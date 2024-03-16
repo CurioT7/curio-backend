@@ -121,99 +121,46 @@ async function getUserInfo(req, res){
 };
   
 
+async function   unFollowSubreddit(req, res) {
+  try {
+    const { username, subreddit } = req.body; 
+
+    // Follow subreddit
+    await userServiceRequest.unFollowSubreddits(username, subreddit);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Subreddit unfollowed successfully",
+    });
+  } catch (error) {
+    console.error("Error unfollowing subreddit:", error);
+    return res.status(500).json({
+      status: "failed",
+      message: "An error occurred while unfollowing subreddit",
+    });
+  }
+}
+
 async function followSubreddit(req, res) {
   try {
+    const { username, subreddit } = req.body; // Destructure username and subreddit from request body
+
     // Follow subreddit
-    await userServiceRequest.followSubreddits(req.body.username, req.body.communityName);
-
-    // Check if the subreddit exists
-    const subreddit = await communityServiceRequest.availableSubreddit(req.body.communityName);
-    if (subreddit.state) {
-      return res.status(404).json({
-        status: "failed",
-        message: "Subreddit not found",
-      });
-    }
-
-    // Check if the requesting user is a moderator in the subreddit
-    const isModerator = await userServiceRequest.isModeratorInSubreddit(req.body.communityName, req.body.username);
-    if (!isModerator) {
-      return res.status(400).json({
-        status: "failed",
-        message: "You are not a moderator in this subreddit",
-      });
-    }
-
-    // Check if the user to be invited as a moderator is not already a moderator
-    const isAlreadyModerator = await userServiceRequest.isModeratorInSubreddit(req.body.communityName, req.body.userID);
-    if (isAlreadyModerator) {
-      return res.status(400).json({
-        status: "failed",
-        message: "This user is already a moderator",
-      });
-    }
-
-    // Invite the user as a moderator
-    await communityServiceRequest.inviteModerator(req.body.communityName, req.body.userID);
+    await userServiceRequest.followSubreddits(username, subreddit);
 
     return res.status(200).json({
-      status: "succeeded",
+      status: "success",
+      message: "Subreddit followed successfully",
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error following subreddit:", error);
     return res.status(500).json({
       status: "failed",
-      message: "An error occurred",
+      message: "An error occurred while following subreddit",
     });
   }
 }
 
-async function unFollowSubreddit(req, res) {
-  try {
-    // Unfollow subreddit
-    await userServiceRequest.unFollowSubreddits(req.body.username, req.body.communityName);
-
-    // Check if the subreddit exists
-    const subreddit = await communityServiceRequest.availableSubreddit(req.body.communityName);
-    if (subreddit.state) {
-      return res.status(404).json({
-        status: "failed",
-        message: "Subreddit not found",
-      });
-    }
-
-    // Check if the requesting user is a moderator in the subreddit
-    const isModerator = await userServiceRequest.isModeratorInSubreddit(req.body.communityName, req.username);
-    if (!isModerator) {
-      return res.status(400).json({
-        status: "failed",
-        message: "You are not a moderator in this subreddit",
-      });
-    }
-
-    // Check if the user to be uninvited as a moderator is already invited
-    const isInvited = await communityServiceRequest.isInvited(req.body.communityName, req.body.userID);
-    if (!isInvited) {
-      return res.status(400).json({
-        status: "failed",
-        message: "This user is not invited",
-      });
-    }
-
-    // Uninvite the user as a moderator
-    await communityServiceRequest.deInviteModerator(req.body.communityName, req.body.userID);
-
-    return res.status(200).json({
-      status: "succeeded",
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      status: "failed",
-      message: "An error occurred",
-    });
-  }
-}
 
 
 
