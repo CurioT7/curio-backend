@@ -75,7 +75,7 @@ class CommunityService extends Service {
    */
   isInvited = async (subreddit, user) => {
     const invitedModerators = (
-      await this.getOne({ name: subreddit, select: "invitedModerators" })
+      await this.getOne({ name: subreddit })
     ).invitedModerators;
     return invitedModerators.includes(user);
   };

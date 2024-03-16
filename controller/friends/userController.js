@@ -121,9 +121,27 @@ async function getUserInfo(req, res){
 };
   
 
-async function   unFollowSubreddit(req, res) {
+async function unFollowSubreddit(req, res) {
   try {
-    const { username, subreddit } = req.body; 
+    const { username, subreddit } = req.body; // Destructure username and subreddit from request body
+
+    // Check if the username exists in the database
+    const userExists = await User.findOne({ username });
+    if (!userExists) {
+      return res.status(404).json({
+        status: "failed",
+        message: "Username not found",
+      });
+    }
+
+    // Check if the subreddit exists in the database
+    const subredditExists = await Subreddit.findOne({ name: subreddit });
+    if (!subredditExists) {
+      return res.status(404).json({
+        status: "failed",
+        message: "Subreddit not found",
+      });
+    }
 
     // Follow subreddit
     await userServiceRequest.unFollowSubreddits(username, subreddit);
@@ -145,6 +163,24 @@ async function followSubreddit(req, res) {
   try {
     const { username, subreddit } = req.body; // Destructure username and subreddit from request body
 
+    // Check if the username exists in the database
+    const userExists = await User.findOne({ username });
+    if (!userExists) {
+      return res.status(404).json({
+        status: "failed",
+        message: "Username not found",
+      });
+    }
+
+    // Check if the subreddit exists in the database
+    const subredditExists = await Subreddit.findOne({ name: subreddit });
+    if (!subredditExists) {
+      return res.status(404).json({
+        status: "failed",
+        message: "Subreddit not found",
+      });
+    }
+
     // Follow subreddit
     await userServiceRequest.followSubreddits(username, subreddit);
 
@@ -160,6 +196,7 @@ async function followSubreddit(req, res) {
     });
   }
 }
+
 
 
 
