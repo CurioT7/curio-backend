@@ -135,7 +135,7 @@ async function unFollowSubreddit(req, res) {
     }
 
     // Check if the subreddit exists in the database
-    const subredditExists = await Subreddit.findOne({ name: subreddit });
+    const subredditExists = await Community.findOne({ name: subreddit });
     if (!subredditExists) {
       return res.status(404).json({
         status: "failed",
@@ -173,7 +173,7 @@ async function followSubreddit(req, res) {
     }
 
     // Check if the subreddit exists in the database
-    const subredditExists = await Subreddit.findOne({ name: subreddit });
+    const subredditExists = await Community.findOne({ name: subreddit });
     if (!subredditExists) {
       return res.status(404).json({
         status: "failed",
