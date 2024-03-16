@@ -4,7 +4,7 @@ const { hashPassword } = require("../utils/passwords");
 const Schema = mongoose.Schema;
 
 const moderatorSchema = new mongoose.Schema({
-  communityName: {
+  subreddit: {
     type: String,
     ref: "Subredddit",
   },
@@ -14,7 +14,7 @@ const moderatorSchema = new mongoose.Schema({
   },
 });
 const memberSchema = new mongoose.Schema({
-  communityName: {
+  subreddit: {
     type: String,
     ref: "Subredddit",
   },
@@ -50,11 +50,6 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ""
       },
-    friend: 
-    {
-      type: String,
-      ref: "User"
-    },
     followers: [
       {
         type: String,
@@ -68,12 +63,12 @@ const userSchema = new mongoose.Schema({
     subreddits: [
       {
         subreddit: {
-          type: Schema.Types.ObjectId,
+          type: String,
           ref: "Subreddit",
         },
         role: {
           type: String,
-          enum: ["moderator", "admin"],
+          enum: ["moderator"],
           default: "member",
         },
       },
@@ -94,7 +89,7 @@ const userSchema = new mongoose.Schema({
         type: moderatorSchema,
       },
     ],
-    over18: {
+    isOver18: {
       type: Boolean,
       default: true,
     }

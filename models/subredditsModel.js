@@ -3,14 +3,14 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const memberSchema = mongoose.Schema({
-  userID: {
+  username: {
     type: String,
     ref: "User",
   },
 });
 
 const moderatorSchema = mongoose.Schema({
-  userID: {
+  username: {
     type: String,
     ref: "User",
   },
@@ -61,10 +61,6 @@ const subredditSchema = new Schema({
   isOver18: {
     type: Boolean,
     default: false,
-  },
-  privacyType: {
-    type: String, // "public" (anyone can view and submit), "private" (only approved members can view and submit), or "restricted" (anyone can view, but only some are approved to submit links)
-    default: "public",
   },
   isPrivate: {
     type: Boolean,

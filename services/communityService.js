@@ -1,5 +1,6 @@
 const Service = require("./service");
 const Community = require("../models/subredditsModel");
+const User = require("../models/user");
 
 /**
  * Service class to handle Community manipulations.
@@ -95,11 +96,14 @@ class CommunityService extends Service {
 
     // Create the subreddit
     const moderator = {
-      username: username,
+      subreddit: subredditName,
+      username:username,
       role: "creator",
     };
-    const memInComm = {
-      username: username,
+    const member = {
+      subreddit: subredditName,
+      username:username,
+
     };
     const newSubreddit = {
       name: subredditName,
@@ -107,11 +111,26 @@ class CommunityService extends Service {
       description:data.description,
       isPrivate: data.type,
       moderators: [moderator],
-      members: [memInComm],
+      members: [member],
     };
 
     try {
       await this.insert(newSubreddit);
+
+      // Update the user model
+      await User.findOneAndUpdate(
+        { username: username },
+        {
+          $push: {
+            subreddits: {
+              subreddit: newSubreddit._id, // Assuming _id is the ObjectId of the newly created subreddit
+              role: "creator",
+            },
+            countSubreddits: subredditName,
+          },
+        }
+      );
+
       return {
         status: true,
         response: "Subreddit created successfully",
@@ -124,7 +143,8 @@ class CommunityService extends Service {
         error: "Failed to create subreddit",
       };
     }
-  }
+}
+
 
   async communityNameExists(communityName) {
     const existingCommunity = await Community.findOne({ communityName });
