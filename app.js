@@ -1,3 +1,11 @@
+/**
+ * Main application file for setting up the Express server and connecting to the database.
+ * @module app
+ * @requires express
+ * @requires mongoose
+ * @requires dotenv
+ */
+
 const mongoose = require("mongoose");
 require("dotenv").config();
 const express = require("express");
@@ -6,11 +14,15 @@ const userSocialsRouter = require("./router/userSocialsRouter");
 const session = require("express-session");
 const passport = require("passport");
 require("./passport/passport")(passport);
+const indentityRouter = require("./router/settings/identityRouter")
 
 const app = express();
 
-// Connect to database
-async function connectToDatabase() {
+/**
+ * Connects to the MongoDB database and starts the Express server.
+ * @async
+ */
+ async function connectToDatabase() {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
@@ -45,6 +57,9 @@ app.get("/", (req, res) => {
 app.use(express.json());
 
 //define routes
+
+
+app.use("/api/settings", indentityRouter);
 app.use("/api", userRouter);
 app.use("/api", userSocialsRouter);
 
