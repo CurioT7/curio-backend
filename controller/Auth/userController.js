@@ -79,10 +79,14 @@ async function signUp(req, res) {
     const token = await generateToken(user._id);
     await sendVerificationMail(email, token);
 
+    //logins user
+    const accessToken = await generateToken(user._id);
+
     //status
     return res.status(201).json({
       success: true,
       message: "User created successfully",
+      accessToken,
     });
   } catch (error) {
     return res.status(500).json({
