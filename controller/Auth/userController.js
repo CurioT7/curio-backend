@@ -27,7 +27,7 @@ const {
  * @returns {Object} The response object.
  */
 async function userExist(req, res) {
-  const { username } = req.body;
+  const { username } = req.params;
   const user = await User.findOne({ username });
   if (user) {
     return res.status(409).json({
