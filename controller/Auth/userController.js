@@ -3,13 +3,10 @@ const { validationResult } = require("express-validator");
 const User = require("../../models/user");
 const Community = require("../../models/subredditsModel");
 const CommunityService = require("../../services/communityService");
-const UserService = require("../../services/userService");
 
 
 const brypt = require("bcrypt");
 require("dotenv").config();
-const communityServiceRequest = new CommunityService(Community);
-const userServiceRequest = new UserService(User);
 
 
 const  { hashPassword, comparePassword } = require("../../utils/passwords");
