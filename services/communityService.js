@@ -93,8 +93,6 @@ class CommunityService extends Service {
         error: "Community with this name already exists",
       };
     }
-
-    // Create the subreddit
     const moderator = {
       subreddit: subredditName,
       username:username,
@@ -123,10 +121,13 @@ class CommunityService extends Service {
         {
           $push: {
             subreddits: {
-              subreddit: newSubreddit._id, // Assuming _id is the ObjectId of the newly created subreddit
+              subreddit: subredditName, // Assuming _id is the ObjectId of the newly created subreddit
               role: "creator",
             },
             countSubreddits: subredditName,
+            members: { subreddit: subredditName },
+            moderators: { subreddit: subredditName },
+          
           },
         }
       );

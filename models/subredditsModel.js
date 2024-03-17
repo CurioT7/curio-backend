@@ -26,7 +26,8 @@ const subredditSchema = new Schema({
   name: {
     type: String,
      required: true,
-    unique: true,
+     minlength: 5, // Minimum character limit set to 5
+     unique: true,
   },
   description: {
     type: String,

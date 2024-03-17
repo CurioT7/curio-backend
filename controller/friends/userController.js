@@ -143,7 +143,6 @@ async function unFollowSubreddit(req, res) {
       });
     }
 
-    // Follow subreddit
     await userServiceRequest.unFollowSubreddits(username, subreddit);
 
     return res.status(200).json({
