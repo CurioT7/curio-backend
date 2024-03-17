@@ -173,3 +173,31 @@ it("should retrieve upvoted content by calling the getVotedContent method with t
         userComments: [{ text: "Comment 1" }, { text: "Comment 2" }],
       });
     });
+        // Successfully report a user with valid input data
+    it('should successfully report a user when valid input data is provided', async () => {
+      const req = {
+        body: {
+          reportedUsername: "testUser",
+          reportType: "username",
+          reportReason: "inappropriate content"
+        }
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+
+      // Mock the User.findOne function to return a resolved promise with a dummy user
+      User.findOne = jest.fn().mockResolvedValue({ username: "testUser" });
+
+      // Mock the newReport.save function to return a resolved promise
+      UserReports.prototype.save = jest.fn().mockResolvedValue();
+
+      await reportUser(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith({
+        succes: true,
+        message: "Report submitted successfully"
+      });
+    });

@@ -53,6 +53,10 @@ const commentSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Post",
   },
+  linkedSubreddit: {
+    type: Schema.Types.ObjectId,
+    ref: "Subreddit",
+  },
   awards: {
     type: Number,
     default: 0,
