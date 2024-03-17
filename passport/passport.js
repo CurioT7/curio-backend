@@ -2,11 +2,25 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const User = require("../models/user");
 const { webSignup } = require("../controller/Auth/SocialsController");
 
+/**
+ * Configure passport middleware for authentication with Google OAuth.
+ * @param {Object} passport - Passport.js instance.
+ */
 module.exports = function (passport) {
+  /**
+   * Serialize the user object into the session.
+   * @param {Object} user - User object.
+   * @param {Function} done - Callback function.
+   */
   passport.serializeUser((user, done) => {
     done(null, user.id); // Serialize the user ID into the session
   });
 
+  /**
+   * Deserialize the user object from the user ID.
+   * @param {string} id - User ID.
+   * @param {Function} done - Callback function.
+   */
   passport.deserializeUser(async (id, done) => {
     try {
       const user = await User.findById(id);
@@ -16,6 +30,9 @@ module.exports = function (passport) {
     }
   });
 
+  /**
+   * Configure Google authentication strategy.
+   */
   passport.use(
     new GoogleStrategy(
       {
@@ -25,6 +42,13 @@ module.exports = function (passport) {
         scope: ["email", "profile"],
       },
 
+      /**
+       * Google authentication callback function.
+       * @param {string} accessToken - Access token provided by Google.
+       * @param {string} refreshToken - Refresh token provided by Google.
+       * @param {Object} profile - User profile object returned by Google.
+       * @param {Function} done - Callback function.
+       */
       async (accessToken, refreshToken, profile, done) => {
         if (!profile) {
           return done(null, false);
