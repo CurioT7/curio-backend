@@ -1,8 +1,31 @@
+/**
+ * Defines the schema for a Reddit user.
+ * @module User
+ * @requires mongoose
+ * @requires jwt
+ * @requires ../utils/passwords
+ */
+
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const { hashPassword } = require("../utils/passwords");
 
-//create user schema for reddit user
+/**
+ * Schema definition for a Reddit user.
+ * @typedef {Object} UserSchema
+ * @property {string} username - The username of the user.
+ * @property {string} email - The email address of the user.
+ * @property {string} password - The hashed password of the user.
+ * @property {Date} createdAt - The date and time when the user account was created.
+ * @property {string} gender - The gender of the user.
+ * @property {string} language - The preferred language of the user.
+ */
+
+/**
+ * Schema definition for a Reddit user.
+ * @type {UserSchema}
+ */
+
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
@@ -33,7 +56,6 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-// Hash the password before saving the user to the database
 userSchema.pre('save', async function(next) {
     if (!this.isModified('password')) {
         return next();
@@ -47,6 +69,7 @@ userSchema.pre('save', async function(next) {
         next(error);
     }
 });
+
 
 const User = mongoose.model("User", userSchema);
 

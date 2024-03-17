@@ -1,0 +1,36 @@
+/** 
+ functions for working with JWT tokens.
+@module utils/tokens
+@requires jsonwebtoken
+@requires dotenv
+@requires ../models/user
+*/
+
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+const user = require("../models/user");
+
+/** 
+ 
+Generate a JWT token for the user.
+@param {string} userId - The user ID.
+@returns {Promise<string>} - A promise that resolves with the JWT token.
+*/
+
+async function generateToken(userId) {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "24h" });
+}
+
+/**
+ 
+Verify a JWT token.
+@param {string} token - The JWT token to verify.
+@returns {Promise<Object>} - A promise that resolves with the token payload.
+*/
+
+async function verifyToken(token) {
+  const payload = jwt.verify(token, process.env.JWT_SECRET);
+  return payload;
+}
+
+module.exports = { generateToken, verifyToken };

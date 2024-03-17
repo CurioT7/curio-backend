@@ -5,6 +5,7 @@
 
 const User = require("../../models/user");
 const UserPreferences = require("../../models/userPreferences");
+const {generateToken,verifyToken } = require("../../utils/tokens");
 require("dotenv").config();
 
 
@@ -15,7 +16,7 @@ require("dotenv").config();
  */
 
 async function getMe(req, res) {
-  const {username} = req.body;
+  const {username} = req.params;
 
   try {
     const userExists = await User.findOne({ username }); 
@@ -38,7 +39,6 @@ async function getMe(req, res) {
             message: error.message });
      }
     
-
 };
 
 
@@ -48,7 +48,7 @@ async function getMe(req, res) {
  * @param {Object} res - Express response object
  */
 async function getUserPreferences(req, res) {
-  const {username} = req.body;
+  const {username} = req.params;
   try {
     const user = await User.findOne({username});
     if (!user) {
@@ -84,8 +84,15 @@ async function getUserPreferences(req, res) {
  */
 
 async function updateUserPreferences(req, res) {
-  const {username} = req.body;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  const user = await User.findOne({ _id: decoded.userId });
   const {
+    gender,
+    language, 
     displayName,
     about,
     socialLinks,
@@ -118,14 +125,16 @@ async function updateUserPreferences(req, res) {
     unsubscribeFromAllEmails
    } = req.body;
    try {
-    const user = await User.findOne({username});
+    const user = await User.findOne({ _id: decoded.userId });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     const preferences = await UserPreferences.findOneAndUpdate(
-      { username},
+      { user},
       {
+        gender, 
+        language,
         displayName,
         about,
         socialLinks,
