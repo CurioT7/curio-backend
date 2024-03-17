@@ -40,77 +40,71 @@ class CommunityService extends Service {
         };
     }
 };
-  async createSubreddit(data, user) {
-    const subredditName = data.name;
-    const username = user.username;
-    const communityName = `${subredditName}_${username}`;
+async createSubreddit(data, user) {
+  const subredditName = data.name;
+  const username = user.username;
+  const communityName = `${subredditName}_${username}`;
 
-    // Check if the communityName is already in use
-    const communityExists = await this.communityNameExists(communityName);
-    if (communityExists) {
-      return {
-        status: false,
-        error: "Community with this name already exists",
-      };
-    }
-    const moderator = {
-      subreddit: subredditName,
-      username:username,
-      role: "creator",
+  // Check if the subreddit name is available
+  const subredditAvailable = await this.availableSubreddit(subredditName);
+  if (!subredditAvailable.state) {
+    return {
+      status: false,
+      error: "Subreddit with this name already exists",
     };
-    const member = {
-      subreddit: subredditName,
-      username:username,
+  }
 
-    };
-    const newSubreddit = {
-      name: subredditName,
-      isOver18: data.over18,
-      description:data.description,
-      isPrivate: data.type,
-      moderators: [moderator],
-      members: [member],
-    };
+  const moderator = {
+    subreddit: subredditName,
+    username: username,
+    role: "creator",
+  };
+  const member = {
+    subreddit: subredditName,
+    username: username,
+  };
+  const newSubreddit = {
+    name: subredditName,
+    isOver18: data.over18,
+    description: data.description,
+    isPrivate: data.type,
+    moderators: [moderator],
+    members: [member],
+  };
 
-    try {
-      await this.insert(newSubreddit);
+  try {
+    await this.insert(newSubreddit);
 
-      // Update the user model
-      await User.findOneAndUpdate(
-        { username: username },
-        {
-          $push: {
-            subreddits: {
-              subreddit: subredditName, // Assuming _id is the ObjectId of the newly created subreddit
-              role: "creator",
-            },
-            countSubreddits: subredditName,
-            members: { subreddit: subredditName },
-            moderators: { subreddit: subredditName },
-          
+    // Update the user model
+    await User.findOneAndUpdate(
+      { username: username },
+      {
+        $push: {
+          subreddits: {
+            subreddit: subredditName, // Assuming _id is the ObjectId of the newly created subreddit
+            role: "creator",
           },
-        }
-      );
+          countSubreddits: subredditName,
+          members: { subreddit: subredditName },
+          moderators: { subreddit: subredditName },
+        },
+      }
+    );
 
-      return {
-        status: true,
-        response: "Subreddit created successfully",
-        communityName: communityName, // Include the generated communityName in the response
-      };
-    } catch (error) {
-      console.error(error);
-      return {
-        status: false,
-        error: "Failed to create subreddit",
-      };
-    }
+    return {
+      status: true,
+      response: "Subreddit created successfully",
+      communityName: communityName, // Include the generated communityName in the response
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      status: false,
+      error: "Failed to create subreddit",
+    };
+  }
 }
 
-
-  async communityNameExists(communityName) {
-    const existingCommunity = await Community.findOne({ communityName });
-    return !!existingCommunity;
-  }
 }
 
 
