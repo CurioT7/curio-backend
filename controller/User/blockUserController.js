@@ -28,12 +28,23 @@ async function blockUser(req, res) {
       }  
 
     const existingBlock = await block.findOne({ blockerId: blockingUser._id, blockedId: blockedUser._id });
+      
     if (existingBlock) {
+        const lastUnblockTimestamp = existingBlock.unblockTimestamp || 0; // Get last unblock time (0 if never unblocked)
+        const timeSinceUnblock = Date.now() - lastUnblockTimestamp;
+        const cooldownTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  
+        if (timeSinceUnblock < cooldownTime) {
+          return res.status(403).json({ message: 'You can\'t block the user for 24 hours after unblocking them' });
+        }
+
+        await existingBlock.save();
         return res.status(409).json({ message: 'User already blocked' });
+
       }
-    
-    const newBlock = new block({ blockerId: blockingUser._id, blockedId: blockedUser._id });
-    await newBlock.save();
+  
+      const newBlock = new block({ blockerId: blockingUser._id, blockedId: blockedUser._id });
+      await newBlock.save();
 
     res.json({ message: 'User successfully blocked' });
 

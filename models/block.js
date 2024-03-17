@@ -10,6 +10,7 @@ const mongoose = require("mongoose");
  * @typedef {Object} BlockSchema
  * @property {mongoose.Types.ObjectId} blockerId - The ID of the user who is blocking.
  * @property {mongoose.Types.ObjectId} blockedId - The ID of the user who is being blocked.
+ * @property {Date} unblockTimestamp - The date and time when the user was unblocked.
  */
 
 /**
@@ -27,6 +28,10 @@ const blockSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: 'User' 
+    },
+    unblockTimestamp: {
+      type: Date,
+      default: null // Set to null initially if a user hasn't been unblocked yet
     }
 });
 
