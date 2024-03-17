@@ -13,18 +13,6 @@ class UserService extends Service {
     super(model);
   }
 
-  /**
- * isModeratorInSubreddit
- * @param {String} (subreddit)
- * @param {String} (user)
- * @function
- */
-  isModeratorInSubreddit = async (subreddit, user) => {
-    let subreddits = (await this.getOne({ _id: user, select: "moderators" }))
-      .moderators;
-    subreddits = subreddits.map((el) => el.communityName);
-    return subreddits.includes(subreddit);
-  };
  /**
  * follow Subreddits
  * @param {String} (username)

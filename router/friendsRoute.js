@@ -1,8 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const userController = require("../controller/Auth/userController");
-const friendsController = require("../controller/friends/userController");
+const friendsController = require("../controller/friends/friendController");
 
 router.post("/friend", friendsController.followSubreddit);
 router.post("/unfriend", friendsController.unFollowSubreddit);

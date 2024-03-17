@@ -40,46 +40,6 @@ class CommunityService extends Service {
         };
     }
 };
-
-
-  /**
-     * invite user to be moderator in subreddit
-     * @param {string} subreddit
-     * @param {string} moderator
-     * @function
-     */
-  inviteModerator = async (subreddit, moderator) => {
-    const doc = await this.getOne({ name: subreddit });
-    doc.invitedModerators.push(moderator);
-    await doc.save();
-  };
-  /**
-     * deinvite user to be moderator in subreddit
-     * @param {string} subreddit
-     * @param {string} moderator
-     * @function
-     */
-  deInviteModerator = async (subreddit, moderator) => {
-    const doc = await this.getOne({ name: subreddit });
-    doc.invitedModerators = doc.invitedModerators.filter(
-      (el) => el != moderator
-    );
-    await doc.save();
-  };
-
-  /**
-   * check if user is moderatot in subreddit
-   * @param {string} subreddit
-   * @param {string} moderator
-   * @function
-   */
-  isInvited = async (subreddit, user) => {
-    const invitedModerators = (
-      await this.getOne({ name: subreddit })
-    ).invitedModerators;
-    return invitedModerators.includes(user);
-  };
-  
   async createSubreddit(data, user) {
     const subredditName = data.name;
     const username = user.username;
