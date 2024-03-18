@@ -15,7 +15,7 @@ const UserReports = require("../../models/reportModel");
  **/
 async function reportUser(req, res) {
   try {
-    // Extract necessary data from the request body
+    
     const { reportedUsername, reportType, reportReason } = req.body;
 
     // Check if the reportedUsername exists in the User database
@@ -34,16 +34,13 @@ async function reportUser(req, res) {
       reportReason,
     });
 
-    // Save the report to the database
     await newReport.save();
 
-    // Respond with success message
     return res.status(201).json({
       succes: true,
       message: "Report submitted successfully",
     });
   } catch (error) {
-    // Handle any errors
     console.error("Error reporting user:", error);
     return res.status(500).json({
       success: false,

@@ -52,5 +52,5 @@ app.use("/api", subredditRouter);
 app.use("/api", friendsRoute);
 
 
-app.use("/api/report", reportRouter);
+app.use("/api", reportRouter);
 app.use("/user", profileRouter);

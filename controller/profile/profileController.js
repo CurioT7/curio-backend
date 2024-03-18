@@ -43,6 +43,11 @@ class ProfileController {
    */
   async fetchPostsByUsername(username) {
     const posts = await Post.find({ authorName: username });
+    // Increment the view count for each post
+    for (const post of posts) {
+      post.views += 1;
+      await post.save();
+    }
     return posts;
   }
 
@@ -198,7 +203,7 @@ class ProfileController {
       for (const comment of userComments) {
         commentKarma += comment.karma;
       }
-      // Respond with aggregated user information.
+     
       res.status(200).json({
         banner,
         bio,
@@ -230,9 +235,11 @@ class ProfileController {
     try {
       const { username } = req.params;
       const user = await this.findUserByUsername(username);
+      
       // Get all posts and comments by the user
       const userPosts = await this.fetchPostsByUsername(username);
       const userComments = await this.fetchCommentsByUsername(username);
+
       res.status(200).json({
         userPosts,
         userComments,

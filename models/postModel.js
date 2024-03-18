@@ -64,7 +64,7 @@ const postSchema = new Schema({
     type: Number,
     default: 0,
   },
-  belongsTo: {
+  linkedSubreddit: {
     type: Schema.Types.ObjectId,
     ref: "Subreddit",
   },
