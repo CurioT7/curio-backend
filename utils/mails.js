@@ -28,9 +28,9 @@ async function sendMail(mailOptions) {
 }
 
 //Function to reset password
-/*
-@params: email - email of the user
-@params: token - token to reset password
+/**
+  @params: email - email of the user
+  @params: token - token to reset password
 */
 
 async function resetPasswordMail(email, token) {
@@ -77,6 +77,10 @@ async function getUsername(email) {
 }
 
 //send verification email
+/**
+  @params: email - email of the user
+  @params: token - token to verify email
+*/
 async function sendVerificationMail(email, token) {
   let mailOptions = {
     from: process.env.EMAIL,
