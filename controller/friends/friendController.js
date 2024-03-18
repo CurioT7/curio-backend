@@ -178,8 +178,9 @@ async function addUserToSubbreddit(user, communityName) {
   moderator.push(userModerator);
   const members = user.member;
   members.push(userMember);
+  console.log('success');
   try {
-    await User.findOneAndUpdate(
+    await user.findOneAndUpdate(
       { username: user.username },
       { moderators: moderator, member: members }
     );
@@ -189,9 +190,6 @@ async function addUserToSubbreddit(user, communityName) {
       error: "operation user",
     };
   }
-  return {
-    status: true,
-  };
 }
 
 /**

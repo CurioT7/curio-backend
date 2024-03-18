@@ -14,11 +14,11 @@ const { verifyToken } = require("../../utils/tokens");
  */
 async function availableSubreddit(subreddit) {
   try {
-    const subReddit = await User.findOne({ name: subreddit });
+    const subReddit = await Community.findOne({ name: subreddit });
     if (subReddit) {
       return {
         success: false,
-        subreddit: subReddit.name,
+        subreddit: subReddit,
       };
     } else {
       return {
@@ -49,13 +49,13 @@ async function createSubreddit(data, user) {
   const communityName = `${subredditName}_${username}`;
   // If the subreddit name is not available (state is false), return an error response
   const subredditAvailable = await availableSubreddit(subredditName);
-  if (!subredditAvailable.state) {
+  //if subreddit is not available
+  if (!subredditAvailable.success) {
     return {
       success: false,
-      error: "Subreddit with this name already exists",
+      error: "Subreddit name is not available",
     };
   }
-
   const moderator = {
     subreddit: subredditName,
     username: username,
@@ -90,7 +90,7 @@ async function createSubreddit(data, user) {
         },
       }
     );
-
+    // Return success response
     return {
       success: true,
       response: "Subreddit created successfully",
@@ -130,16 +130,19 @@ async function newSubreddit(req, res) {
     }
 
     const result = await createSubreddit(req.body, user);
-    if (!result.status) {
-      return res.status(200).json({
-        status: result.error,
+    console.log("adad");
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.error,
       });
     }
-
-    await addUserToSubbreddit(user, result.response.communityName);
+    await addUserToSubbreddit(user, result.communityName);
 
     return res.status(200).json({
-      status: result.response,
+      success: true,
+      message: result.response,
+      communityName: result.communityName,
     });
   } catch (error) {
     console.error(error);
