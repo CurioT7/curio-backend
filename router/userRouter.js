@@ -43,5 +43,6 @@ router.patch("/auth/resend_verification", userController.resendVerification);
  * @param {Function} middleware - Middleware function for route
  */
 router.post("/User/block", userBlockController.blockUser);
+router.post("/User/unblock", userBlockController.unblockUser);
 
 module.exports = router;

@@ -12,6 +12,7 @@ const mongoose = require("mongoose");
  * @property {string} username - The username of the user.
  * @property {string} gender - The gender preference of the user.
  * @property {string} language - The language preference of the user.
+ * @property {string} locationCustomization - The location preference of the user.
  * @property {string} displayName - The display name of the user.
  * @property {string} about - Information about the user.
  * @property {string} socialLinks - Links to the user's social profiles.
@@ -39,7 +40,6 @@ const mongoose = require("mongoose");
  * @property {boolean} upvotes - Whether to receive upvotes notifications.
  * @property {boolean} replies - Whether to receive replies notifications.
  * @property {boolean} newFollowers - Whether to receive new followers notifications.
- * @property {boolean} invitations - Whether to receive invitations notifications.
  * @property {boolean} postsYouFollow - Whether to receive notifications for posts you follow.
  * @property {boolean} newFollowerEmail - Whether to receive new follower emails.
  * @property {boolean} chatRequestEmail - Whether to receive chat request emails.
@@ -65,6 +65,10 @@ const userPreferencesSchema = new mongoose.Schema({
     type: String,
     enum :["Deutsch", "English(us)", "Espanol(es)", "Espanol(mx)", "Francias", "Italiano", "portugues(br)", "portugues(pt)"],
     default: "English(us)"
+  },
+  locationCustomization : {
+    type: String,
+    default: "No Location specified."
   },
   displayName: {
     type: String,
@@ -162,10 +166,6 @@ const userPreferencesSchema = new mongoose.Schema({
     default: true,
   },
   newFollowers: {
-    type: Boolean,
-    default: true,
-  },
-  invitations: {
     type: Boolean,
     default: true,
   },

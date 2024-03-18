@@ -16,10 +16,13 @@ require("dotenv").config();
  */
 
 async function getMe(req, res) {
-  const {username} = req.params;
-
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   try {
-    const userExists = await User.findOne({ username }); 
+    const userExists = await User.findOne({ _id: decoded.userId }); 
     if (!userExists) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -48,9 +51,13 @@ async function getMe(req, res) {
  * @param {Object} res - Express response object
  */
 async function getUserPreferences(req, res) {
-  const {username} = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   try {
-    const user = await User.findOne({username});
+    const user = await User.findOne({ _id: decoded.userId});
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -85,92 +92,66 @@ async function getUserPreferences(req, res) {
 
 async function updateUserPreferences(req, res) {
   const token = req.headers.authorization.split(" ")[1];
-  const decoded = verifyToken(token);
+  const decoded = await verifyToken(token);
   if (!decoded) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
-  const user = await User.findOne({ _id: decoded.userId });
-  const {
-    gender,
-    language, 
-    displayName,
-    about,
-    socialLinks,
-    images,
-    NSFW,
-    allowFollow,
-    contentVisibility,
-    activeInCommunityVisibility,
-    clearHistory,
-    block,
-    viewBlockedPeople,
-    mute,
-    viewMutedCommunities,
-    adultContent,
-    autoplayMedia,
-    communityThemes,
-    communityContentSort,
-    globalContentView,
-    rememberPerCommunity,
-    openPostsInNewTab, 
-    mentions, 
-    comments,
-    upvotes, 
-    replies,
-    newFollowers,
-    invitations,
-    postsYouFollow,
-    newFollowerEmail,
-    chatRequestEmail,
-    unsubscribeFromAllEmails
-   } = req.body;
-   try {
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
 
+  const user = await User.findOne({ _id: decoded.userId });
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  const updateFields = {};
+  const preferencesFields = [
+    'gender',
+    'language',
+    'locationCustomization',
+    'displayName',
+    'about',
+    'socialLinks',
+    'images',
+    'NSFW',
+    'allowFollow',
+    'contentVisibility',
+    'activeInCommunityVisibility',
+    'clearHistory',
+    'block',
+    'viewBlockedPeople',
+    'mute',
+    'viewMutedCommunities',
+    'adultContent',
+    'autoplayMedia',
+    'communityThemes',
+    'communityContentSort',
+    'globalContentView',
+    'rememberPerCommunity',
+    'openPostsInNewTab',
+    'mentions',
+    'comments',
+    'upvotes',
+    'replies',
+    'newFollowers',
+    'postsYouFollow',
+    'newFollowerEmail',
+    'chatRequestEmail',
+    'unsubscribeFromAllEmails'
+  ];
+
+  preferencesFields.forEach(field => {
+    if (req.body[field] !== undefined) {
+      updateFields[field] = req.body[field];
+    }
+  });
+
+  try {
     const preferences = await UserPreferences.findOneAndUpdate(
-      { user},
-      {
-        gender, 
-        language,
-        displayName,
-        about,
-        socialLinks,
-        images,
-        NSFW,
-        allowFollow,
-        contentVisibility,
-        activeInCommunityVisibility,
-        clearHistory,
-        block,
-        viewBlockedPeople,
-        mute,
-        viewMutedCommunities,
-        adultContent,
-        autoplayMedia,
-        communityThemes,
-        communityContentSort,
-        globalContentView,
-        rememberPerCommunity,
-        openPostsInNewTab,
-        mentions,
-        comments,
-        upvotes,
-        replies,
-        newFollowers,
-        invitations,
-        postsYouFollow,
-        newFollowerEmail,
-        chatRequestEmail,
-        unsubscribeFromAllEmails,
-      },
+      { username: user.username },
+      updateFields,
       { new: true, upsert: true }
     );
 
     res.json({ preferences, message: 'User preferences updated successfully' });
-    preferences.save();
 
   } catch (error) {
     console.error(error);

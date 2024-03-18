@@ -11,7 +11,7 @@ const router = express.Router();
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.get("/v1/me/:username", identityController.getMe);
+router.get("/v1/me", identityController.getMe);
 
 
 /**
@@ -23,7 +23,7 @@ router.get("/v1/me/:username", identityController.getMe);
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.get("/v1/me/prefs/:username", identityController.getUserPreferences);
+router.get("/v1/me/prefs", identityController.getUserPreferences);
 
 
 /**

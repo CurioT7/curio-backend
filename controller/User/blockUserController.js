@@ -5,6 +5,8 @@
 
 const User = require("../../models/user");
 const block = require('../../models/block');
+const {generateToken,verifyToken } = require("../../utils/tokens");
+
 require("dotenv").config();
 
 
@@ -14,8 +16,12 @@ require("dotenv").config();
  * @param {Object} res - Express response object
  */
 async function blockUser(req, res) {
-  const {usernameToBlock} = req.body;
-
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  const usernameToBlock = req.body.usernameToBlock;
   try {
     const blockingUser = await User.findOne({ username: usernameToBlock });    
     if (!blockingUser) {
@@ -38,6 +44,7 @@ async function blockUser(req, res) {
           return res.status(403).json({ message: 'You can\'t block the user for 24 hours after unblocking them' });
         }
 
+        existingBlock.unblockTimestamp = null
         await existingBlock.save();
         return res.status(409).json({ message: 'User already blocked' });
 
@@ -60,5 +67,45 @@ async function blockUser(req, res) {
     
 };
 
+async function unblockUser(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  const usernameToUnblock = req.body.usernameToUnblock;
+  try {
+    const blocker = await User.findOne({ username: usernameToUnblock });    
+    if (!blocker) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const unblockedUser = await User.findOne({ username: usernameToUnblock });    
+    if (!unblockedUser) {
+        return res.status(404).json({ message: 'User to unblock not found' });
+      }  
 
-module.exports = { blockUser };
+    const existingBlock = await block.findOne({ blockerId: blocker._id, blockedId: unblockedUser._id });
+      
+    if (!existingBlock) {
+        return res.status(409).json({ message: 'User not blocked' });
+      }
+  
+      existingBlock.unblockTimestamp = Date.now();
+      await existingBlock.save();
+
+    res.json({ message: 'User successfully unblocked' });
+
+    
+    }
+    catch (error) {
+         return res.status(500).json({ 
+            success: false,
+            message: error.message
+         });
+     }
+
+    
+}
+
+module.exports = { blockUser, unblockUser };
