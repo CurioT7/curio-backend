@@ -1,5 +1,6 @@
 const User = require("../../models/userModel");
 const UserReports = require("../../models/reportModel");
+const { verifyToken } = require("../../utils/tokens");
 
 /**
  * Handles the reporting of a user.
@@ -15,7 +16,15 @@ const UserReports = require("../../models/reportModel");
  **/
 async function reportUser(req, res) {
   try {
-    
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
     const { reportedUsername, reportType, reportReason } = req.body;
 
     // Check if the reportedUsername exists in the User database
@@ -27,8 +36,17 @@ async function reportUser(req, res) {
       });
     }
 
+    //check if the user is trying to report themselves
+    if (user.username === reportedUsername) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot report yourself",
+      });
+    }
+
     // Create a new report instance
     const newReport = new UserReports({
+      reporterUsername: user.username,
       reportedUsername,
       reportType,
       reportReason,
@@ -37,7 +55,7 @@ async function reportUser(req, res) {
     await newReport.save();
 
     return res.status(201).json({
-      succes: true,
+      success: true,
       message: "Report submitted successfully",
     });
   } catch (error) {

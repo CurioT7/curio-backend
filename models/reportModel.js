@@ -16,6 +16,10 @@ const Schema = mongoose.Schema;
  */
 
 const userReportSchema = new Schema({
+  reporterUsername: {
+    type: String,
+    required: true,
+  },
   reportedUsername: {
     type: String,
     required: true,
