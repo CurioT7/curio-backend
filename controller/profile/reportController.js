@@ -21,10 +21,10 @@ async function reportUser(req, res) {
     // Check if the reportedUsername exists in the User database
     const existingUser = await User.findOne({ username: reportedUsername });
     if (!existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: "Reported user does not exist",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Reported user does not exist",
+      });
     }
 
     // Create a new report instance
@@ -38,18 +38,18 @@ async function reportUser(req, res) {
     await newReport.save();
 
     // Respond with success message
-      return res.status(201).json({
-          succes: true,
-          message: "Report submitted successfully"
-      });
+    return res.status(201).json({
+      succes: true,
+      message: "Report submitted successfully",
+    });
   } catch (error) {
     // Handle any errors
     console.error("Error reporting user:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
   }
 }
 

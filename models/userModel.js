@@ -29,7 +29,7 @@ const Schema = mongoose.Schema;
 const moderatorSchema = new mongoose.Schema({
   subreddit: {
     type: String,
-    ref: "Subredddit",
+    ref: "Subreddit",
   },
   role: {
     type: String,
@@ -39,7 +39,7 @@ const moderatorSchema = new mongoose.Schema({
 const memberSchema = new mongoose.Schema({
   subreddit: {
     type: String,
-    ref: "Subredddit",
+    ref: "Subreddit",
   },
 });
 

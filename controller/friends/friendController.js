@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
-const User = require("../../models/user");
-const Community = require("../../models/subredditsModel");
+const User = require("../../models/userModel");
+const Community = require("../../models/subredditModel");
 const brypt = require("bcrypt");
 
 require("dotenv").config();
@@ -21,7 +21,7 @@ async function followSubreddits(username, communityName) {
         $addToSet: {
           subreddits: {
             subreddit: communityName,
-            role: "member", 
+            role: "member",
           },
         },
       }
@@ -46,7 +46,6 @@ async function followSubreddits(username, communityName) {
       }
     );
 
-
     return {
       status: true,
       response: "Subreddit followed successfully",
@@ -61,9 +60,8 @@ async function followSubreddits(username, communityName) {
   }
 }
 
-
 /**
- * unfollow a subreddit 
+ * unfollow a subreddit
  * @param {String} (username)
  * @param {String} (communityName)
  * @function
@@ -110,65 +108,64 @@ async function unFollowSubreddits(username, communityName) {
   }
 }
 
-  /**
+/**
  * add friend of user
  * @param {String} (username)
  * @param {String} (friend)
  * @function
  */
-  async function addFriend (username, friend){
-    await User.findOneAndUpdate(
-        { username: username },
-        {
-            $addToSet: {
-              followings: friend,
-            },
-        }
-    );
-    await User.findOneAndUpdate(
-        { username: friend },
-        {
-            $addToSet: {
-              followers: username,
-            },
-        }
-    );
-    
-  };
+async function addFriend(username, friend) {
+  await User.findOneAndUpdate(
+    { username: username },
+    {
+      $addToSet: {
+        followings: friend,
+      },
+    }
+  );
+  await User.findOneAndUpdate(
+    { username: friend },
+    {
+      $addToSet: {
+        followers: username,
+      },
+    }
+  );
+}
 
-  /**
-   * delete friend of user 
-   * @param {String} (username)
-   * @param {String} (friend)
-   * @function
-   */
-  async function deleteFriend (username, friend) {
-    await User.findOneAndUpdate(
-      { username: username },
-      {
-        $pull: {
-          followings: friend,
-        },
-      }
-    );
-    await User.findOneAndUpdate(
-      { username: friend },
-      {
-        $pull: {
-          followers: username,
-        },
-      }
-    );
-  };
-  
 /**
-   * Add user to community
-   * @param {String} (username)
-   * @param {String} (communityName)
-   * @returns {object} mentions
-   * @function
-   */
-async function addUserToSubbreddit  (user, communityName){
+ * delete friend of user
+ * @param {String} (username)
+ * @param {String} (friend)
+ * @function
+ */
+async function deleteFriend(username, friend) {
+  await User.findOneAndUpdate(
+    { username: username },
+    {
+      $pull: {
+        followings: friend,
+      },
+    }
+  );
+  await User.findOneAndUpdate(
+    { username: friend },
+    {
+      $pull: {
+        followers: username,
+      },
+    }
+  );
+}
+
+/**
+ * Add user to community
+ * @param {String} (username)
+ * @param {String} (communityName)
+ * @returns {object} mentions
+ * @function
+ */
+async function addUserToSubbreddit(user, communityName) {
   const userModerator = {
     communityName: communityName,
     role: "creator",
@@ -194,7 +191,7 @@ async function addUserToSubbreddit  (user, communityName){
   return {
     status: true,
   };
-};
+}
 
 /**
  * friend request to add friendship or moderator_deInvite
@@ -203,7 +200,7 @@ async function addUserToSubbreddit  (user, communityName){
  */
 async function friendRequest(req, res) {
   const username = req.body.username;
-  const friendname = req.body.friendUsername; 
+  const friendname = req.body.friendUsername;
 
   try {
     const user = await User.findOne({ username });
@@ -224,7 +221,7 @@ async function friendRequest(req, res) {
       });
     }
 
-    await addFriend(username, friendname); 
+    await addFriend(username, friendname);
 
     return res.status(200).json({
       status: "success",
@@ -233,8 +230,8 @@ async function friendRequest(req, res) {
   } catch (error) {
     console.error(error);
     return res.status(500).json({
-      status: "failed",
-      message: "An error occurred while adding friend",
+      success: false,
+      message: error.message,
     });
   }
 }
@@ -244,50 +241,50 @@ async function friendRequest(req, res) {
  * @param {function} (req,res)
  * @returns {object} res
  */
-async function unFriendRequest(req, res){
-    const username = req.body.username;
-    const friendname = req.body.friendUsername; 
-  
-    try {
-      const user = await User.findOne({ username });
-  
-      if (!user) {
-        return res.status(404).json({
-          status: "failed",
-          message: "User not found",
-        });
-      }
-  
-      const friend = await User.findOne({ username: friendname });
-  
-      if (!friend) {
-        return res.status(404).json({
-          status: "failed",
-          message: "User to be deleted not found",
-        });
-      }
-  
-      await deleteFriend(username, friendname); 
-  
-      return res.status(200).json({
-        status: "success",
-        message: "Friend deleted successfully",
-      });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({
+async function unFriendRequest(req, res) {
+  const username = req.body.username;
+  const friendname = req.body.friendUsername;
+
+  try {
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({
         status: "failed",
-        message: "An error occurred while adding friend",
+        message: "User not found",
       });
     }
+
+    const friend = await User.findOne({ username: friendname });
+
+    if (!friend) {
+      return res.status(404).json({
+        status: "failed",
+        message: "User to be deleted not found",
+      });
+    }
+
+    await deleteFriend(username, friendname);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Friend deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
-  
+}
+
 /**
- * get user information 
+ * get user information
  * @param {function} (req,res)
  * @returns {object} res
  */
-async function getUserInfo(req, res){
+async function getUserInfo(req, res) {
   const username = req.body.username;
   const user = await User.findOne({ username });
   if (!user) {
@@ -303,18 +300,18 @@ async function getUserInfo(req, res){
       avatar: user.avatar,
     });
   }
-};
-  
+}
+
 /**
- * unfollow a subreddit 
+ * unfollow a subreddit
  * @param {String} (username)
  * @param {String} (communityName)
  * @function
- */ 
+ */
 
 async function unFollowSubreddit(req, res) {
   try {
-    const { username, subreddit } = req.body; 
+    const { username, subreddit } = req.body;
 
     const userExists = await User.findOne({ username });
     if (!userExists) {
@@ -341,21 +338,21 @@ async function unFollowSubreddit(req, res) {
   } catch (error) {
     console.error("Error unfollowing subreddit:", error);
     return res.status(500).json({
-      status: "failed",
-      message: "An error occurred while unfollowing subreddit",
+      success: false,
+      message: error.message,
     });
   }
 }
 
 /**
- * follow a subreddit 
+ * follow a subreddit
  * @param {String} (username)
  * @param {String} (communityName)
  * @function
  */
 async function followSubreddit(req, res) {
   try {
-    const { username, subreddit } = req.body; 
+    const { username, subreddit } = req.body;
 
     const userExists = await User.findOne({ username });
     if (!userExists) {
@@ -382,13 +379,13 @@ async function followSubreddit(req, res) {
   } catch (error) {
     console.error("Error following subreddit:", error);
     return res.status(500).json({
-      status: "failed",
-      message: "An error occurred while following subreddit",
+      success: false,
+      message: error.message,
     });
   }
 }
 
-module.exports = { 
+module.exports = {
   friendRequest,
   unFriendRequest,
   getUserInfo,
