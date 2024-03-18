@@ -32,16 +32,23 @@ const { validateEmail, validatePassword } = require("../../middlewares/auth");
 async function userExist(req, res) {
   const { username } = req.params;
   const user = await User.findOne({ username });
-  if (user) {
-    return res.status(409).json({
+  try {
+    if (user) {
+      return res.status(409).json({
+        success: false,
+        message: "Username already exists",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Username is available",
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: "Username already exists",
+      message: error.message,
     });
   }
-  return res.status(200).json({
-    success: true,
-    message: "Username is available",
-  });
 }
 
 /**
@@ -238,32 +245,39 @@ async function resetPassword(req, res) {
       message: "Invalid or expired token",
     });
   }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({
+  try {
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    console.log(password);
+    console.log(user.password);
+
+    //compare passwords
+    const isMatch = await comparePassword(password, user.password);
+    if (isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "New password cannot be the same as the old password",
+      });
+    }
+
+    user.password = password;
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful",
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: "User not found",
+      message: error.message,
     });
   }
-
-  console.log(password);
-  console.log(user.password);
-
-  //compare passwords
-  const isMatch = await comparePassword(password, user.password);
-  if (isMatch) {
-    return res.status(400).json({
-      success: false,
-      message: "New password cannot be the same as the old password",
-    });
-  }
-
-  user.password = password;
-  await user.save();
-  return res.status(200).json({
-    success: true,
-    message: "Password reset successful",
-  });
 }
 
 //change password
@@ -289,32 +303,39 @@ async function changePassword(req, res) {
       message: "Invalid or expired token",
     });
   }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: "User not found",
-    });
-  }
-  const isMatch = await comparePassword(oldPassword, user.password);
-  if (!isMatch) {
-    return res.status(400).json({
-      success: false,
-      message: "Old password is incorrect",
-    });
-  }
-  if (!validatePassword(password)) {
-    return res
-      .status(400)
-      .json({ message: "Password doesn't meet the requirements" });
-  }
+  try {
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    const isMatch = await comparePassword(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Old password is incorrect",
+      });
+    }
+    if (!validatePassword(password)) {
+      return res
+        .status(400)
+        .json({ message: "Password doesn't meet the requirements" });
+    }
 
-  user.password = password;
-  await user.save();
-  return res.status(200).json({
-    success: true,
-    message: "Password change successful",
-  });
+    user.password = password;
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Password change successful",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 }
 
 //change Email
