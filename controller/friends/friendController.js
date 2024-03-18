@@ -3,6 +3,7 @@ const { validationResult } = require("express-validator");
 const User = require("../../models/userModel");
 const Community = require("../../models/subredditModel");
 const brypt = require("bcrypt");
+const { verifyToken } = require("../../utils/tokens");
 
 require("dotenv").config();
 
@@ -199,11 +200,15 @@ async function addUserToSubbreddit(user, communityName) {
  * @returns {object} res
  */
 async function friendRequest(req, res) {
-  const username = req.body.username;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   const friendname = req.body.friendUsername;
 
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ _id: decoded.userId });
 
     if (!user) {
       return res.status(404).json({
@@ -221,7 +226,7 @@ async function friendRequest(req, res) {
       });
     }
 
-    await addFriend(username, friendname);
+    await addFriend(user.username, friendname);
 
     return res.status(200).json({
       status: "success",
@@ -242,11 +247,15 @@ async function friendRequest(req, res) {
  * @returns {object} res
  */
 async function unFriendRequest(req, res) {
-  const username = req.body.username;
+  const token = req.headers.authorization.split(" ")[1];
   const friendname = req.body.friendUsername;
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ _id: decoded.userId });
 
     if (!user) {
       return res.status(404).json({
@@ -264,7 +273,7 @@ async function unFriendRequest(req, res) {
       });
     }
 
-    await deleteFriend(username, friendname);
+    await deleteFriend(user.username, friendname);
 
     return res.status(200).json({
       status: "success",

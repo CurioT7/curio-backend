@@ -30,7 +30,7 @@ router.post("/unfriend", friendsController.unFollowSubreddit);
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-router.post("/me/friends/:username", friendsController.friendRequest);
+router.post("/me/friends", friendsController.friendRequest);
 
 /**
  * Route to cancel a friend request.
@@ -40,7 +40,7 @@ router.post("/me/friends/:username", friendsController.friendRequest);
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-router.delete("/me/friends/:username", friendsController.unFriendRequest);
+router.delete("/me/friends", friendsController.unFriendRequest);
 
 /**
  * Route to get user information.
