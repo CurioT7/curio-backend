@@ -287,6 +287,7 @@ async function unFriendRequest(req, res){
  * @param {function} (req,res)
  * @returns {object} res
  */
+
 async function getUserInfo(req, res){
   const username = req.body.username;
   const user = await User.findOne({ username });
@@ -305,12 +306,6 @@ async function getUserInfo(req, res){
   }
 };
   
-/**
- * unfollow a subreddit 
- * @param {String} (username)
- * @param {String} (communityName)
- * @function
- */ 
 
 async function unFollowSubreddit(req, res) {
   try {
@@ -347,12 +342,6 @@ async function unFollowSubreddit(req, res) {
   }
 }
 
-/**
- * follow a subreddit 
- * @param {String} (username)
- * @param {String} (communityName)
- * @function
- */
 async function followSubreddit(req, res) {
   try {
     const { username, subreddit } = req.body; 
