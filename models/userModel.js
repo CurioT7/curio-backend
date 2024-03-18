@@ -140,7 +140,7 @@ const userSchema = new Schema({
       },
       role: {
         type: String,
-        enum: ["moderator", "admin"],
+        enum: ["moderator", "creator"],
         default: "member",
       },
     },

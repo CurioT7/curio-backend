@@ -45,6 +45,8 @@ const subredditSchema = new Schema({
   name: {
     type: String,
     required: true,
+    minLength: 3,
+    maxLength: 21,
     unique: true,
   },
   description: {
@@ -144,7 +146,7 @@ const subredditSchema = new Schema({
   },
   role: {
     type: String,
-    enum: ["moderator", "admin", "member"],
+    enum: ["moderator", "creator", "member"],
   },
 });
 
