@@ -22,17 +22,106 @@ const userBlockController = require("../controller/User/blockUserController");
  * @param {string} path - Express route path
  * @param {Function} middleware - Middleware function for route
  */
-
 router.post("/auth/signup", userController.signUp);
+
+/**
+ * Route to log in a user.
+ * @name POST/auth/login
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
 router.post("/auth/login", userController.login);
+
+/**
+ * Route to check if a username is available.
+ * @name GET/auth/username_available/:username
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ */
 router.get("/auth/username_available/:username", userController.userExist);
+
+/**
+ * Route to send a password reset email.
+ * @name POST/auth/password
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
 router.post("/auth/password", userController.forgotPassword);
+
+/**
+ * Route to send a username reminder email.
+ * @name POST/auth/username
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ */
 router.post("/auth/username", userController.forgotUsername);
+
+/**
+ * Route to reset a user's password.
+ * @name POST/auth/reset_password/:token
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
 router.post("/auth/reset_password/:token", userController.resetPassword);
+
+/**
+ * Route to change a user's password.
+ * @name PATCH/auth/change_password
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
 router.patch("/auth/change_password", userController.changePassword);
+
+/**
+ * Route to change a user's email.
+ * @name PATCH/auth/change_email
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
 router.patch("/auth/change_email", userController.changeEmail);
+
+/**
+ * Route to verify a user's email.
+ * @name PATCH/auth/verify_email/:token
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
 router.patch("/auth/verify_email/:token", userController.verifyEmail);
+
+/**
+ * Route to resend a user's verification email.
+ * @name PATCH/auth/resend_verification
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
 router.patch("/auth/resend_verification", userController.resendVerification);
+
 /**
  * Route to block a user.
  * @name POST/User/block
@@ -43,6 +132,16 @@ router.patch("/auth/resend_verification", userController.resendVerification);
  * @param {Function} middleware - Middleware function for route
  */
 router.post("/User/block", userBlockController.blockUser);
+
+/**
+ * Route to unblock a user.
+ * @name POST/User/unblock
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
 router.post("/User/unblock", userBlockController.unblockUser);
 
 module.exports = router;
