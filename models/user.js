@@ -2,8 +2,26 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const { hashPassword } = require("../utils/passwords");
 
-//create user schema for reddit user
-const userSchema = new mongoose.Schema({
+
+/**
+ * Schema definition for a user in the Reddit-like application.
+ * @typedef {Object} UserSchema
+ * @property {string} googleId - Google ID of the user (if signed up via Google).
+ * @property {string} username - Username of the user.
+ * @property {string} email - Email address of the user.
+ * @property {string} password - Hashed password of the user.
+ * @property {Date} createdAt - Date and time when the user account was created.
+ * @property {boolean} isVerified - Indicates whether the user's email has been verified.
+ * @property {string} gender - Gender of the user (optional).
+ * @property {string} language - Preferred language of the user (optional).
+ */
+
+/**
+ * Schema definition for a user in the Reddit-like application.
+ * @type {UserSchema}
+ */
+ 
+ const userSchema = new mongoose.Schema({
   googleId: {
     type: String,
     trim: true,

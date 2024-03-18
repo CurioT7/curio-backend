@@ -1,5 +1,5 @@
 /**
- * @file This file contains controller functions related to user actions.
+ * @file This file contains controller functions related to user actions such as blocking and unblocking users.
  * @module user/blockUserController
  */
 
@@ -15,6 +15,8 @@ require("dotenv").config();
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
+
+
 async function blockUser(req, res) {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = await verifyToken(token);
@@ -39,6 +41,7 @@ async function blockUser(req, res) {
         const lastUnblockTimestamp = existingBlock.unblockTimestamp || 0; // Get last unblock time (0 if never unblocked)
         const timeSinceUnblock = Date.now() - lastUnblockTimestamp;
         const cooldownTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
   
         if (timeSinceUnblock < cooldownTime) {
           return res.status(403).json({ message: 'You can\'t block the user for 24 hours after unblocking them' });
@@ -46,11 +49,11 @@ async function blockUser(req, res) {
 
         existingBlock.unblockTimestamp = null
         await existingBlock.save();
-        return res.status(409).json({ message: 'User already blocked' });
+        
 
       }
   
-      const newBlock = new block({ blockerId: blockingUser._id, blockedId: blockedUser._id });
+      const newBlock = existingBlock || new block({ blockerId: blockingUser._id, blockedId: blockedUser._id });
       await newBlock.save();
 
     res.json({ message: 'User successfully blocked' });
@@ -67,6 +70,11 @@ async function blockUser(req, res) {
     
 };
 
+/**
+ * @description Unblocks a user based on the provided username to unblock.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object 
+ */
 async function unblockUser(req, res) {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = await verifyToken(token);
