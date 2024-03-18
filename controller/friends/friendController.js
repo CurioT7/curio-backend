@@ -174,14 +174,14 @@ async function addUserToSubbreddit(user, communityName) {
   const userMember = {
     communityName: communityName,
   };
-  const modarr = user.moderators;
-  modarr.push(userModerator);
-  const memarr = user.member;
-  memarr.push(userMember);
+  const moderator = user.moderators;
+  moderator.push(userModerator);
+  const members = user.member;
+  members.push(userMember);
   try {
     await User.findOneAndUpdate(
       { username: user.username },
-      { moderators: modarr, member: memarr }
+      { moderators: moderator, member: members }
     );
   } catch {
     return {
@@ -302,14 +302,14 @@ async function getUserInfo(req, res) {
   const user = await User.findOne({ _id: decoded.userId });
   if (!user) {
     return res.status(404).json({
-      status: "failed",
+      success: false,
       message: "not found this user",
     });
   } else {
     return res.status(200).json({
       username: user.username,
-      about: user.about,
-      avatar: user.avatar,
+      bio: user.bio,
+      profilePicture: user.profilePicture,
     });
   }
 }
@@ -333,7 +333,7 @@ async function unFollowSubreddit(req, res) {
     const userExists = await User.findOne({ _id: decoded.userId });
     if (!userExists) {
       return res.status(404).json({
-        status: "failed",
+        success: false,
         message: "Username not found",
       });
     }
@@ -341,7 +341,7 @@ async function unFollowSubreddit(req, res) {
     const subredditExists = await Community.findOne({ name: subreddit });
     if (!subredditExists) {
       return res.status(404).json({
-        status: "failed",
+        success: false,
         message: "Subreddit not found",
       });
     }
@@ -349,7 +349,7 @@ async function unFollowSubreddit(req, res) {
     await unFollowSubreddits(userExists.username, subreddit);
 
     return res.status(200).json({
-      status: "success",
+      success: true,
       message: "Subreddit unfollowed successfully",
     });
   } catch (error) {
@@ -379,7 +379,7 @@ async function followSubreddit(req, res) {
     const userExists = await User.findOne({ _id: decoded.userId });
     if (!userExists) {
       return res.status(404).json({
-        status: "failed",
+        success: false,
         message: "Username not found",
       });
     }
@@ -387,7 +387,7 @@ async function followSubreddit(req, res) {
     const subredditExists = await Community.findOne({ name: subreddit });
     if (!subredditExists) {
       return res.status(404).json({
-        status: "failed",
+        success: "false",
         message: "Subreddit not found",
       });
     }
@@ -395,7 +395,7 @@ async function followSubreddit(req, res) {
     await followSubreddits(userExists.username, subreddit);
 
     return res.status(200).json({
-      status: "success",
+      success: true,
       message: "Subreddit followed successfully",
     });
   } catch (error) {

@@ -40,24 +40,6 @@ const Schema = mongoose.Schema;
  * Creates a model for the Subreddit schema.
  * @type {mongoose.Model<SubredditSchema>}
  */
-const memberSchema = mongoose.Schema({
-  username: {
-    type: String,
-    ref: "User",
-  },
-});
-
-const moderatorSchema = mongoose.Schema({
-  username: {
-    type: String,
-    ref: "User",
-  },
-  role: {
-    type: String,
-    enum: ["creator", "moderator"],
-  },
-});
-
 const subredditSchema = new Schema({
   name: {
     type: String,
@@ -167,12 +149,22 @@ const subredditSchema = new Schema({
   },
   members: [
     {
-      type: memberSchema,
+      username: {
+        type: String,
+        ref: "User",
+      },
     },
   ],
   moderators: [
     {
-      type: moderatorSchema,
+      username: {
+        type: String,
+        ref: "User",
+      },
+      role: {
+        type: String,
+        enum: ["creator", "moderator"],
+      },
     },
   ],
 });
