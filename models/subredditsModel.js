@@ -22,17 +22,16 @@ const moderatorSchema = mongoose.Schema({
 
 //create user schema for reddit user
 const subredditSchema = new Schema({
- 
   name: {
     type: String,
-     required: true,
-     minlength: 5, 
-     maxlength:21,
-     unique: true,
+    required: true,
+    minlength: 5,
+    maxlength: 21,
+    unique: true,
   },
   description: {
     type: String,
-     required: true,
+    required: true,
   },
   createdAt: {
     type: Date,
@@ -127,11 +126,7 @@ const subredditSchema = new Schema({
   },
   role: {
     type: String,
-    enum: [
-      "moderator",
-      "admin",
-      "member",
-    ],
+    enum: ["moderator", "admin", "member"],
   },
   members: [
     {
