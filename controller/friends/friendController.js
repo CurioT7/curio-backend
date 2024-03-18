@@ -6,16 +6,6 @@ const brypt = require("bcrypt");
 
 require("dotenv").config();
 
-/**
- * Service class to handle User manipulations.
- * @class UserService
- */
-// class UserService extends Service {
-//   constructor(model) {
-//     super(model);
-//   }
-
- 
 // }
 /**
  * follow Subreddits
@@ -25,20 +15,18 @@ require("dotenv").config();
  */
 async function followSubreddits(username, communityName) {
   try {
-    // Update the user model
     await User.findOneAndUpdate(
       { username: username },
       {
         $addToSet: {
           subreddits: {
             subreddit: communityName,
-            role: "member", // Assuming the user is a member when they follow a subreddit
+            role: "member", 
           },
         },
       }
     );
 
-    // Update the members schema
     await User.findOneAndUpdate(
       { username: username },
       {
@@ -75,14 +63,13 @@ async function followSubreddits(username, communityName) {
 
 
 /**
- * delete friend of user 
+ * unfollow a subreddit 
  * @param {String} (username)
  * @param {String} (communityName)
  * @function
  */
 async function unFollowSubreddits(username, communityName) {
   try {
-    // Update the user model
     await User.findOneAndUpdate(
       { username: username },
       {
@@ -92,7 +79,6 @@ async function unFollowSubreddits(username, communityName) {
       }
     );
 
-    // Update the members schema
     await User.findOneAndUpdate(
       { username: username },
       {
@@ -217,10 +203,9 @@ async function addUserToSubbreddit  (user, communityName){
  */
 async function friendRequest(req, res) {
   const username = req.body.username;
-  const friendname = req.body.friendUsername; // Corrected variable name
+  const friendname = req.body.friendUsername; 
 
   try {
-    // Check if the requesting user exists in the database
     const user = await User.findOne({ username });
 
     if (!user) {
@@ -230,7 +215,6 @@ async function friendRequest(req, res) {
       });
     }
 
-    // Check if the user to be followed exists in the database
     const friend = await User.findOne({ username: friendname });
 
     if (!friend) {
@@ -240,8 +224,7 @@ async function friendRequest(req, res) {
       });
     }
 
-    // Proceed with the friend request
-    await addFriend(username, friendname); // Use correct variables
+    await addFriend(username, friendname); 
 
     return res.status(200).json({
       status: "success",
@@ -263,10 +246,9 @@ async function friendRequest(req, res) {
  */
 async function unFriendRequest(req, res){
     const username = req.body.username;
-    const friendname = req.body.friendUsername; // Corrected variable name
+    const friendname = req.body.friendUsername; 
   
     try {
-      // Check if the requesting user exists in the database
       const user = await User.findOne({ username });
   
       if (!user) {
@@ -276,7 +258,6 @@ async function unFriendRequest(req, res){
         });
       }
   
-      // Check if the user to be followed exists in the database
       const friend = await User.findOne({ username: friendname });
   
       if (!friend) {
@@ -286,8 +267,7 @@ async function unFriendRequest(req, res){
         });
       }
   
-      // Proceed with the friend request
-      await deleteFriend(username, friendname); // Use correct variables
+      await deleteFriend(username, friendname); 
   
       return res.status(200).json({
         status: "success",
@@ -302,8 +282,11 @@ async function unFriendRequest(req, res){
     }
   }
   
-
-
+/**
+ * get user information 
+ * @param {function} (req,res)
+ * @returns {object} res
+ */
 async function getUserInfo(req, res){
   const username = req.body.username;
   const user = await User.findOne({ username });
@@ -322,12 +305,17 @@ async function getUserInfo(req, res){
   }
 };
   
+/**
+ * unfollow a subreddit 
+ * @param {String} (username)
+ * @param {String} (communityName)
+ * @function
+ */ 
 
 async function unFollowSubreddit(req, res) {
   try {
-    const { username, subreddit } = req.body; // Destructure username and subreddit from request body
+    const { username, subreddit } = req.body; 
 
-    // Check if the username exists in the database
     const userExists = await User.findOne({ username });
     if (!userExists) {
       return res.status(404).json({
@@ -336,7 +324,6 @@ async function unFollowSubreddit(req, res) {
       });
     }
 
-    // Check if the subreddit exists in the database
     const subredditExists = await Community.findOne({ name: subreddit });
     if (!subredditExists) {
       return res.status(404).json({
@@ -360,11 +347,16 @@ async function unFollowSubreddit(req, res) {
   }
 }
 
+/**
+ * follow a subreddit 
+ * @param {String} (username)
+ * @param {String} (communityName)
+ * @function
+ */
 async function followSubreddit(req, res) {
   try {
-    const { username, subreddit } = req.body; // Destructure username and subreddit from request body
+    const { username, subreddit } = req.body; 
 
-    // Check if the username exists in the database
     const userExists = await User.findOne({ username });
     if (!userExists) {
       return res.status(404).json({
@@ -373,7 +365,6 @@ async function followSubreddit(req, res) {
       });
     }
 
-    // Check if the subreddit exists in the database
     const subredditExists = await Community.findOne({ name: subreddit });
     if (!subredditExists) {
       return res.status(404).json({
@@ -382,7 +373,6 @@ async function followSubreddit(req, res) {
       });
     }
 
-    // Follow subreddit
     await followSubreddits(username, subreddit);
 
     return res.status(200).json({

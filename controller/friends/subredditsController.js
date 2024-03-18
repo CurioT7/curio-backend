@@ -34,13 +34,19 @@ const  { addUserToSubbreddit } = require("./friendController");
         };
     }
   };
+ /**
+   * Create subreddit
+   * @param {string} data contain 
+   * @param {string} user user information
+   * @return {Object} state
+   * @function
+   */
 
   async function createSubreddit(data, user) {
     const subredditName = data.name;
     const username = user.username;
     const communityName = `${subredditName}_${username}`;
 
-    // Check if the subreddit name is available
     const subredditAvailable = await availableSubreddit(subredditName);
     if (!subredditAvailable.state) {
       return {
@@ -70,16 +76,14 @@ const  { addUserToSubbreddit } = require("./friendController");
     try {
       await Community.create(newSubreddit);
 
-      // Update the user model
       await User.findOneAndUpdate(
         { username: username },
         {
           $push: {
             subreddits: {
-              subreddit: subredditName, // Assuming _id is the ObjectId of the newly created subreddit
+              subreddit: subredditName, 
               role: "creator",
             },
-            countSubreddits: subredditName,
             members: { subreddit: subredditName },
             moderators: { subreddit: subredditName },
           },
@@ -89,7 +93,7 @@ const  { addUserToSubbreddit } = require("./friendController");
       return {
         status: true,
         response: "Subreddit created successfully",
-        communityName: communityName, // Include the generated communityName in the response
+        communityName: communityName, 
       };
     } catch (error) {
       console.error(error);
@@ -110,7 +114,7 @@ async function createSub(req, res) {
     const username = req.body.username;
     const user = await User.findOne({ username });
 
-    // Check if user exists
+    
     if (!user) {
       return res.status(404).json({
         status: "failed",
@@ -118,16 +122,14 @@ async function createSub(req, res) {
       });
     }
 
-    // Proceed with subreddit creation
-    const result = await createSubreddit(req.body, user); // Pass the entire request body
+    const result = await createSubreddit(req.body, user); 
     if (!result.status) {
       return res.status(200).json({
         status: result.error,
       });
     }
 
-    // Add user to the subreddit
-    const updateUser = await addUserToSubbreddit(user, result.response.communityName); // Pass the subreddit name from the response
+    const updateUser = await addUserToSubbreddit(user, result.response.communityName); 
    
 
     return res.status(200).json({
