@@ -363,37 +363,44 @@ async function changeEmail(req, res) {
       message: "Invalid or expired token",
     });
   }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: "User not found",
-    });
-  }
-  const isMatch = await comparePassword(password, user.password);
-  if (!isMatch) {
-    return res.status(400).json({
-      success: false,
-      message: "Password is incorrect",
-    });
-  }
-
-  user.email = email;
-  await user.save();
-  //send verification email
   try {
-    const newToken = await generateToken(user._id);
-    await sendVerificationMail(email, newToken);
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    const isMatch = await comparePassword(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Password is incorrect",
+      });
+    }
+
+    user.email = email;
+    await user.save();
+    //send verification email
+    try {
+      const newToken = await generateToken(user._id);
+      await sendVerificationMail(email, newToken);
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Email change successful, please verify your new email address",
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
-  return res.status(200).json({
-    success: true,
-    message: "Email change successful, please verify your new email address",
-  });
 }
 
 //verify email

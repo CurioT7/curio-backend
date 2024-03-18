@@ -178,7 +178,7 @@ async function addUserToSubbreddit(user, communityName) {
   moderator.push(userModerator);
   const members = user.member;
   members.push(userMember);
-  console.log('success');
+  console.log("success");
   try {
     await user.findOneAndUpdate(
       { username: user.username },
