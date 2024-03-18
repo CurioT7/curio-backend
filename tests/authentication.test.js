@@ -1,45 +1,47 @@
 const { signUp } = require('../controller/Auth/userController');
 const User = require('../models/user');
-// describe('signUp function', () => {
-//     it('should create a new user when valid username, email, and password are provided', async () => {
-//       // Mock request with sample data
-//       const req = {
-//         body: {
-//           username: 'testuser',
-//           email: 'testuser@example.com',
-//           password: 'password123'
-//         }
-//       };
-  
-//       // Mock response with Jest's mock functions
-//       const res = {
-//         status: jest.fn().mockReturnThis(), // Mock the status method
-//         json: jest.fn() // Mock the json method
-//       };
-  
-//       // Call the signUp function with the mock request and response
-//       await signUp(req, res);
-  
-//       // Assert that the response status is set to 201 (Created)
-//       expect(res.status).toHaveBeenCalledWith(201);
-  
-//       // Assert that the response JSON matches the expected success message
-//       expect(res.json).toHaveBeenCalledWith({ success: true, message: "User created successfully" });
-//     }, 50000);
-//     });
-  
 
-    // Creating a new user with all required fields should successfully save to the database.
-    it('should successfully save a new user with all required fields', async () => {
-        const newUser = new User({
-          username: 'testuser',
-          email: 'testuser@example.com',
-          password: 'password123'
+
+    // Returns a 200 status code and a success message when the username is available.
+    it('should return a 200 status code and a success message when the username is available', async () => {
+      const req = { params: { username: 'abdullah' } };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+      const User = require('../../models/userModel');
+      User.findOne = jest.fn().mockResolvedValue(null);
+
+      await userExist(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        message: 'Username is available',
+      });
+    });
+
+        // Returns an error message if email is invalid
+        it('should return an error message when email is invalid', async () => {
+          const req = {
+            body: {
+              username: 'testuser',
+              email: 'invalidemail',
+              password: 'Test1234',
+            },
+          };
+          const res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+          };
+    
+          await signUp(req, res);
+    
+          expect(res.status).toHaveBeenCalledWith(400);
+          expect(res.json).toHaveBeenCalledWith({
+            message: 'Invalid email address',
+          });
         });
-        const savedUser = await newUser.save();
-        expect(savedUser._id).toBeDefined();
-        expect(savedUser.username).toBe(newUser.username);
-        expect(savedUser.email).toBe(newUser.email);
-        expect(savedUser.password).toBe(newUser.password);
-        });
+
+
 

@@ -423,19 +423,26 @@ async function verifyEmail(req, res) {
       message: "Invalid or expired token",
     });
   }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({
+  try {
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    user.isVerified = true;
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: "User not found",
+      message: error.message,
     });
   }
-  user.isVerified = true;
-  await user.save();
-  return res.status(200).json({
-    success: true,
-    message: "Email verified successfully",
-  });
 }
 
 //resend verification email
