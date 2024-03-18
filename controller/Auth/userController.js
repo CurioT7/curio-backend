@@ -1,14 +1,11 @@
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const User = require("../../models/user");
-
-
-
 const brypt = require("bcrypt");
 require("dotenv").config();
 
 
-const  { hashPassword, comparePassword } = require("../../utils/passwords");
+const { hashPassword, comparePassword } = require("../../utils/passwords");
 
 async function signUp(req, res) {
     const errors = validationResult(req);
@@ -38,7 +35,7 @@ async function signUp(req, res) {
             message: error.message });
     }
 };
+ 
 
-module.exports = { 
-  signUp,
- };
+    
+module.exports = { signUp };
