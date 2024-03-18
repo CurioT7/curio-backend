@@ -303,6 +303,12 @@ async function changePassword(req, res) {
       message: "Old password is incorrect",
     });
   }
+  if (!validatePassword(password)) {
+    return res
+      .status(400)
+      .json({ message: "Password doesn't meet the requirements" });
+  }
+
   user.password = password;
   await user.save();
   return res.status(200).json({
@@ -324,6 +330,9 @@ async function changePassword(req, res) {
 
 async function changeEmail(req, res) {
   const { email, password } = req.body;
+  if (!validateEmail(email)) {
+    return res.status(400).json({ message: "Invalid email address" });
+  }
   const token = req.headers.authorization.split(" ")[1];
   //decode token
   const decoded = await verifyToken(token);
