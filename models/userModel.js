@@ -26,6 +26,22 @@ const Schema = mongoose.Schema;
  * @property {Array<string>} followings - Array containing usernames of users followed by the user.
  * @property {Array<Object>} subreddits - Array containing objects with subreddit and role fields representing subreddits the user is a member of, with roles like moderator or admin.
  */
+const moderatorSchema = new mongoose.Schema({
+  subreddit: {
+    type: String,
+    ref: "Subredddit",
+  },
+  role: {
+    type: String,
+    enum: ["creator", "moderator"],
+  },
+});
+const memberSchema = new mongoose.Schema({
+  subreddit: {
+    type: String,
+    ref: "Subredddit",
+  },
+});
 
 const userSchema = new Schema({
   username: {
@@ -143,6 +159,16 @@ const userSchema = new Schema({
         enum: ["moderator", "creator"],
         default: "member",
       },
+    },
+  ],
+  member: [
+    {
+      type: memberSchema,
+    },
+  ],
+  moderators: [
+    {
+      type: moderatorSchema,
     },
   ],
 });

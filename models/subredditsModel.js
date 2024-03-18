@@ -23,7 +23,7 @@ const moderatorSchema = mongoose.Schema({
 //create user schema for reddit user
 const subredditSchema = new Schema({
  
-  name: {
+  subredditName: {
     type: String,
      required: true,
      minlength: 5, 
