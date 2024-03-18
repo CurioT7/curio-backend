@@ -14,7 +14,11 @@ const userSocialsRouter = require("./router/userSocialsRouter");
 const session = require("express-session");
 const passport = require("passport");
 require("./passport/passport")(passport);
-const indentityRouter = require("./router/settings/identityRouter")
+const indentityRouter = require("./router/settings/identityRouter");
+const subredditRouter = require("./router/subredditRouter");
+const friendsRoute = require("./router/friendsRoute");
+const reportRouter = require("./router/reportRouter");
+const profileRouter = require("./router/profileRouter");
 
 const app = express();
 
@@ -62,6 +66,13 @@ app.use(express.json());
 app.use("/api/settings", indentityRouter);
 app.use("/api", userRouter);
 app.use("/api", userSocialsRouter);
+
+app.use("/api", subredditRouter);
+app.use("/api", friendsRoute);
+
+
+app.use("/api", reportRouter);
+app.use("/user", profileRouter);
 
 const PORT = process.env.PORT;
 const server = app.listen(PORT, () => {
