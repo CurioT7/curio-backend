@@ -2,12 +2,214 @@ const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const User = require("../../models/user");
 const Community = require("../../models/subredditsModel");
-const CommunityService = require("../../services/communityService");
-const UserService = require("../../services/userService");
 const brypt = require("bcrypt");
+
 require("dotenv").config();
-const communityServiceRequest = new CommunityService(Community);
-const userServiceRequest = new UserService(User);
+
+/**
+ * Service class to handle User manipulations.
+ * @class UserService
+ */
+// class UserService extends Service {
+//   constructor(model) {
+//     super(model);
+//   }
+
+ 
+// }
+/**
+ * follow Subreddits
+ * @param {String} (username)
+ * @param {String} (communityName)
+ * @function
+ */
+async function followSubreddits(username, communityName) {
+  try {
+    // Update the user model
+    await User.findOneAndUpdate(
+      { username: username },
+      {
+        $addToSet: {
+          subreddits: {
+            subreddit: communityName,
+            role: "member", // Assuming the user is a member when they follow a subreddit
+          },
+        },
+      }
+    );
+
+    // Update the members schema
+    await User.findOneAndUpdate(
+      { username: username },
+      {
+        $addToSet: {
+          member: {
+            subreddit: communityName,
+          },
+        },
+      }
+    );
+    await Community.findOneAndUpdate(
+      { name: communityName },
+      {
+        $addToSet: {
+          members: { username: username },
+        },
+      }
+    );
+
+
+    return {
+      status: true,
+      response: "Subreddit followed successfully",
+      communityName: communityName,
+    };
+  } catch (error) {
+    console.error("Error following subreddit:", error);
+    return {
+      status: false,
+      error: "Failed to follow subreddit",
+    };
+  }
+}
+
+
+/**
+ * delete friend of user 
+ * @param {String} (username)
+ * @param {String} (communityName)
+ * @function
+ */
+async function unFollowSubreddits(username, communityName) {
+  try {
+    // Update the user model
+    await User.findOneAndUpdate(
+      { username: username },
+      {
+        $pull: {
+          subreddits: { subreddit: communityName },
+        },
+      }
+    );
+
+    // Update the members schema
+    await User.findOneAndUpdate(
+      { username: username },
+      {
+        $pull: {
+          member: { subreddit: communityName },
+        },
+      }
+    );
+    await Community.findOneAndUpdate(
+      { name: communityName },
+      {
+        $pull: {
+          members: { username: username },
+        },
+      }
+    );
+
+    return {
+      status: true,
+      response: "Subreddit unfollowed successfully",
+      communityName: communityName,
+    };
+  } catch (error) {
+    console.error("Error unfollowing subreddit:", error);
+    return {
+      status: false,
+      error: "Failed to unfollow subreddit",
+    };
+  }
+}
+
+  /**
+ * add friend of user
+ * @param {String} (username)
+ * @param {String} (friend)
+ * @function
+ */
+  async function addFriend (username, friend){
+    await User.findOneAndUpdate(
+        { username: username },
+        {
+            $addToSet: {
+              followings: friend,
+            },
+        }
+    );
+    await User.findOneAndUpdate(
+        { username: friend },
+        {
+            $addToSet: {
+              followers: username,
+            },
+        }
+    );
+    
+  };
+
+  /**
+   * delete friend of user 
+   * @param {String} (username)
+   * @param {String} (friend)
+   * @function
+   */
+  async function deleteFriend (username, friend) {
+    await User.findOneAndUpdate(
+      { username: username },
+      {
+        $pull: {
+          followings: friend,
+        },
+      }
+    );
+    await User.findOneAndUpdate(
+      { username: friend },
+      {
+        $pull: {
+          followers: username,
+        },
+      }
+    );
+  };
+  
+/**
+   * Add user to community
+   * @param {String} (username)
+   * @param {String} (communityName)
+   * @returns {object} mentions
+   * @function
+   */
+async function addUserToSubbreddit  (user, communityName){
+  const userModerator = {
+    communityName: communityName,
+    role: "creator",
+  };
+  const userMember = {
+    communityName: communityName,
+  };
+  const modarr = user.moderators;
+  modarr.push(userModerator);
+  const memarr = user.member;
+  memarr.push(userMember);
+  try {
+    await User.findOneAndUpdate(
+      { username: user.username },
+      { moderators: modarr, member: memarr }
+    );
+  } catch {
+    return {
+      status: false,
+      error: "operation user",
+    };
+  }
+  return {
+    status: true,
+  };
+};
+
 /**
  * friend request to add friendship or moderator_deInvite
  * @param {function} (req,res)
@@ -39,7 +241,7 @@ async function friendRequest(req, res) {
     }
 
     // Proceed with the friend request
-    await userServiceRequest.addFriend(username, friendname); // Use correct variables
+    await addFriend(username, friendname); // Use correct variables
 
     return res.status(200).json({
       status: "success",
@@ -85,7 +287,7 @@ async function unFriendRequest(req, res){
       }
   
       // Proceed with the friend request
-      await userServiceRequest.deleteFriend(username, friendname); // Use correct variables
+      await deleteFriend(username, friendname); // Use correct variables
   
       return res.status(200).json({
         status: "success",
@@ -143,7 +345,7 @@ async function unFollowSubreddit(req, res) {
       });
     }
 
-    await userServiceRequest.unFollowSubreddits(username, subreddit);
+    await unFollowSubreddits(username, subreddit);
 
     return res.status(200).json({
       status: "success",
@@ -181,7 +383,7 @@ async function followSubreddit(req, res) {
     }
 
     // Follow subreddit
-    await userServiceRequest.followSubreddits(username, subreddit);
+    await followSubreddits(username, subreddit);
 
     return res.status(200).json({
       status: "success",
@@ -196,14 +398,15 @@ async function followSubreddit(req, res) {
   }
 }
 
-
-
-
-
 module.exports = { 
   friendRequest,
   unFriendRequest,
   getUserInfo,
   followSubreddit,
   unFollowSubreddit,
- };
+  addUserToSubbreddit,
+  followSubreddits,
+  unFollowSubreddits,
+  addFriend,
+  deleteFriend,
+};

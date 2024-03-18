@@ -1,8 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const User = require("../../models/user");
-const Community = require("../../models/subredditsModel");
-const CommunityService = require("../../services/communityService");
+
 
 
 const brypt = require("bcrypt");
