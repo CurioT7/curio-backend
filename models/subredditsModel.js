@@ -25,7 +25,7 @@ const subredditSchema = new Schema({
   name: {
     type: String,
     required: true,
-    minlength: 5,
+    minlength: 3,
     maxlength: 21,
     unique: true,
   },
@@ -126,7 +126,7 @@ const subredditSchema = new Schema({
   },
   role: {
     type: String,
-    enum: ["moderator", "admin", "member"],
+    enum: ["moderator", "creator", "member"],
   },
   members: [
     {
