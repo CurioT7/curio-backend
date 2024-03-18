@@ -1,6 +1,6 @@
 var nodemailer = require("nodemailer");
 require("dotenv").config();
-const User = require("../models/user");
+const User = require("../models/userModel");
 
 //Function to send mail
 

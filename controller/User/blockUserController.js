@@ -3,7 +3,7 @@
  * @module user/blockUserController
  */
 
-const User = require("../../models/user");
+const User = require("../../models/userModel");
 const block = require('../../models/block');
 const {generateToken,verifyToken } = require("../../utils/tokens");
 

@@ -3,7 +3,7 @@
  * @module identity/identutyController
  */
 
-const User = require("../../models/user");
+const User = require("../../models/userModel");
 const UserPreferences = require("../../models/userPreferences");
 const { generateToken, verifyToken } = require("../../utils/tokens");
 require("dotenv").config();

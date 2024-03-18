@@ -44,6 +44,10 @@ const memberSchema = new mongoose.Schema({
 });
 //create user schema for reddit user
 const userSchema = new mongoose.Schema({
+  googleId: {
+    type: String,
+    trim: true,
+  },
   username: {
     type: String,
     required: true,
@@ -59,6 +63,22 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  gender: {
+    type: String,
+    required: false,
+  },
+  language: {
+    type: String,
+    required: false,
   },
   cakeDay: {
     type: Date,

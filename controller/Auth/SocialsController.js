@@ -1,6 +1,6 @@
 const express = require("express");
 require("dotenv").config();
-const User = require("../../models/user");
+const User = require("../../models/userModel");
 const generator = require("generate-password");
 const jwt = require("jsonwebtoken");
 const { generatePassword } = require("../../utils/passwords");

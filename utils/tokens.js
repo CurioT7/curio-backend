@@ -3,12 +3,12 @@
  * @module utils/tokens
  * @requires jsonwebtoken
  * @requires dotenv
- * @requires ../models/user
+ * @requires ../models/userModel
  */
 
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const user = require("../models/user");
+const user = require("../models/userModel");
 
 /**
  * Generate a JWT token for the user.

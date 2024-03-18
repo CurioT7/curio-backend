@@ -1,5 +1,5 @@
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const User = require("../models/user");
+const User = require("../models/userModel");
 const { webSignup } = require("../controller/Auth/SocialsController");
 
 /**
