@@ -17,19 +17,19 @@ async function availableSubreddit(subreddit) {
     const subReddit = await User.findOne({ name: subreddit });
     if (subReddit) {
       return {
-        state: false,
+        success: false,
         subreddit: subReddit.name,
       };
     } else {
       return {
-        state: true,
+        success: true,
         subreddit: null,
       };
     }
   } catch (error) {
     console.error("Error checking subreddit availability:", error);
     return {
-      state: false,
+      success: false,
       subreddit: null,
       error: "An error occurred while checking subreddit availability",
     };
@@ -51,7 +51,7 @@ async function createSubreddit(data, user) {
   const subredditAvailable = await availableSubreddit(subredditName);
   if (!subredditAvailable.state) {
     return {
-      status: false,
+      success: false,
       error: "Subreddit with this name already exists",
     };
   }
@@ -92,14 +92,14 @@ async function createSubreddit(data, user) {
     );
 
     return {
-      status: true,
+      success: true,
       response: "Subreddit created successfully",
       communityName: communityName,
     };
   } catch (error) {
     console.error(error);
     return {
-      status: false,
+      success: false,
       error: "Failed to create subreddit",
     };
   }
@@ -116,7 +116,7 @@ async function newSubreddit(req, res) {
     const decoded = await verifyToken(token);
     if (!decoded) {
       return res.status(401).json({
-        status: "failed",
+        success: false,
         message: "Unauthorized",
       });
     }
@@ -124,7 +124,7 @@ async function newSubreddit(req, res) {
 
     if (!user) {
       return res.status(404).json({
-        status: "failed",
+        success: false,
         message: "User not found",
       });
     }
