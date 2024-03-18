@@ -42,8 +42,8 @@ const memberSchema = new mongoose.Schema({
     ref: "Subreddit",
   },
 });
-
-const userSchema = new Schema({
+//create user schema for reddit user
+const userSchema = new mongoose.Schema({
   username: {
     type: String,
     required: true,
@@ -151,7 +151,7 @@ const userSchema = new Schema({
   subreddits: [
     {
       subreddit: {
-        type: Schema.Types.ObjectId,
+        type: String,
         ref: "Subreddit",
       },
       role: {
