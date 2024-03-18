@@ -3,7 +3,6 @@
  * @module subredditModel
  * @requires mongoose
  */
-
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
@@ -164,11 +163,7 @@ const subredditSchema = new Schema({
   },
   role: {
     type: String,
-    enum: [
-      "moderator",
-      "admin",
-      "member",
-    ],
+    enum: ["moderator", "creator", "member"],
   },
   members: [
     {
@@ -181,7 +176,6 @@ const subredditSchema = new Schema({
     },
   ],
 });
-
 /**
  * Creates a model for the Subreddit schema.
  * @type {mongoose.Model}
