@@ -294,8 +294,12 @@ async function unFriendRequest(req, res) {
  * @returns {object} res
  */
 async function getUserInfo(req, res) {
-  const username = req.body.username;
-  const user = await User.findOne({ username });
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const user = await User.findOne({ _id: decoded.userId });
   if (!user) {
     return res.status(404).json({
       status: "failed",
@@ -303,7 +307,6 @@ async function getUserInfo(req, res) {
     });
   } else {
     return res.status(200).json({
-      id: user._id,
       username: user.username,
       about: user.about,
       avatar: user.avatar,
@@ -320,9 +323,14 @@ async function getUserInfo(req, res) {
 
 async function unFollowSubreddit(req, res) {
   try {
-    const { username, subreddit } = req.body;
+    const { subreddit } = req.body;
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
-    const userExists = await User.findOne({ username });
+    const userExists = await User.findOne({ _id: decoded.userId });
     if (!userExists) {
       return res.status(404).json({
         status: "failed",
@@ -338,7 +346,7 @@ async function unFollowSubreddit(req, res) {
       });
     }
 
-    await unFollowSubreddits(username, subreddit);
+    await unFollowSubreddits(userExists.username, subreddit);
 
     return res.status(200).json({
       status: "success",
@@ -361,9 +369,14 @@ async function unFollowSubreddit(req, res) {
  */
 async function followSubreddit(req, res) {
   try {
-    const { username, subreddit } = req.body;
+    const { subreddit } = req.body;
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
-    const userExists = await User.findOne({ username });
+    const userExists = await User.findOne({ _id: decoded.userId });
     if (!userExists) {
       return res.status(404).json({
         status: "failed",
@@ -379,7 +392,7 @@ async function followSubreddit(req, res) {
       });
     }
 
-    await followSubreddits(username, subreddit);
+    await followSubreddits(userExists.username, subreddit);
 
     return res.status(200).json({
       status: "success",

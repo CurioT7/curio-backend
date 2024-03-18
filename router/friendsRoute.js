@@ -50,6 +50,6 @@ router.delete("/me/friends", friendsController.unFriendRequest);
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-router.get("/me/friends/:username", friendsController.getUserInfo);
+router.get("/me/friends", friendsController.getUserInfo);
 
 module.exports = router;

@@ -4,6 +4,7 @@ const User = require("../../models/userModel");
 const Community = require("../../models/subredditModel");
 require("dotenv").config();
 const { addUserToSubbreddit } = require("./friendController");
+const { verifyToken } = require("../../utils/tokens");
 
 /**
  * Check whether subreddit is available or not
@@ -111,8 +112,15 @@ async function createSubreddit(data, user) {
  */
 async function newSubreddit(req, res) {
   try {
-    const username = req.body.username;
-    const user = await User.findOne({ username });
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({
+        status: "failed",
+        message: "Unauthorized",
+      });
+    }
+    const user = await User.findOne({ _id: decoded.userId });
 
     if (!user) {
       return res.status(404).json({
