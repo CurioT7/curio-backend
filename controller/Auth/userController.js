@@ -18,6 +18,8 @@ const {
   sendVerificationMail,
 } = require("../../utils/mails");
 
+const { validateEmail, validatePassword } = require("../../middlewares/auth");
+
 /**
  * Checks if a user with the given username already exists.
  * @async
@@ -25,6 +27,7 @@ const {
  * @param {Object} req - The request object.
  * @param {Object} res - The response object.
  * @returns {Object} The response object.
+ * @throws {Error} - The error message.
  */
 async function userExist(req, res) {
   const { username } = req.params;
@@ -48,6 +51,7 @@ async function userExist(req, res) {
  * @param {Object} req - The request object.
  * @param {Object} res - The response object.
  * @returns {Object} The response object.
+ * @throws {Error} - The error message.
  */
 
 async function signUp(req, res) {
@@ -57,6 +61,10 @@ async function signUp(req, res) {
   }
   const { username, email, password } = req.body;
   try {
+    //validate email
+    if (!validateEmail(email)) {
+      return res.status(400).json({ message: "Invalid email address" });
+    }
     let emailExist = await User.findOne({ email });
     if (emailExist) {
       return res.status(409).json({
@@ -71,6 +79,14 @@ async function signUp(req, res) {
         message: "Username already exists",
       });
     }
+
+    //validate password
+    if (!validatePassword(password)) {
+      return res
+        .status(400)
+        .json({ message: "Password doesn't meet the requirements" });
+    }
+
     const user = new User({ username, email, password, isVerified: false });
     //save user to database
     await user.save();
@@ -250,6 +266,17 @@ async function resetPassword(req, res) {
   });
 }
 
+//change password
+/**
+ * Changes the user's password using the provided token.
+ * @async
+ * @function changePassword
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response object.
+ * @throws {Error} - The error message.
+ */
+
 async function changePassword(req, res) {
   const { password } = req.body;
   const { oldPassword } = req.body;
@@ -382,6 +409,7 @@ async function verifyEmail(req, res) {
  * @param {Object} req - The request object.
  * @param {Object} res - The response object.
  * @returns {Object} The response object.
+ * @throws {Error} - The error message.
  */
 
 async function resendVerification(req, res) {
