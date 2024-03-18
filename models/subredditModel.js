@@ -63,8 +63,8 @@ const subredditSchema = new Schema({
   name: {
     type: String,
     required: true,
-    minLength: 3,
-    maxLength: 21,
+    minlength: 3,
+    maxlength: 21,
     unique: true,
   },
   description: {
@@ -164,7 +164,11 @@ const subredditSchema = new Schema({
   },
   role: {
     type: String,
-    enum: ["moderator", "creator", "member"],
+    enum: [
+      "moderator",
+      "admin",
+      "member",
+    ],
   },
   members: [
     {
@@ -182,6 +186,6 @@ const subredditSchema = new Schema({
  * Creates a model for the Subreddit schema.
  * @type {mongoose.Model}
  */
-const Subreddit = mongoose.model("Subredddit", subredditSchema);
+const Subreddit = mongoose.model("Subreddit", subredditSchema);
 
 module.exports = Subreddit;
