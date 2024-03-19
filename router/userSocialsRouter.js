@@ -16,8 +16,7 @@ router.get(
 // Google Auth web callback, redirected to after google login
 router.get(
   "/auth/google/callback",
-  passport.authenticate("google"),
-  { failuremessage: "UserSigned up, please login again" },
+  passport.authenticate("google", { failuremessage: "UserSigned up, please login again"}),
   webSocialsController.googleCallbackHandler
 );
 

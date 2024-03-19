@@ -6,7 +6,7 @@ const { webSignup } = require("../controller/Auth/SocialsController");
  * Configure passport middleware for authentication with Google OAuth.
  * @param {Object} passport - Passport.js instance.
  */
-module.exports = async function (passport) {
+module.exports = function (passport) {
   /**
    * Serialize the user object into the session.
    * @param {Object} user - User object.
