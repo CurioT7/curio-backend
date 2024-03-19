@@ -82,7 +82,7 @@ async function createSubreddit(data, user) {
         $push: {
           subreddits: {
             subreddit: subredditName,
-            role: "creator",
+            role: "creerewator",
           },
           members: { subreddit: subredditName },
           moderators: { subreddit: subredditName },
