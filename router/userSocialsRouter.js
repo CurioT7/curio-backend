@@ -17,6 +17,7 @@ router.get(
 router.get(
   "/auth/google/callback",
   passport.authenticate("google"),
+  { failuremessage: "UserSigned up, please login again" },
   webSocialsController.googleCallbackHandler
 );
 
