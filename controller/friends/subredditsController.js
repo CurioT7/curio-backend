@@ -69,7 +69,7 @@ async function createSubreddit(data, user) {
     name: subredditName,
     isOver18: data.over18,
     description: data.description,
-    isPrivate: data.type,
+    privacyMode: data.privacyMode,
     moderators: [moderator],
     members: [member],
   };

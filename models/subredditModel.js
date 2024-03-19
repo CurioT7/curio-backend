@@ -82,9 +82,9 @@ const subredditSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  isPrivate: {
-    type: Boolean,
-    default: false,
+  privacyMode: {
+    type: String,
+    enum: ["private", "public", "restricted"],
   },
   isNSFW: {
     type: Boolean,
