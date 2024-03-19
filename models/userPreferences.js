@@ -54,21 +54,30 @@ const mongoose = require("mongoose");
 const userPreferencesSchema = new mongoose.Schema({
   username: {
     type: String,
-    ref: 'User',
+    ref: "User",
     required: true,
   },
-  gender: { 
+  gender: {
     type: String,
-    enum : ["woman", "man", "i prefer not to say"]
+    enum: ["woman", "man", "i prefer not to say"],
   },
   language: {
     type: String,
-    enum :["Deutsch", "English(us)", "Espanol(es)", "Espanol(mx)", "Francias", "Italiano", "portugues(br)", "portugues(pt)"],
-    default: "English(us)"
+    enum: [
+      "Deutsch",
+      "English(us)",
+      "Espanol(es)",
+      "Espanol(mx)",
+      "Francias",
+      "Italiano",
+      "portugues(br)",
+      "portugues(pt)",
+    ],
+    default: "English(us)",
   },
-  locationCustomization : {
+  locationCustomization: {
     type: String,
-    default: "No Location specified."
+    default: "No Location specified.",
   },
   displayName: {
     type: String,
@@ -103,19 +112,27 @@ const userPreferencesSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  block: [{
-    username: { type: String },
-  }],
-  viewBlockedPeople: [{
-    username: { type: String },
-  }],
-  mute: [{
-    username: { type: String },
-  }],
-  viewMutedCommunities: [{
-    communityId: { type: String }, // Reference community model 
-  }],
-  adultContent:{
+  block: [
+    {
+      username: { type: String },
+    },
+  ],
+  viewBlockedPeople: [
+    {
+      username: { type: String },
+    },
+  ],
+  mute: [
+    {
+      username: { type: String },
+    },
+  ],
+  viewMutedCommunities: [
+    {
+      communityId: { type: String }, // Reference community model
+    },
+  ],
+  adultContent: {
     type: Boolean,
     default: false,
   },
@@ -143,7 +160,7 @@ const userPreferencesSchema = new mongoose.Schema({
     rememberContentView: {
       type: Boolean,
       default: false,
-    }
+    },
   },
   openPostsInNewTab: {
     type: Boolean,
@@ -157,7 +174,11 @@ const userPreferencesSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
-  upvotes: {
+  upvotesPosts: {
+    type: Boolean,
+    default: true,
+  },
+  upvotesComments: {
     type: Boolean,
     default: true,
   },
