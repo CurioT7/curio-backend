@@ -35,7 +35,7 @@ const userReportSchema = new Schema({
       "threatening violence",
       "hate",
       "minor abuse or sexualization",
-      "sharing personal informtion",
+      "sharing personal information",
       "non-consensual intimate media",
       "prohibited transaction",
       "impersonation",

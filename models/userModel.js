@@ -49,10 +49,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
   isVerified: {
     type: Boolean,
     default: false,
@@ -161,7 +157,7 @@ const userSchema = new mongoose.Schema({
       },
       role: {
         type: String,
-        enum: ["moderator", "creator"],
+        enum: ["moderator", "creator", "member"],
         default: "member",
       },
     },
