@@ -133,9 +133,11 @@ async function login(req, res) {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  const { username, password } = req.body;
+  const { usernameOrEmail, password } = req.body;
   //check if user exists
-  const user = await User.findOne({ username });
+  const user = await User.findOne({
+    $or: [{ username: usernameOrEmail }, { email: usernameOrEmail }],
+  });
   if (!user) {
     return res.status(404).json({
       success: false,
