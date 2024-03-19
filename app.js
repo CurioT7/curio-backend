@@ -42,6 +42,7 @@ const app = express();
 
 connectToDatabase();
 
+
 // Express session
 app.use(
   session({
@@ -78,3 +79,8 @@ const PORT = process.env.PORT;
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Seeding the database if needed
+if (process.env.SEED_DB === "true" && process.argv.includes("--seed")) {
+  require("./utils/seeding");
+};

@@ -161,7 +161,7 @@ const userSchema = new mongoose.Schema({
       },
       role: {
         type: String,
-        enum: ["moderator", "creator"],
+        enum: ["moderator", "creator", "member"],
         default: "member",
       },
     },
