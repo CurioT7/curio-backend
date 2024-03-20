@@ -122,14 +122,12 @@ const userPreferencesSchema = new mongoose.Schema({
       username: { type: String },
     },
   ],
-  mute: [
-    {
-      username: { type: String },
-    },
-  ],
   viewMutedCommunities: [
     {
-      communityId: { type: String }, // Reference community model
+      communityName: {
+        type: String,
+        ref: "Subreddit"
+      }, 
     },
   ],
   adultContent: {

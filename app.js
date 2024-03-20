@@ -16,7 +16,7 @@ const passport = require("passport");
 require("./passport/passport")(passport);
 const indentityRouter = require("./router/settings/identityRouter");
 const subredditRouter = require("./router/subredditRouter");
-const friendsRoute = require("./router/friendsRoute");
+const friendsRoute = require("./router/friendsRouter");
 const reportRouter = require("./router/reportRouter");
 const profileRouter = require("./router/profileRouter");
 
