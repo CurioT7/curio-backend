@@ -9,6 +9,8 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const user = require("../models/userModel");
+const admin = require("firebase-admin");
+const serviceAccount = require("../config/firebaseServiceAccountKey.json");
 
 /**
  * Generate a JWT token for the user.
@@ -31,4 +33,14 @@ async function verifyToken(token) {
   return payload;
 }
 
-module.exports = { generateToken, verifyToken };
+//Verify token sent from firebase
+async function verifyFirebaseToken(token) {
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    return decodedToken;
+  } catch (err) {
+    throw new Error(err);
+  }
+}
+
+module.exports = { generateToken, verifyToken, verifyFirebaseToken };

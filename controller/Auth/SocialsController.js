@@ -4,7 +4,7 @@ const User = require("../../models/userModel");
 const generator = require("generate-password");
 const jwt = require("jsonwebtoken");
 const { generatePassword } = require("../../utils/passwords");
-const { generateToken } = require("../../utils/tokens");
+const { generateToken, verifyFirebaseToken } = require("../../utils/tokens");
 
 /**
  * Sign up a user using web authentication with social media.
@@ -55,4 +55,22 @@ const googleCallbackHandler = async (req, res) => {
   });
 };
 
-module.exports = { webSignup, googleCallbackHandler };
+const verifyFirebaseToken = async (req, res) => {
+  const { token } = req.body;
+  try {
+    const decodedToken = await verifyFirebaseToken(token);
+    const user = await User.findOne({ email: decodedToken.email });
+    if (!user) {
+      await webSignup(decodedToken, "google");
+    }
+    const accessToken = await generateToken(user._id);
+    res.status(200).json({
+      success: true,
+      message: "User logged in Successfully",
+      accessToken,
+    });
+  } catch (err) {
+    res.status(401).json({ success: false, message: "Invalid token" });
+  }
+};
+module.exports = { webSignup, googleCallbackHandler, verifyFirebaseToken };

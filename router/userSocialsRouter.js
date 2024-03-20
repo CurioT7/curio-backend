@@ -7,10 +7,7 @@ const router = express.Router();
 
 router.get(
   "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] }),
-  () => {
-    res.send({ title: "User logging in" });
-  }
+  passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
 // Google Auth web callback, redirected to after google login
@@ -19,9 +16,12 @@ router.get(
   passport.authenticate(
     "google",
     //if failed redirect to Login again)
-    { failureRedirect: "/api/auth/google" }
+    { failureRedirect: "/login" }
   ),
   webSocialsController.googleCallbackHandler
 );
+
+//Firebase token authentication
+router.post("/auth/google/mobile", webSocialsController.verifyFirebaseToken);
 
 module.exports = router;

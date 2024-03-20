@@ -19,14 +19,15 @@ const subredditRouter = require("./router/subredditRouter");
 const friendsRoute = require("./router/friendsRoute");
 const reportRouter = require("./router/reportRouter");
 const profileRouter = require("./router/profileRouter");
-
+const admin = require("firebase-admin");
+const serviceAccount = require("./config/firebaseServiceAccountKey.json");
 const app = express();
 
 /**
  * Connects to the MongoDB database and starts the Express server.
  * @async
  */
- async function connectToDatabase() {
+async function connectToDatabase() {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
@@ -42,6 +43,11 @@ const app = express();
 
 connectToDatabase();
 
+// Firebase Admin SDK
+const serviceAccount = require("./path/to/serviceAccountKey.json");
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 // Express session
 app.use(
@@ -63,14 +69,12 @@ app.use(express.json());
 
 //define routes
 
-
 app.use("/api/settings", indentityRouter);
 app.use("/api", userRouter);
 app.use("/api", userSocialsRouter);
 
 app.use("/api", subredditRouter);
 app.use("/api", friendsRoute);
-
 
 app.use("/api", reportRouter);
 app.use("/user", profileRouter);
@@ -83,4 +87,4 @@ const server = app.listen(PORT, () => {
 // Seeding the database if needed
 if (process.env.SEED_DB === "true" && process.argv.includes("--seed")) {
   require("./utils/seeding");
-};
+}
