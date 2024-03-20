@@ -151,8 +151,9 @@ async function seedPreferences(n = 5, users) {
       clearHistory: faker.datatype.boolean(),
       block: [{ username: faker.internet.userName() }],
       viewBlockedPeople: [{ username: faker.internet.userName() }],
-      mute: [{ username: faker.internet.userName() }],
-      viewMutedCommunities: [{ communityId: faker.datatype.uuid() }],
+      viewMutedCommunities: [
+        { communityName: faker.lorem.words(2).substring(0, 20) },
+      ],
       adultContent: faker.datatype.boolean(),
       autoplayMedia: faker.datatype.boolean(),
       communityThemes: faker.datatype.boolean(),
@@ -170,7 +171,8 @@ async function seedPreferences(n = 5, users) {
       openPostsInNewTab: faker.datatype.boolean(),
       mentions: faker.datatype.boolean(),
       comments: faker.datatype.boolean(),
-      upvotes: faker.datatype.boolean(),
+      upvotesPosts: faker.datatype.boolean(),
+      upvotesComments: faker.datatype.boolean(),
       replies: faker.datatype.boolean(),
       newFollowers: faker.datatype.boolean(),
       postsYouFollow: faker.datatype.boolean(),
@@ -246,11 +248,15 @@ async function seedSubreddits(n = 5, users) {
         users[faker.datatype.number({ min: 0, max: users.length - 1 })]._id,
       members:
         users[faker.datatype.number({ min: 0, max: users.length - 1 })]._id,
-      posts:[new mongoose.Types.ObjectId()],
+      posts: [new mongoose.Types.ObjectId()],
       banner: faker.internet.url(),
       icon: faker.internet.url(),
       isOver18: faker.datatype.boolean(),
-      isPrivate: faker.datatype.boolean(),
+      privacyMode: faker.random.arrayElement([
+        "private",
+        "public",
+        "restricted",
+      ]),
       isNSFW: faker.datatype.boolean(),
       isSpoiler: faker.datatype.boolean(),
       isOC: faker.datatype.boolean(),
@@ -374,10 +380,10 @@ async function updateSubredditsWithPosts(subreddits, posts) {
 
 async function updateUserData(users, posts, comments, subreddits) {
   for (const user of users) {
-     if (!posts || posts.length === 0 || !comments || comments.length === 0) {
-       console.error("Posts or comments are empty or undefined.");
-       return;
-     }
+    if (!posts || posts.length === 0 || !comments || comments.length === 0) {
+      console.error("Posts or comments are empty or undefined.");
+      return;
+    }
     // Update user posts
     const userPosts = await Post.find({ authorName: user.username }).select(
       "_id"
@@ -446,7 +452,6 @@ async function updatePostsWithComments(posts, comments) {
     }
   }
 }
-
 
 async function seedData() {
   try {

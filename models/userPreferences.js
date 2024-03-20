@@ -119,9 +119,12 @@ const userPreferencesSchema = new mongoose.Schema({
   ],
   viewBlockedPeople: [
     {
+
       username: { type: String, 
       ref: "block"
      },
+
+
     },
   ],
   viewMutedCommunities: [
@@ -129,6 +132,8 @@ const userPreferencesSchema = new mongoose.Schema({
       communityName: { 
         type: String, 
         ref: "subredditModel"
+
+
       }, 
     },
   ],
