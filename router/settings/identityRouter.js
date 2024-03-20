@@ -38,4 +38,27 @@ router.get("/v1/me/prefs", identityController.getUserPreferences);
 router.patch("/v1/me/prefs", identityController.updateUserPreferences);
 
 
+/**
+ * Route to mute a community
+ * @name POST /api/settings/mute
+ * @function
+ * @memberof module:routes/identity
+ * @inner
+ * @param {string} path - Express route path
+ * @param {callback} middleware - Express middleware callback
+ */
+router.post("/mute", identityController.muteCommunity)
+
+/**
+ * 
+ * Route to unmute a community
+ * @name POST /api/settings/unmute
+ * @function
+ * @memberof module:routes/identity
+ * @inner
+ * @param {string} path - Express route path
+ * @param {callback} middleware - Express middleware callback
+ */
+router.post("/unmute", identityController.unmuteCommunity)
+
 module.exports = router;

@@ -24,7 +24,7 @@ const mongoose = require("mongoose");
  * @property {boolean} clearHistory - Whether to clear user's history.
  * @property {Array} block - List of blocked users.
  * @property {Array} viewBlockedPeople - List of people the user has blocked.
- * @property {Array} mute - List of muted users.
+ * @property {Array} mute - List of muted communities.
  * @property {Array} viewMutedCommunities - List of muted communities.
  * @property {boolean} adultContent - Whether adult content is allowed.
  * @property {boolean} autoplayMedia - Whether media should autoplay.
@@ -119,7 +119,9 @@ const userPreferencesSchema = new mongoose.Schema({
   ],
   viewBlockedPeople: [
     {
-      username: { type: String },
+      username: { type: String, 
+      ref: "block"
+     },
     },
   ],
   mute: [
@@ -129,7 +131,10 @@ const userPreferencesSchema = new mongoose.Schema({
   ],
   viewMutedCommunities: [
     {
-      communityId: { type: String }, // Reference community model
+      communityName: { 
+        type: String, 
+        ref: "subredditModel"
+      }, 
     },
   ],
   adultContent: {
@@ -216,4 +221,5 @@ const userPreferencesSchema = new mongoose.Schema({
 
 
 const UserPreferences = mongoose.model("UserPreferences", userPreferencesSchema);
+
 module.exports = UserPreferences;
