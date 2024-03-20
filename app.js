@@ -19,6 +19,7 @@ const subredditRouter = require("./router/subredditRouter");
 const friendsRoute = require("./router/friendsRouter");
 const reportRouter = require("./router/reportRouter");
 const profileRouter = require("./router/profileRouter");
+const cors = require('cors');
 
 const app = express();
 
@@ -41,6 +42,8 @@ const app = express();
 }
 
 connectToDatabase();
+
+app.use(cors());
 
 
 // Express session
