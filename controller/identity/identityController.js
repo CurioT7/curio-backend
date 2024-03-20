@@ -180,17 +180,24 @@ async function muteCommunity (req, res) {
     }
 
     const community = await Subreddit.findOne({ name: communityToMute});
-    console.log(community);
     if (!community) {
       return res.status(404).json({ message: 'Community not found' });
     }
-    if (UserPreferences.viewMutedCommunities.includes(community.name)) {
+    const userPreferences = await UserPreferences.findOne({ username: user.username });
+   
+    const communityName = community.name;
+    
+    const isCommunityMuted = userPreferences.viewMutedCommunities.some(item => item.communityName === communityName);
+
+    if (isCommunityMuted) {
       return res.status(409).json({ message: 'Community already muted' });
     }
+    
+    userPreferences.viewMutedCommunities.push({ communityName: community.name });
+    
+    await userPreferences.save();
+    
 
-    UserPreferences.viewMutedCommunities.push(community.name);
-
-    await UserPreferences.save();
     res.json({ message: 'Community successfully muted' });
   }
   catch (error) {
@@ -221,16 +228,26 @@ async function unmuteCommunity (req, res) {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    const community = await Community.findOne({ name: communityToUnmute });
+
+    const community = await Subreddit.findOne({ name: communityToUnmute});
     if (!community) {
       return res.status(404).json({ message: 'Community not found' });
     }
-
-    await UserPreferences.updateOne(
-      { _id: decoded.userId },
-      { $pull: { viewMutedCommunities : communityToUnmute } }
-    );
+    const userPreferences = await UserPreferences.findOne({ username: user.username });
+   
+    const communityName = community.name;
     
+    const isCommunityMuted = userPreferences.viewMutedCommunities.some(item => item.communityName === communityName);
+
+    if (!isCommunityMuted) {
+      return res.status(409).json({ message: 'Community not muted' });
+    }
+    
+    // Remove the community from the user's muted communities
+    userPreferences.viewMutedCommunities = userPreferences.viewMutedCommunities.filter(item => item.communityName !== communityName);
+    await userPreferences.save();
+    
+    res.json({ message: 'Community successfully unmuted' });
   }
   catch (error) {
     return res.status(500).json({ 
@@ -238,5 +255,6 @@ async function unmuteCommunity (req, res) {
       message: error.message
     });
   }
+ 
 }
 module.exports = { getMe, getUserPreferences, updateUserPreferences, muteCommunity, unmuteCommunity };

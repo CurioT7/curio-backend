@@ -124,11 +124,6 @@ const userPreferencesSchema = new mongoose.Schema({
      },
     },
   ],
-  mute: [
-    {
-      username: { type: String },
-    },
-  ],
   viewMutedCommunities: [
     {
       communityName: { 
