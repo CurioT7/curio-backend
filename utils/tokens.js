@@ -27,8 +27,12 @@ async function generateToken(userId) {
  */
 
 async function verifyToken(token) {
-  const payload = jwt.verify(token, process.env.JWT_SECRET);
-  return payload;
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    return payload;
+  } catch (err) {
+    return null;
+  }
 }
 
 //Verify token sent from firebase
