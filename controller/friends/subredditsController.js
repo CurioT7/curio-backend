@@ -94,7 +94,7 @@ async function createSubreddit(data, user) {
     return {
       success: true,
       response: "Subreddit created successfully",
-      communityName: communityName,
+      communityName: subredditName,
     };
   } catch (error) {
     console.error(error);
@@ -139,7 +139,7 @@ async function newSubreddit(req, res) {
     }
     await addUserToSubbreddit(user, result.communityName);
 
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
       message: result.response,
       communityName: result.communityName,
