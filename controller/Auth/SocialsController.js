@@ -5,6 +5,7 @@ const generator = require("generate-password");
 const jwt = require("jsonwebtoken");
 const { generatePassword } = require("../../utils/passwords");
 const { generateToken, verifyFirebaseToken } = require("../../utils/tokens");
+const axios = require("axios");
 
 /**
  * Sign up a user using web authentication with social media.
@@ -55,22 +56,33 @@ const googleCallbackHandler = async (req, res) => {
   });
 };
 
-const verifyFirebaseToken = async (req, res) => {
+const verifyGoogleToken = async (req, res) => {
   const { token } = req.body;
   try {
-    const decodedToken = await verifyFirebaseToken(token);
-    const user = await User.findOne({ email: decodedToken.email });
-    if (!user) {
-      await webSignup(decodedToken, "google");
+    const response = await axios.get(
+      `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`
+    );
+
+    if (response.status === 200) {
+      const user = await User.findOne({ email: response.data.email });
+      if (!user) {
+        await webSignup(response.data, "google");
+      }
+      const accessToken = await generateToken(user._id);
+      res.status(200).json({ success: true, accessToken });
+    } else {
+      res.status(400).json({ success: false, message: "Token is invalid" });
     }
-    const accessToken = await generateToken(user._id);
-    res.status(200).json({
-      success: true,
-      message: "User logged in Successfully",
-      accessToken,
-    });
   } catch (err) {
-    res.status(401).json({ success: false, message: "Invalid token" });
+    console.error("Error verifying Google token:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to verify Google token" });
   }
 };
-module.exports = { webSignup, googleCallbackHandler, verifyFirebaseToken };
+
+module.exports = {
+  webSignup,
+  googleCallbackHandler,
+  verifyGoogleToken,
+};

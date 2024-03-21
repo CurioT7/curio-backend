@@ -9,8 +9,6 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const user = require("../models/userModel");
-const admin = require("firebase-admin");
-const serviceAccount = require("../config/firebaseServiceAccountKey.json");
 
 /**
  * Generate a JWT token for the user.

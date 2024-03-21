@@ -22,6 +22,6 @@ router.get(
 );
 
 //Firebase token authentication
-router.post("/auth/google/mobile", webSocialsController.verifyFirebaseToken);
+router.post("/auth/google/mobile", webSocialsController.verifyGoogleToken);
 
 module.exports = router;

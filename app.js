@@ -19,8 +19,7 @@ const subredditRouter = require("./router/subredditRouter");
 const friendsRoute = require("./router/friendsRoute");
 const reportRouter = require("./router/reportRouter");
 const profileRouter = require("./router/profileRouter");
-const admin = require("firebase-admin");
-const serviceAccount = require("./config/firebaseServiceAccountKey.json");
+
 const app = express();
 
 /**
@@ -43,11 +42,6 @@ async function connectToDatabase() {
 
 connectToDatabase();
 
-// Firebase Admin SDK
-const serviceAccount = require("./path/to/serviceAccountKey.json");
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
 
 // Express session
 app.use(
