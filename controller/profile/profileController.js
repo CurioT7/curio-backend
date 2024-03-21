@@ -179,12 +179,17 @@ class ProfileController {
       const profilePicture = user.profilePicture;
       const isOver18 = user.isOver18;
 
-      // Extract subreddit IDs where the user is a moderator
-      const moderatedSubredditIds = user.subreddits
-        .filter((sub) => sub.role === "moderator")
-        .map((sub) => sub.subreddit);
+      // Get subreddits where the user is a moderator or creator
+      const findModeratedSubreddits = user.subreddits.filter(
+        (sub) => sub.role === "moderator" || sub.role === "creator"
+      );
 
-      // Fetch subreddit details for those IDs
+      // Extract subreddit IDs
+      const moderatedSubredditIds = findModeratedSubreddits.map(
+        (sub) => sub.subreddit
+      );
+
+      // Query for the subreddit details
       const moderatedSubreddits = await Subreddit.find({
         _id: { $in: moderatedSubredditIds },
       });
@@ -203,7 +208,7 @@ class ProfileController {
       for (const comment of userComments) {
         commentKarma += comment.karma;
       }
-     
+
       res.status(200).json({
         banner,
         bio,
@@ -235,7 +240,7 @@ class ProfileController {
     try {
       const { username } = req.params;
       const user = await this.findUserByUsername(username);
-      
+
       // Get all posts and comments by the user
       const userPosts = await this.fetchPostsByUsername(username);
       const userComments = await this.fetchCommentsByUsername(username);

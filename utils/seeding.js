@@ -16,7 +16,7 @@ async function seedUsers(n = 10) {
     const cakeDay = faker.date.past(); // Generate a random past date
     const formattedCakeDay = cakeDay.toLocaleDateString("en-US", {
       month: "short",
-      day: "numeric",
+      day: "2-digit",
       year: "numeric",
     });
     const user = new User({
@@ -27,7 +27,7 @@ async function seedUsers(n = 10) {
       isVerified: faker.datatype.boolean(),
       gender: faker.random.arrayElement(["male", "female", "other"]),
       language: faker.random.locale(),
-      cakeDay: formattedCakeDay, // Assign the formatted date
+      cakeDay: formattedCakeDay,
       goldAmount: faker.datatype.number(),
       banner: faker.internet.url(),
       profilePicture: faker.internet.avatar(),
