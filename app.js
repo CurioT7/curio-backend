@@ -27,7 +27,7 @@ const app = express();
  * Connects to the MongoDB database and starts the Express server.
  * @async
  */
- async function connectToDatabase() {
+async function connectToDatabase() {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
@@ -66,14 +66,12 @@ app.use(express.json());
 
 //define routes
 
-
 app.use("/api/settings", indentityRouter);
 app.use("/api", userRouter);
 app.use("/api", userSocialsRouter);
 
 app.use("/api", subredditRouter);
 app.use("/api", friendsRoute);
-
 
 app.use("/api", reportRouter);
 app.use("/user", profileRouter);
@@ -86,4 +84,4 @@ const server = app.listen(PORT, () => {
 // Seeding the database if needed
 if (process.env.SEED_DB === "true" && process.argv.includes("--seed")) {
   require("./utils/seeding");
-};
+}

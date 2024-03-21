@@ -31,4 +31,14 @@ async function verifyToken(token) {
   return payload;
 }
 
-module.exports = { generateToken, verifyToken };
+//Verify token sent from firebase
+async function verifyFirebaseToken(token) {
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    return decodedToken;
+  } catch (err) {
+    throw new Error(err);
+  }
+}
+
+module.exports = { generateToken, verifyToken, verifyFirebaseToken };
