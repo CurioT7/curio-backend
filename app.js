@@ -19,7 +19,8 @@ const subredditRouter = require("./router/subredditRouter");
 const friendsRoute = require("./router/friendsRouter");
 const reportRouter = require("./router/reportRouter");
 const profileRouter = require("./router/profileRouter");
-const cors = require('cors');
+const listingRouter = require("./router/listingRouter");
+const cors = require("cors");
 
 const app = express();
 
@@ -44,7 +45,6 @@ async function connectToDatabase() {
 connectToDatabase();
 
 app.use(cors());
-
 
 // Express session
 app.use(
@@ -74,6 +74,7 @@ app.use("/api", subredditRouter);
 app.use("/api", friendsRoute);
 
 app.use("/api", reportRouter);
+app.use("/api", listingRouter);
 app.use("/user", profileRouter);
 
 const PORT = process.env.PORT;
