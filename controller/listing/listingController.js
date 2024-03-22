@@ -9,7 +9,7 @@ const subredditModel = require("../../models/subredditModel");
  */
 
 async function randomPost(req, res) {
-  const sub = req.body.subreddit;
+  const sub = req.params.subreddit;
   const subreddit = await subredditModel.findOne({ name: sub });
   if (!subreddit) {
     return res
