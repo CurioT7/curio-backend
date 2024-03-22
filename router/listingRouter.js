@@ -12,6 +12,6 @@ const ListingController = require("../controller/listing/listingController");
  * @returns {object} Express router instance.
  */
 
-router.get("/random_post/:subreddit", ListingController.randomPost);
+router.get("/r/:subreddit/random", ListingController.randomPost);
 
 module.exports = router;
