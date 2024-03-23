@@ -1,7 +1,6 @@
 const subredditModel = require("../../models/subredditModel");
 const Post = require("../../models/postModel");
 
-
 /**
  * Get a random post from a subreddit.
  * @async
@@ -29,11 +28,11 @@ async function randomPost(req, res) {
   }
 }
 
-
 /**
  * Get the top-viewed posts from a subreddit, or a random post if there are no top-viewed posts.
  * @async
- * @param {string} subredditName - The name of the subreddit.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
  * @returns {Promise<Object>} - The top-viewed post or a random post.
  */
 async function getTopPosts(req, res) {
@@ -43,9 +42,9 @@ async function getTopPosts(req, res) {
     const subreddit = await subredditModel.findOne({ name: subredditName });
 
     if (!subreddit) {
-     return res
-       .status(404)
-       .json({ success: false, message: "Subreddit not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Subreddit not found" });
     }
 
     // Find top-viewed posts sorted by views in descending order
@@ -61,9 +60,7 @@ async function getTopPosts(req, res) {
       res.status(200).json({ success: true, post: topPost });
     }
   } catch (error) {
-     res
-       .status(400)
-       .json({ success: false, message: "Error getting top post" });
+    res.status(400).json({ success: false, message: "Error getting top post" });
   }
 }
 
