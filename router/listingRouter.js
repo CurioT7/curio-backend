@@ -14,4 +14,6 @@ const ListingController = require("../controller/listing/listingController");
 
 router.get("/r/:subreddit/random", ListingController.randomPost);
 
+router.get("/r/:subreddit/top", ListingController.getTopPosts);
+
 module.exports = router;
