@@ -48,14 +48,16 @@ async function getTopPosts(req, res) {
     }
 
     // Find top-viewed posts sorted by upvotes in descending order
-    const topPosts = await Post.find()
-      .sort({ upvotes: -1 })
+    const topPosts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
+      upvotes: -1,
+    });
 
     if (topPosts.length > 0) {
       // If top-viewed posts exist, increment views of the first post
-      const topPost = topPosts[0];
-      await Post.updateOne({ _id: topPost._id }, { $inc: { views: 1 } });
-      return res.status(200).json({ success: true, post: topPost });
+      for (const post of topPosts) {
+        await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } });
+      }
+      return res.status(200).json({ success: true, post: topPosts });
     } else {
       return res
         .status(404)
