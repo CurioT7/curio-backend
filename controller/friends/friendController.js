@@ -297,17 +297,39 @@ async function getUserInfo(req, res) {
   if (!decoded) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: "not found this user",
-    });
-  } else {
+
+  const { friendUsername } = req.params; // Extract friend's username from request parameters
+
+  try {
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Check if the friend exists in the user's friend list
+    const friend = await User.findOne({ username: friendUsername });
+    if (!friend || !user.followings.includes(friendUsername)) {
+      return res.status(404).json({
+        success: false,
+        message: "Friend not found",
+      });
+    }
+
+    // Return information about the friend
     return res.status(200).json({
-      username: user.username,
-      bio: user.bio,
-      profilePicture: user.profilePicture,
+      username: friend.username,
+      bio: friend.bio,
+      profilePicture: friend.profilePicture,
+      // Add more fields as needed
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 }
