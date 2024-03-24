@@ -15,6 +15,13 @@ async function randomPost(req, res) {
     const subreddit = await subredditModel.findOne({
       name: req.params.subreddit,
     });
+
+    if (!subreddit) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subreddit not found" });
+    }
+
     const posts = await Post.find({ linkedSubreddit: subreddit._id });
     if (posts.length === 0) {
       return res
