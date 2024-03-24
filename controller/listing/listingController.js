@@ -47,20 +47,26 @@ async function getTopPosts(req, res) {
         .json({ success: false, message: "Subreddit not found" });
     }
 
-    // Find top-viewed posts sorted by views in descending order
-    const topPosts = await Post.find({ linkedSubreddit: subreddit._id })
-      .sort({ views: -1 })
-      .limit(1)
-      .lean(); // Using lean() to convert documents to plain JavaScript objects
+    // Find top-viewed posts sorted by upvotes in descending order
+    const topPosts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
+      upvotes: -1,
+    });
 
     if (topPosts.length > 0) {
       // If top-viewed posts exist, increment views of the first post
-      const topPost = topPosts[0];
-      await Post.updateOne({ _id: topPost._id }, { $inc: { views: 1 } });
-      res.status(200).json({ success: true, post: topPost });
+      for (const post of topPosts) {
+        await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } });
+      }
+      return res.status(200).json({ success: true, post: topPosts });
+    } else {
+      return res
+        .status(404)
+        .json({ success: false, message: "No top posts found" });
     }
   } catch (error) {
-    res.status(400).json({ success: false, message: "Error getting top post" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Error getting top post" });
   }
 }
 
