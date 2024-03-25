@@ -189,6 +189,8 @@ const userSchema = new mongoose.Schema({
  * Hashes the password before saving the user to the database.
  * @param {Function} next - Callback function.
  * @returns {Promise<void>} - Promise that resolves when hashing is done.
+ * @throws {Error} - If there is an error hashing the password or saving the userPreferences.
+ * @async
  */
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
@@ -199,9 +201,15 @@ userSchema.pre("save", async function (next) {
     this.password = hashedPassword;
 
     //Create default userPreferences
-    if (this.isNew) {
-      const userPreferences = new UserPreferences({ username: this.username });
-      await userPreferences.save();
+    try {
+      if (this.isNew) {
+        const userPreferences = new UserPreferences({
+          username: this.username,
+        });
+        await userPreferences.save();
+      }
+    } catch (error) {
+      next(error);
     }
     next();
   } catch (error) {
