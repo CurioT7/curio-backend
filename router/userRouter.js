@@ -36,6 +36,16 @@ router.post("/auth/signup", userController.signUp);
  */
 router.post("/auth/login", userController.login);
 
+/**
+ * Route to log in a user in app
+ * @name POST/auth/app/login
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
 router.post("/auth/app/login", appUserController.appLogin);
 
 /**
