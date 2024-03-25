@@ -211,6 +211,7 @@ async function seedReports(n = 5, users) {
       reportedUsername: users[reportedIndex].username,
       reportType: faker.random.arrayElement([
         "username",
+        "display name",
         "profile image",
         "banner image",
         "bio",
@@ -229,6 +230,7 @@ async function seedReports(n = 5, users) {
         "self-harm or suicide",
         "spam",
       ]),
+      reportDetails: faker.random.word(),
     });
     await report.save();
     reports.push(report);
