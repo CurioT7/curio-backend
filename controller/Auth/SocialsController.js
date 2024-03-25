@@ -4,7 +4,11 @@ const User = require("../../models/userModel");
 const generator = require("generate-password");
 const jwt = require("jsonwebtoken");
 const { generatePassword } = require("../../utils/passwords");
-const { generateToken, verifyFirebaseToken } = require("../../utils/tokens");
+const {
+  generateToken,
+  verifyFirebaseToken,
+  verifyGoogleToken,
+} = require("../../utils/tokens");
 const axios = require("axios");
 
 /**
@@ -20,16 +24,15 @@ async function webSignup(userInfo, socialMediaType) {
   try {
     var password = generatePassword();
     var newUser = {
-      firstName: userInfo.name.givenName,
-      //username is given name and random generated number
-      username: `${userInfo.name.givenName}${Math.floor(Math.random() * 1000)}`,
-      email: userInfo.emails[0].value,
+      //generate a random username
+      username: `user${Math.floor(Math.random() * 100000)}`,
+      email: userInfo.email,
       password: password,
       socialMediaType: socialMediaType,
       isVerified: true,
     };
     if (socialMediaType === "google") {
-      newUser.googleId = userInfo.id;
+      newUser.googleId = userInfo.user_id;
     }
     await User.create(newUser);
   } catch (err) {
@@ -56,13 +59,27 @@ const googleCallbackHandler = async (req, res) => {
   });
 };
 
-const verifyGoogleToken = async (req, res) => {
+const googleConnectCallbackHandler = async (req, res) => {
+  if (req.user.googleId) {
+    res.status(200).json({
+      success: true,
+      message: "Google account connected successfully",
+    });
+  }
+};
+
+/**
+ * Authenticate a user using Google OAuth.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Object} - The response object containing the access token.
+ * @throws {Error} - If there is an error authenticating the user.
+ */
+
+const googleAuth = async (req, res) => {
   const { token } = req.body;
   try {
-    const response = await axios.get(
-      `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`
-    );
-
+    const response = await verifyGoogleToken(token);
     if (response.status === 200) {
       const user = await User.findOne({ email: response.data.email });
       if (!user) {
@@ -81,8 +98,46 @@ const verifyGoogleToken = async (req, res) => {
   }
 };
 
+/**
+ * Connect a user's Google account.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Object} - The response object containing the success message.
+ * @throws {Error} - If there is an error connecting the account.
+ */
+
+async function connectWithGoogle(req, res) {
+  const { token } = req.body;
+  try {
+    const response = await verifyGoogleToken(token);
+    if (response.status === 200) {
+      const user = await User.findOne({ googleId: response.data.user_id });
+      if (user) {
+        res.status(400).json({
+          success: false,
+          message: "Google account already connected",
+        });
+      }
+      //add googleId to user
+      user.googleId = response.data.user_id;
+      await user.save();
+      res.status(200).json({
+        success: true,
+        message: "Google account connected successfully",
+      });
+    }
+  } catch (err) {
+    console.error("Error connecting account", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Error connecting account" });
+  }
+}
+
 module.exports = {
   webSignup,
   googleCallbackHandler,
-  verifyGoogleToken,
+  googleAuth,
+  googleConnectCallbackHandler,
+  connectWithGoogle,
 };
