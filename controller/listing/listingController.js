@@ -70,6 +70,15 @@ async function getTopPosts(req, res) {
       .json({ success: false, message: "Error getting top post" });
   }
 }
+
+/**
+ * Get the newest posts from a subreddit.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The newest posts.
+ */
+ 
 async function newPosts (req, res) {
   try {
     const subredditName = req.params.subreddit;
@@ -95,6 +104,13 @@ async function newPosts (req, res) {
 
 }
 
+/**
+ * Get the hot posts from a subreddit.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The hot posts.
+ */
 
 async function hotPosts (req, res) {
   try {
@@ -120,6 +136,14 @@ async function hotPosts (req, res) {
 
 }
 
+/**
+ * Get the posts with the most comments from a subreddit.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The posts with the most comments.
+ */
+
 async function mostComments (req, res) {
   try {
     const subredditName = req.params.subreddit;
@@ -128,9 +152,16 @@ async function mostComments (req, res) {
       return res.status(404).json({ success: false, message: "Subreddit not found" });
     }
 
-    const posts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
-      comments: -1
-     });
+    const posts = await Post.find({ linkedSubreddit: subreddit._id }).populate({
+      path: 'comments',
+      select: '_id',
+    });
+    posts.forEach(post => {
+      post.numComments = post.comments.length; // Number of comments is the length of the comments array
+    });
+
+    posts.sort((a, b) => b.numComments - a.numComments);
+
     
     return res.status(200).json({ success: true, posts });
 

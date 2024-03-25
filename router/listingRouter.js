@@ -59,6 +59,6 @@ router.get("/r/:subreddit/hot", ListingController.hotPosts);
  * @returns {object} Express router instance.
  */
 
-router.get("/r/:subreddit/mostComments", ListingController.mostComments);
+router.get("/r/:subreddit/most_comments", ListingController.mostComments);
 
 module.exports = router;
