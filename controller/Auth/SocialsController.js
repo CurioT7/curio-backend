@@ -56,6 +56,15 @@ const googleCallbackHandler = async (req, res) => {
   });
 };
 
+const googleConnectCallbackHandler = async (req, res) => {
+  if (req.user.googleId) {
+    res.status(200).json({
+      success: true,
+      message: "Google account connected successfully",
+    });
+  }
+};
+
 const verifyGoogleToken = async (req, res) => {
   const { token } = req.body;
   try {
@@ -85,4 +94,5 @@ module.exports = {
   webSignup,
   googleCallbackHandler,
   verifyGoogleToken,
+  googleConnectCallbackHandler,
 };

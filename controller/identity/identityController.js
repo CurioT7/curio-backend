@@ -302,4 +302,6 @@ async function deleteAccount (req, res) {
   }
 }
 
+
+
 module.exports = { getMe, getUserPreferences, updateUserPreferences, muteCommunity, unmuteCommunity, deleteAccount };

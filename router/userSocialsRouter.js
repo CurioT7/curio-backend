@@ -21,6 +21,17 @@ router.get(
   webSocialsController.googleCallbackHandler
 );
 
+router.get(
+  "/google/connect",
+  passport.authenticate("google-connect", { scope: ["profile", "email"] })
+);
+
+router.get(
+  "/google/connect/callback",
+  passport.authenticate("google-connect"),
+  webSocialsController.googleConnectCallbackHandler
+);
+
 //Firebase token authentication
 router.post("/auth/google/mobile", webSocialsController.verifyGoogleToken);
 

@@ -1,6 +1,7 @@
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const User = require("../models/userModel");
 const { webSignup } = require("../controller/Auth/SocialsController");
+const passport = require("passport");
 
 /**
  * Configure passport middleware for authentication with Google OAuth.
@@ -71,3 +72,46 @@ module.exports = function (passport) {
     )
   );
 };
+
+passport.use(
+  "google-connect",
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "http://localhost:3000/api/google/connect/callback",
+      scope: ["email", "profile"],
+    },
+
+    //connect user to google account
+    async (accessToken, refreshToken, profile, done) => {
+      if (!profile) {
+        return done(null, false);
+      }
+      try {
+        //check if user exists, check if googleId exists
+        let user = await User.findOne({ email: profile.emails[0].value });
+        //user has same email as google account but not connected
+        if (user && !user.googleId) {
+          user.googleId = profile.id;
+          await user.save();
+          return done(null, user);
+        }
+        //user has different email
+        if (!user) {
+          user.googleId = profile.id;
+          await user.save();
+          return done(null, user);
+        }
+        //user has same email and already connected,return message
+        if (user.googleId) {
+          return done(null, false, {
+            message: "Google account already connected",
+          });
+        }
+      } catch (error) {
+        return done(error, false);
+      }
+    }
+  )
+);
