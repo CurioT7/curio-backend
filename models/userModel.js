@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const { hashPassword } = require("../utils/passwords");
+const UserPreferences = require("./userPreferences");
 
 const Schema = mongoose.Schema;
 
@@ -196,6 +197,12 @@ userSchema.pre("save", async function (next) {
   try {
     const hashedPassword = await hashPassword(this.password);
     this.password = hashedPassword;
+
+    //Create default userPreferences
+    if (this.isNew) {
+      const userPreferences = new UserPreferences({ username: this.username });
+      await userPreferences.save();
+    }
     next();
   } catch (error) {
     next(error);
