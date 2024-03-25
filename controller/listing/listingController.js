@@ -1,4 +1,4 @@
-const subredditModel = require("../../models/subredditModel");
+const Subreddit = require("../../models/subredditModel");
 const Post = require("../../models/postModel");
 
 /**
@@ -11,7 +11,7 @@ const Post = require("../../models/postModel");
 
 async function randomPost(req, res) {
   const sub = req.params.subreddit;
-  const subreddit = await subredditModel.findOne({ name: sub });
+  const subreddit = await Subreddit.findOne({ name: sub });
   if (!subreddit) {
     return res
       .status(404)
@@ -39,7 +39,7 @@ async function getTopPosts(req, res) {
   try {
     const subredditName = req.params.subreddit;
     // Find the subreddit
-    const subreddit = await subredditModel.findOne({ name: subredditName });
+    const subreddit = await Subreddit.findOne({ name: subredditName });
 
     if (!subreddit) {
       return res
@@ -70,7 +70,47 @@ async function getTopPosts(req, res) {
   }
 }
 
+/**
+ * Retrieves the best posts based on the proportion of upvotes to downvotes.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+ */
+async function getBestPosts(req, res) {
+  try {
+    // Fetch all posts from the database
+    const posts = await Post.find({});
+
+     if (posts.length === 0) {
+       return res.status(404).json({
+         success: false,
+         message: "No posts found in the database",
+       });
+     }
+    
+    // Sort the posts using the best algorithm
+    const sortedPosts = posts.sort((a, b) => {
+      const karmaA = a.upvotes - a.downvotes;
+      const karmaB = b.upvotes - b.downvotes;
+
+      // Calculate the proportion of upvotes to downvotes for each post
+      const proportionA = karmaA > 0 ? karmaA / (karmaA + a.downvotes) : 0;
+      const proportionB = karmaB > 0 ? karmaB / (karmaB + b.downvotes) : 0;
+
+      // Sort posts based on the proportion of upvotes to downvotes
+      return proportionB - proportionA;
+    });
+
+    res.status(200).json({ success: true, SortedPosts: sortedPosts });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
+
 module.exports = {
   randomPost,
   getTopPosts,
+  getBestPosts,
 };
