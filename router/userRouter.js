@@ -11,6 +11,7 @@ const router = express.Router();
 const passport = require("passport");
 
 const userController = require("../controller/Auth/userController");
+const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
 
 /**
@@ -25,7 +26,7 @@ const userBlockController = require("../controller/User/blockUserController");
 router.post("/auth/signup", userController.signUp);
 
 /**
- * Route to log in a user.
+ * Route to log in a user in web
  * @name POST/auth/login
  * @function
  * @memberof module:UserRoutes
@@ -34,6 +35,18 @@ router.post("/auth/signup", userController.signUp);
  * @param {Function} middleware - Middleware function for route
  */
 router.post("/auth/login", userController.login);
+
+/**
+ * Route to log in a user in app
+ * @name POST/auth/app/login
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
+router.post("/auth/app/login", appUserController.appLogin);
 
 /**
  * Route to check if a username is available.
