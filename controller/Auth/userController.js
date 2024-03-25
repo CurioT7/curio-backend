@@ -372,8 +372,8 @@ async function changeEmail(req, res) {
         message: "Password is incorrect",
       });
     }
-    const emailExist = await User.findOne({ email: email });
-    if (emailExist) {
+
+    if (user.email === email) {
       return res.status(409).json({
         success: false,
         message: "Email already exists",
