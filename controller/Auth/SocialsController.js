@@ -7,6 +7,7 @@ const { generatePassword } = require("../../utils/passwords");
 const {
   generateToken,
   verifyFirebaseToken,
+  verifyToken,
   verifyGoogleToken,
 } = require("../../utils/tokens");
 const axios = require("axios");
@@ -81,10 +82,11 @@ const googleAuth = async (req, res) => {
   try {
     const response = await verifyGoogleToken(token);
     if (response.status === 200) {
-      const user = await User.findOne({ email: response.data.email });
+      let user = await User.findOne({ email: response.data.email });
       if (!user) {
         await webSignup(response.data, "google");
       }
+      user = await User.findOne({ email: response.data.email });
       const accessToken = await generateToken(user._id);
       res.status(200).json({ success: true, accessToken });
     } else {
@@ -107,18 +109,23 @@ const googleAuth = async (req, res) => {
  */
 
 async function connectWithGoogle(req, res) {
-  const { token } = req.body;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+  const googleToken = req.body.token;
   try {
-    const response = await verifyGoogleToken(token);
+    const response = await verifyGoogleToken(googleToken);
     if (response.status === 200) {
-      const user = await User.findOne({ googleId: response.data.user_id });
+      let user = await User.findOne({ googleId: response.data.user_id });
       if (user) {
         res.status(400).json({
           success: false,
           message: "Google account already connected",
         });
       }
-      //add googleId to user
+      user = await User.findOne({ _id: decoded.userId });
       user.googleId = response.data.user_id;
       await user.save();
       res.status(200).json({
