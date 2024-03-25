@@ -7,6 +7,7 @@ const User = require("../../models/userModel");
 const UserPreferences = require("../../models/userPreferences");
 const Subreddit = require("../../models/subredditModel");
 const { generateToken, verifyToken } = require("../../utils/tokens");
+const { comparePassword } = require('../../utils/passwords');
 require("dotenv").config();
 
 /**
@@ -257,4 +258,48 @@ async function unmuteCommunity (req, res) {
   }
  
 }
-module.exports = { getMe, getUserPreferences, updateUserPreferences, muteCommunity, unmuteCommunity };
+
+/**
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Deletes a user account
+ */
+
+
+async function deleteAccount (req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  
+  const { usernametodelete , password } = req.body;
+  try {
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+         });
+    }
+    const isMatch = await comparePassword(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials, check username or password",
+      });
+    }
+     await UserPreferences.findOneAndDelete({ username: user.usernametodelete });
+     await User.findOneAndDelete({ _id: decoded.userId });
+     res.json({ message: 'Account successfully deleted' });
+  }
+  catch (error) {
+    return res.status(500).json({ 
+      success: false,
+      message: error.message
+    });
+  }
+}
+
+module.exports = { getMe, getUserPreferences, updateUserPreferences, muteCommunity, unmuteCommunity, deleteAccount };
