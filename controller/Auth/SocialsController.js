@@ -68,6 +68,14 @@ const googleConnectCallbackHandler = async (req, res) => {
   }
 };
 
+/**
+ * Authenticate a user using Google OAuth.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Object} - The response object containing the access token.
+ * @throws {Error} - If there is an error authenticating the user.
+ */
+
 const googleAuth = async (req, res) => {
   const { token } = req.body;
   try {
@@ -89,6 +97,14 @@ const googleAuth = async (req, res) => {
       .json({ success: false, message: "Failed to verify Google token" });
   }
 };
+
+/**
+ * Connect a user's Google account.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Object} - The response object containing the success message.
+ * @throws {Error} - If there is an error connecting the account.
+ */
 
 async function connectWithGoogle(req, res) {
   const { token } = req.body;
