@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const categoriesController = require("../controller/homePage/categoriesController");
+const categoriesController = require("../controller/homePage/homepageController");
 
 /**
  * Route to handle GET requests for getting a random post.
