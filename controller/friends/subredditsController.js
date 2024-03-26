@@ -153,8 +153,35 @@ async function newSubreddit(req, res) {
   }
 }
 
+async function getSubredditInfo(req, res) {
+  const subredditName = req.params.subreddit;
+
+  try {
+    // Query the database for the subreddit by name
+    const subreddit = await Community.findOne({ name: subredditName });
+
+    // If the subreddit is not found, return an error
+    if (!subreddit) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subreddit not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      subreddit: subreddit.toObject(), // Convert Mongoose document to plain JavaScript object
+    });
+  } catch (error) {
+    console.error("Error fetching subreddit:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to fetch subreddit" });
+  }
+}
+
 module.exports = {
   newSubreddit,
   availableSubreddit,
   createSubreddit,
+  getSubredditInfo,
 };
