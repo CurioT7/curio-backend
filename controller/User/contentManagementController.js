@@ -16,7 +16,7 @@ async function hidePost(req, res) {
         .status(404)
         .json({ success: false, message: "User not found" });
     }
-    const post = await Post({ _id: postId });
+    const post = await Post.findOne({ _id: postId });
     if (!post) {
       return res
         .status(404)
@@ -53,7 +53,7 @@ async function unhidePost(req, res) {
         .status(404)
         .json({ success: false, message: "User not found" });
     }
-    const post = await Post({ _id: postId });
+    const post = await Post.findOne({ _id: postId });
     if (!post) {
       return res
         .status(404)
