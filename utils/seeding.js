@@ -112,7 +112,7 @@ async function seedBlock(n = 5, users) {
   return blocks;
 }
 
-async function seedPreferences(n = 5, users) {
+async function seedPreferences(n = 5, users, subreddits) {
   const preferences = [];
   for (let i = 0; i < n; i++) {
     const userIndex = faker.datatype.number({
@@ -149,9 +149,22 @@ async function seedPreferences(n = 5, users) {
       contentVisibility: faker.datatype.boolean(),
       activeInCommunityVisibility: faker.datatype.boolean(),
       clearHistory: faker.datatype.boolean(),
-      block: [{ username: faker.internet.userName() }],
-      viewBlockedPeople: [{ username: faker.internet.userName() }],
+      block: [
+        { username: faker.internet.userName() },
+        { username: faker.internet.userName() },
+      ],
+      viewBlockedPeople: [
+        {
+          username: faker.internet.userName(),
+          blockTimestamp: faker.date.past(),
+        },
+        {
+          username: faker.internet.userName(),
+          blockTimestamp: faker.date.past(),
+        },
+      ],
       viewMutedCommunities: [
+        { communityName: faker.lorem.words(2).substring(0, 20) },
         { communityName: faker.lorem.words(2).substring(0, 20) },
       ],
       adultContent: faker.datatype.boolean(),
@@ -180,6 +193,39 @@ async function seedPreferences(n = 5, users) {
       chatRequestEmail: faker.datatype.boolean(),
       unsubscribeFromAllEmails: faker.datatype.boolean(),
     });
+    // Link viewMutedCommunities array with existing communities
+    const mutedCommunityIndex1 = faker.datatype.number({
+      min: 0,
+      max: subreddits.length - 1,
+    });
+    const mutedCommunityIndex2 = faker.datatype.number({
+      min: 0,
+      max: subreddits.length - 1,
+    });
+    preference.viewMutedCommunities = [
+      { communityName: subreddits[mutedCommunityIndex1].name },
+      { communityName: subreddits[mutedCommunityIndex2].name },
+    ];
+
+    // Link viewBlockedPeople array with existing users
+    const blockedUserIndex1 = faker.datatype.number({
+      min: 0,
+      max: users.length - 1,
+    });
+    const blockedUserIndex2 = faker.datatype.number({
+      min: 0,
+      max: users.length - 1,
+    });
+    preference.viewBlockedPeople = [
+      {
+        username: users[blockedUserIndex1].username,
+        blockTimestamp: faker.date.past(),
+      },
+      {
+        username: users[blockedUserIndex2].username,
+        blockTimestamp: faker.date.past(),
+      },
+    ];
     await preference.save();
     preferences.push(preference);
   }
@@ -323,6 +369,10 @@ async function seedPosts(n = 20, users, subreddits) {
       link: faker.internet.url(),
       isDraft: faker.datatype.boolean(),
     });
+    // Calculate karma for the post using the virtual property
+    const karma = post.karma;
+    post.karma = karma;
+
     await post.save();
     posts.push(post);
   }
@@ -365,7 +415,11 @@ async function clearCollections() {
 }
 
 async function updateSubredditsWithPosts(subreddits, posts) {
-  // This assumes a many-to-one relationship (many posts can belong to one subreddit)
+   for (const subreddit of subreddits) {
+     // Clear existing posts in the subreddit
+     subreddit.posts = [];
+     await subreddit.save();
+   }
   for (const post of posts) {
     const subredditIndex = faker.datatype.number({
       min: 0,
@@ -465,7 +519,7 @@ async function seedData() {
     const comments = await seedComments(40, users, posts);
     await updateSubredditsWithPosts(subreddits, posts);
     await updatePostsWithComments(posts, comments);
-    await seedPreferences(5, users);
+    await seedPreferences(5, users, subreddits);
     await seedBlock(5, users);
     await seedReports(5, users);
     await updateUserData(users, posts, comments, subreddits);
