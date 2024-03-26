@@ -63,6 +63,37 @@ describe("hidePost function", () => {
     });
   });
 
+  it("should return 404 if post is not found", async () => {
+    const payload = { userId: "userId123" };
+    verifyToken.mockResolvedValue(payload); // Simulate token verification success
+    userFindOneMock.mockResolvedValue({}); // Simulate user found
+    postFindOneMock.mockResolvedValue(null); // Simulate post not found
+
+    await hidePost(req, res);
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Post not found",
+    });
+  });
+
+  it("should return 400 if post is already hidden", async () => {
+    const payload = { userId: "userId123" };
+    verifyToken.mockResolvedValue(payload); // Simulate token verification success
+    userFindOneMock.mockResolvedValue({
+      hiddenPosts: ["660227d61650ec9f41404c80"],
+    }); // Simulate user found
+    postFindOneMock.mockResolvedValue({}); // Simulate post found
+
+    await hidePost(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Post already hidden",
+    });
+  });
+
   it("should handle internal server error", async () => {
     const payload = { userId: "userId123" };
     verifyToken.mockResolvedValue(payload); // Simulate token verification success
@@ -101,6 +132,7 @@ describe("unhidePost function", () => {
       json: jest.fn(),
     };
   });
+
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -139,6 +171,21 @@ describe("unhidePost function", () => {
     expect(res.json).toHaveBeenCalledWith({
       success: false,
       message: "Internal server error",
+    });
+  });
+
+  it("should return 404 if post is not found", async () => {
+    const payload = { userId: "userId123" };
+    verifyToken.mockResolvedValue(payload); // Simulate token verification success
+    userFindOneMock.mockResolvedValue({}); // Simulate user found
+    postFindOneMock.mockResolvedValue(null); // Simulate post not found
+
+    await unhidePost(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Post not found",
     });
   });
 });
