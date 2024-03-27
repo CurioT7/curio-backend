@@ -16,4 +16,6 @@ router.get("/r/:subreddit/random", ListingController.randomPost);
 
 router.get("/r/:subreddit/top", ListingController.getTopPosts);
 
+router.get("/r/:subreddit/top/:timeThreshold", ListingController.getTopPostsbytime);
+
 module.exports = router;
