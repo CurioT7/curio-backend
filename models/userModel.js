@@ -89,8 +89,9 @@ const userSchema = new mongoose.Schema({
   },
   socialLinks: [
     {
-      platform: String,
+      displayName: String,
       url: String,
+      platform: String,
     },
   ],
   displayName: {
