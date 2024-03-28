@@ -434,10 +434,7 @@ async function verifyEmail(req, res) {
     }
     user.isVerified = true;
     await user.save();
-    return res.status(200).json({
-      success: true,
-      message: "Email verified successfully",
-    });
+    return res.redirect("http://localhost:3000/profile?verified=true");
   } catch (error) {
     return res.status(500).json({
       success: false,

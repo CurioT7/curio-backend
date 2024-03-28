@@ -36,6 +36,17 @@ async function verifyToken(token) {
   }
 }
 
+async function refreshToken(token) {
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    return jwt.sign({ userId: payload.userId }, process.env.JWT_SECRET, {
+      expiresIn: "24h",
+    });
+  } catch (err) {
+    return null;
+  }
+}
+
 //Verify token sent from firebase
 async function verifyFirebaseToken(token) {
   try {
@@ -62,4 +73,5 @@ module.exports = {
   verifyToken,
   verifyFirebaseToken,
   verifyGoogleToken,
+  refreshToken,
 };
