@@ -161,7 +161,7 @@ async function newSubreddit(req, res) {
  * @returns {Promise<void>} A promise that resolves once the response is sent.
  */
 async function getSubredditInfo(req, res) {
-  const subredditName = req.params.subreddit;
+  const subredditName = decodeURIComponent(req.params.subreddit);
 
   try {
     // Query the database for the subreddit by name
