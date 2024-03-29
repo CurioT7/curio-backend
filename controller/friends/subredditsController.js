@@ -153,8 +153,41 @@ async function newSubreddit(req, res) {
   }
 }
 
+/**
+ * Get information about a subreddit by name.
+ * @async
+ * @param {object} req - The request object.
+ * @param {object} res - The response object.
+ * @returns {Promise<void>} A promise that resolves once the response is sent.
+ */
+async function getSubredditInfo(req, res) {
+  const subredditName = req.params.subreddit;
+
+  try {
+    // Query the database for the subreddit by name
+    const subreddit = await Community.findOne({ name: subredditName });
+
+    if (!subreddit) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subreddit not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      subreddit: subreddit.toObject(), // Convert Mongoose document to plain JavaScript object
+    });
+  } catch (error) {
+    console.error("Error fetching subreddit:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to fetch subreddit" });
+  }
+}
+
 module.exports = {
   newSubreddit,
   availableSubreddit,
   createSubreddit,
+  getSubredditInfo,
 };
