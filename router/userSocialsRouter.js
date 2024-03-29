@@ -5,7 +5,10 @@ const router = express.Router();
 
 // Google Auth web
 
-router.post("/auth/google", webSocialsController.googleAuth);
+router.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
 
 // Google Auth web callback, redirected to after google login
 router.get(
@@ -18,12 +21,7 @@ router.get(
   webSocialsController.googleCallbackHandler
 );
 
-router.post("/google/connect", webSocialsController.connectWithGoogle);
-
-router.get(
-  "/google/connect/callback",
-  passport.authenticate("google-connect"),
-  webSocialsController.googleConnectCallbackHandler
-);
+//Firebase token authentication
+router.post("/auth/google/mobile", webSocialsController.verifyGoogleToken);
 
 module.exports = router;

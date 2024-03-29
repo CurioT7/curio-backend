@@ -71,15 +71,4 @@ router.get("/:username/about", profileController.getAboutInformation);
  */
 router.get("/:username/overview", profileController.getOverviewInformation);
 
-/**
- * Route to get joined/moderated communities by a user.
- * @route GET /profile/:username/communities
- * @group User - Operations related to user profiles
- * @param {string} :username.path.required - The username of the user.
- * @returns {object} 200 - An object containing the list of joined/moderated communities.
- * @returns {object} 404 - Not found. Indicates that the user does not exist.
- * @returns {object} 500 - Internal server error. Indicates that an error occurred while fetching user communities.
- */
-router.get("/:username/communities", profileController.getJoinedCommunities);
-
 module.exports = router;

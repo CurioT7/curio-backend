@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const { hashPassword } = require("../utils/passwords");
-const UserPreferences = require("./userPreferences");
 
 const Schema = mongoose.Schema;
 
@@ -43,7 +42,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: false,
+    unique: true,
     index: true,
   },
   password: {
@@ -89,9 +88,8 @@ const userSchema = new mongoose.Schema({
   },
   socialLinks: [
     {
-      displayName: String,
-      url: String,
       platform: String,
+      url: String,
     },
   ],
   displayName: {
@@ -184,20 +182,12 @@ const userSchema = new mongoose.Schema({
       },
     },
   ],
-  hiddenPosts: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "Post",
-    },
-  ],
 });
 
 /**
  * Hashes the password before saving the user to the database.
  * @param {Function} next - Callback function.
  * @returns {Promise<void>} - Promise that resolves when hashing is done.
- * @throws {Error} - If there is an error hashing the password or saving the userPreferences.
- * @async
  */
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
@@ -206,18 +196,6 @@ userSchema.pre("save", async function (next) {
   try {
     const hashedPassword = await hashPassword(this.password);
     this.password = hashedPassword;
-
-    //Create default userPreferences
-    try {
-      if (this.isNew) {
-        const userPreferences = new UserPreferences({
-          username: this.username,
-        });
-        await userPreferences.save();
-      }
-    } catch (error) {
-      next(error);
-    }
     next();
   } catch (error) {
     next(error);

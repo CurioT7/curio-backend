@@ -11,30 +11,21 @@ const moment = require("moment");
  */
 
 async function randomPost(req, res) {
-  // random post linked with the subreddit
+  const sub = req.params.subreddit;
+  const subreddit = await subredditModel.findOne({ name: sub });
+  if (!subreddit) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Subreddit not found" });
+  }
   try {
-    const decodedURI = decodeURIComponent(req.params.subreddit);
-    const subreddit = await subredditModel.findOne({ name: decodedURI });
-
-    if (!subreddit) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Subreddit not found" });
-    }
-
-    const posts = await Post.find({ linkedSubreddit: subreddit._id });
-    if (posts.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No posts found in the subreddit" });
-    }
-    const randomPost = posts[Math.floor(Math.random() * posts.length)];
-    //increase of the number of views
-    randomPost.views += 1;
-    await randomPost.save();
-    return res.status(200).json({ success: true, post: randomPost });
+    const randomPost =
+      subreddit.posts[Math.floor(Math.random() * subreddit.posts.length)];
+    res.status(200).json({ success: true, post: randomPost });
   } catch (err) {
-    return res.status(500).json({ success: false, message: "Server error" });
+    res
+      .status(400)
+      .json({ success: false, message: "Error getting random post" });
   }
 }
 

@@ -9,7 +9,6 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const user = require("../models/userModel");
-const axios = require("axios");
 
 /**
  * Generate a JWT token for the user.
@@ -46,20 +45,4 @@ async function verifyFirebaseToken(token) {
   }
 }
 
-async function verifyGoogleToken(token) {
-  try {
-    const response = await axios.get(
-      `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`
-    );
-    return response;
-  } catch (err) {
-    throw new Error(err);
-  }
-}
-
-module.exports = {
-  generateToken,
-  verifyToken,
-  verifyFirebaseToken,
-  verifyGoogleToken,
-};
+module.exports = { generateToken, verifyToken, verifyFirebaseToken };

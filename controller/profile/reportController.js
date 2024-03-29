@@ -25,8 +25,7 @@ async function reportUser(req, res) {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    const { reportedUsername, reportType, reportReason, reportDetails } =
-      req.body;
+    const { reportedUsername, reportType, reportReason } = req.body;
 
     // Check if the reportedUsername exists in the User database
     const existingUser = await User.findOne({ username: reportedUsername });
@@ -51,7 +50,6 @@ async function reportUser(req, res) {
       reportedUsername,
       reportType,
       reportReason,
-      reportDetails,
     });
 
     await newReport.save();

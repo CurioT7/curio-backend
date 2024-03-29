@@ -11,9 +11,7 @@ const router = express.Router();
 const passport = require("passport");
 
 const userController = require("../controller/Auth/userController");
-const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
-const contentManagementController = require("../controller/User/ContentManagementController");
 
 /**
  * Route to sign up a new user.
@@ -27,7 +25,7 @@ const contentManagementController = require("../controller/User/ContentManagemen
 router.post("/auth/signup", userController.signUp);
 
 /**
- * Route to log in a user in web
+ * Route to log in a user.
  * @name POST/auth/login
  * @function
  * @memberof module:UserRoutes
@@ -36,18 +34,6 @@ router.post("/auth/signup", userController.signUp);
  * @param {Function} middleware - Middleware function for route
  */
 router.post("/auth/login", userController.login);
-
-/**
- * Route to log in a user in app
- * @name POST/auth/app/login
- * @function
- * @memberof module:UserRoutes
- * @inner
- * @param {string} path - Express route path
- * @param {Function} middleware - Middleware function for route
- */
-
-router.post("/auth/app/login", appUserController.appLogin);
 
 /**
  * Route to check if a username is available.
@@ -157,29 +143,5 @@ router.post("/User/block", userBlockController.blockUser);
  * @param {Function} middleware - Middleware function for route
  */
 router.post("/User/unblock", userBlockController.unblockUser);
-
-/**
- * Route to hide a post.
- * @name POST/User/hide
- * @function
- * @memberof module:UserRoutes
- * @inner
- * @param {string} path - Express route path
- * @param {Function} middleware - Middleware function for route
- */
-
-router.post("/hide", contentManagementController.hidePost);
-
-/**
- * Route to unhide a post.
- * @name POST/User/unhide
- * @function
- * @memberof module:UserRoutes
- * @inner
- * @param {string} path - Express route path
- * @param {Function} middleware - Middleware function for route
- */
-
-router.post("/unhide", contentManagementController.unhidePost);
 
 module.exports = router;

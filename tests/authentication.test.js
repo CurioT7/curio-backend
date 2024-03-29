@@ -1,137 +1,47 @@
-const { signUp } = require("../controller/Auth/userController");
-const User = require("../models/userModel");
-const { userExist } = require("../controller/Auth/userController");
-const { appLogin } = require("../controller/Auth/appUserController");
-const {
-  forgotPassword,
-  forgotUsername,
-} = require("../controller/Auth/userController");
-const { deserializeUser } = require("passport");
+const { signUp } = require('../controller/Auth/userController');
+const User = require('../models/user');
 
-// test userExists function
-describe("userExist function", () => {
-  it("Should return 200 if username is available", async () => {
-    const req = {
-      params: {
-        username: "unique_username1",
-      },
-    };
-    const res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-    const userFindOneMock = jest.spyOn(User, "findOne");
-    userFindOneMock.mockResolvedValue(null);
-    await userExist(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-  });
 
-  it("Should return 409 if user already exists", async () => {
-    const req = {
-      params: {
-        username: "test_user",
-      },
-    };
-    const res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-    const userFindOneMock = jest.spyOn(User, "findOne");
-    userFindOneMock.mockResolvedValue("test_user");
-    await userExist(req, res);
-    expect(res.status).toHaveBeenCalledWith(409);
-  });
-});
+    // Returns a 200 status code and a success message when the username is available.
+    it('should return a 200 status code and a success message when the username is available', async () => {
+      const req = { params: { username: 'abdullah' } };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+      const User = require('../../models/userModel');
+      User.findOne = jest.fn().mockResolvedValue(null);
 
-// test signUp function
-describe("signUp function", () => {
-  it("Should return 409 if user already exists", async () => {
-    const req = {
-      body: {
-        username: "test_user",
-        email: "email@gmail.com",
-        password: "password",
-      },
-    };
-    const res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-    const userFindOneMock = jest.spyOn(User, "findOne");
-    userFindOneMock.mockResolvedValue("test_user");
-    await signUp(req, res);
-    expect(res.status).toHaveBeenCalledWith(409);
-  });
-});
+      await userExist(req, res);
 
-describe("appLogin function", () => {
-  it("Should return 404 if invalid credintials", async () => {
-    const req = {
-      body: {
-        usernameOrEmail: "notfound@mail.com",
-        password: "password",
-      },
-    };
-    const res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-    const userFindOneMock = jest.spyOn(User, "findOne");
-    userFindOneMock.mockResolvedValue(null);
-    await appLogin(req, res);
-    expect(res.status).toHaveBeenCalledWith(404);
-  });
-});
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        message: 'Username is available',
+      });
+    });
 
-describe("forgotPassword function", () => {
-  it("Should return 404 if user not found", async () => {
-    const req = {
-      body: {
-        username: "notfound",
-      },
-    };
-    const res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-    const userFindOneMock = jest.spyOn(User, "findOne");
-    userFindOneMock.mockResolvedValue(null);
-    await forgotPassword(req, res);
-    expect(res.status).toHaveBeenCalledWith(404);
-  });
+        // Returns an error message if email is invalid
+        it('should return an error message when email is invalid', async () => {
+          const req = {
+            body: {
+              username: 'testuser',
+              email: 'invalidemail',
+              password: 'Test1234',
+            },
+          };
+          const res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+          };
+    
+          await signUp(req, res);
+    
+          expect(res.status).toHaveBeenCalledWith(400);
+          expect(res.json).toHaveBeenCalledWith({
+            message: 'Invalid email address',
+          });
+        });
 
-  it("Should return 200 if user is found", async () => {
-    const req = {
-      body: {
-        username: "test_user",
-        email: "test@mail.com",
-      },
-    };
-    const res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-    const userFindOneMock = jest.spyOn(User, "findOne");
-    userFindOneMock.mockResolvedValue("test_user");
-    await forgotPassword(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-  });
-});
 
-describe("forgotUsername function", () => {
-  it("Should return 200 and send email if user found", async () => {
-    const req = {
-      body: {
-        email: "test@mail.com",
-      },
-    };
-    const res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-    const userFindOneMock = jest.spyOn(User, "findOne");
-    userFindOneMock.mockResolvedValue("test_user");
-    await forgotUsername(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-  });
-});
+

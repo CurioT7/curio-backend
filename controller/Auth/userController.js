@@ -72,7 +72,13 @@ async function signUp(req, res) {
     if (!validateEmail(email)) {
       return res.status(400).json({ message: "Invalid email address" });
     }
-
+    let emailExist = await User.findOne({ email });
+    if (emailExist) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already exists",
+      });
+    }
     let userExist = await User.findOne({ username });
     if (userExist) {
       return res.status(409).json({
@@ -127,9 +133,11 @@ async function login(req, res) {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  const { username, password } = req.body;
+  const { usernameOrEmail, password } = req.body;
   //check if user exists
-  const user = await User.findOne({ username: username });
+  const user = await User.findOne({
+    $or: [{ username: usernameOrEmail }, { email: usernameOrEmail }],
+  });
   if (!user) {
     return res.status(404).json({
       success: false,
@@ -372,8 +380,8 @@ async function changeEmail(req, res) {
         message: "Password is incorrect",
       });
     }
-
-    if (user.email === email) {
+    const emailExist = await User.findOne({ email: email });
+    if (emailExist) {
       return res.status(409).json({
         success: false,
         message: "Email already exists",

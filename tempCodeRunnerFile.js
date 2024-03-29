@@ -1,15 +1,43 @@
 /* global use, db */
 // MongoDB Playground
-// To disable this template go to Settings | MongoDB | Use Default Template For Playground.
-// Make sure you are connected to enable completions and to be able to run a playground.
 // Use Ctrl+Space inside a snippet or a string literal to trigger completions.
-// The result of the last command run in a playground is shown on the results panel.
-// By default the first 20 documents will be returned with a cursor.
-// Use 'console.log()' to print to the debug output.
-// For more documentation on playgrounds please refer to
-// https://www.mongodb.com/docs/mongodb-vscode/playgrounds/
 
-// Select the database to use.
-use('mongodbVSCodePlaygroundDB');
+const database = 'NEW_DATABASE_NAME';
+const collection = 'NEW_COLLECTION_NAME';
 
-db.getCollection('users').dropIndexes("email_1");
+// Create a new database.
+use(database);
+
+// Create a new collection.
+db.createCollection(collection);
+
+// The prototype form to create a collection:
+/* db.createCollection( <name>,
+  {
+    capped: <boolean>,
+    autoIndexId: <boolean>,
+    size: <number>,
+    max: <number>,
+    storageEngine: <document>,
+    validator: <document>,
+    validationLevel: <string>,
+    validationAction: <string>,
+    indexOptionDefaults: <document>,
+    viewOn: <string>,
+    pipeline: <pipeline>,
+    collation: <document>,
+    writeConcern: <document>,
+    timeseries: { // Added in MongoDB 5.0
+      timeField: <string>, // required for time series collections
+      metaField: <string>,
+      granularity: <string>,
+      bucketMaxSpanSeconds: <number>, // Added in MongoDB 6.3
+      bucketRoundingSeconds: <number>, // Added in MongoDB 6.3
+    },
+    expireAfterSeconds: <number>,
+    clusteredIndex: <document>, // Added in MongoDB 5.3
+  }
+)*/
+
+// More information on the `createCollection` command can be found at:
+// https://www.mongodb.com/docs/manual/reference/method/db.createCollection/

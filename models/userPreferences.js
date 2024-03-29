@@ -122,8 +122,8 @@ const userPreferencesSchema = new mongoose.Schema({
 
       username: { type: String, 
       ref: "block"
-      },
-      blockTimestamp: { type: Date, default: Date.now },
+     },
+
 
     },
   ],

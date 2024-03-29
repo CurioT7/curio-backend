@@ -61,19 +61,4 @@ router.post("/mute", identityController.muteCommunity)
  */
 router.post("/unmute", identityController.unmuteCommunity)
 
-
-/**
- * Route to delete a user account
- * @name DELETE /api/delete_account
- * @function
- * @memberof module:routes/identity
- * @inner
- * @param {string} path - Express route path
- * @param {callback} middleware - Express middleware callback
- */
-router.delete("/delete_account", identityController.deleteAccount)
-
-
-
-
 module.exports = router;
