@@ -1,0 +1,20 @@
+const express = require("express");
+const router = express.Router();
+const categoriesController = require("../controller/homePage/homepageController");
+
+/**
+ * Route to handle GET requests for getting a random post.
+ * @name GET/random_post
+ * @function
+ * @memberof module:routes/listingRouter
+ * @param {string} path - The URL path for the route ("/random_post").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ */
+
+// router.get("/r/:subreddit/random", ListingController.randomPost);
+
+// router.get("/r/:subreddit/top", ListingController.getTopPosts);
+ router.get("/random-category", categoriesController.getRandomCommunities);
+
+module.exports = router;
