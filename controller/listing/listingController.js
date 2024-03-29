@@ -12,9 +12,8 @@ const Post = require("../../models/postModel");
 async function randomPost(req, res) {
   // random post linked with the subreddit
   try {
-    const subreddit = await subredditModel.findOne({
-      name: req.params.subreddit,
-    });
+    const decodedURI = decodeURIComponent(req.params.subreddit);
+    const subreddit = await subredditModel.findOne({ name: decodedURI });
 
     if (!subreddit) {
       return res
