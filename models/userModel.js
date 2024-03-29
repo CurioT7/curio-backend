@@ -184,6 +184,12 @@ const userSchema = new mongoose.Schema({
       },
     },
   ],
+  hiddenPosts: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Post",
+    },
+  ],
 });
 
 /**
