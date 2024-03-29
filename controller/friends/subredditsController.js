@@ -153,6 +153,13 @@ async function newSubreddit(req, res) {
   }
 }
 
+/**
+ * Get information about a subreddit by name.
+ * @async
+ * @param {object} req - The request object.
+ * @param {object} res - The response object.
+ * @returns {Promise<void>} A promise that resolves once the response is sent.
+ */
 async function getSubredditInfo(req, res) {
   const subredditName = req.params.subreddit;
 
@@ -160,7 +167,6 @@ async function getSubredditInfo(req, res) {
     // Query the database for the subreddit by name
     const subreddit = await Community.findOne({ name: subredditName });
 
-    // If the subreddit is not found, return an error
     if (!subreddit) {
       return res
         .status(404)
