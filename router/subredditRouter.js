@@ -11,6 +11,7 @@ const subredditsController = require("../controller/friends/subredditsController
  * @param {callback} middleware - Express middleware.
  */
 router.post("/createSubreddit", subredditsController.newSubreddit);
+
 /**
  * Route to get a subreddit info from a subreddit.
  * @name GET /subreddit/r/:subreddit
@@ -20,5 +21,16 @@ router.post("/createSubreddit", subredditsController.newSubreddit);
  *  @param {callback} middleware - Express middleware.
  */
 router.get("/r/:subreddit", subredditsController.getSubredditInfo);
+
+/**
+ * Route to retrieve the top communities sorted by the number of members.
+ * @name GET /best/communities
+ * @function
+ * @memberof subredditsController
+ * @param {import('express').Request} req - The request object.
+ * @param {import('express').Response} res - The response object.
+ * @returns {Promise<void>} - Promise that resolves once the operation is complete.
+ */
+router.get("/best/communities", subredditsController.getTopCommunities);
 
 module.exports = router;
