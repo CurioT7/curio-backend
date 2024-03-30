@@ -91,7 +91,7 @@ async function getTopPosts(req, res) {
  
 async function newPosts (req, res) {
   try {
-    const subredditName = req.params.subreddit;
+    const subredditName = decodeURIComponent(req.params.subreddit);
     const subreddit = await Subreddit.findOne({ name: subredditName });
     if (!subreddit) {
       return res.status(404).json({ success: false, message: "Subreddit not found" });
@@ -124,7 +124,7 @@ async function newPosts (req, res) {
 
 async function hotPosts (req, res) {
   try {
-    const subredditName = req.params.subreddit;
+    const subredditName = decodeURIComponent(req.params.subreddit);
     const subreddit = await Subreddit.findOne({ name: subredditName });
     if (!subreddit) {
       return res.status(404).json({ success: false, message: "Subreddit not found" });
@@ -156,8 +156,9 @@ async function hotPosts (req, res) {
 
 async function mostComments(req, res) {
   try {
-    const subredditName = req.params.subreddit;
+    const subredditName = decodeURIComponent(req.params.subreddit);
     const subreddit = await Subreddit.findOne({ name: subredditName });
+
     if (!subreddit) {
       return res.status(404).json({ success: false, message: "Subreddit not found" });
     }
