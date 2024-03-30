@@ -14,7 +14,7 @@ async function randomPost(req, res) {
   // random post linked with the subreddit
   try {
     const decodedURI = decodeURIComponent(req.params.subreddit);
-    const subreddit = await subredditModel.findOne({ name: decodedURI });
+    const subreddit = await Subreddit.findOne({ name: decodedURI });
 
     if (!subreddit) {
       return res
@@ -83,7 +83,7 @@ async function getTopPosts(req, res) {
 async function getTopPostsbytime(req, res) {
   try {
     const subredditName = decodeURIComponent(req.params.subreddit);
-    const subreddit = await subredditModel.findOne({ name: subredditName });
+    const subreddit = await Subreddit.findOne({ name: subredditName });
 
     if (!subreddit) {
       return res

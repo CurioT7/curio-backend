@@ -21,4 +21,6 @@ router.get(
   categoryController.getCommunitiesByCategory
 );
 
+router.get("/random-category", categoryController.getRandomCommunities);
+
 module.exports = router;
