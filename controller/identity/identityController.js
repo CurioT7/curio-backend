@@ -287,7 +287,7 @@ async function deleteAccount (req, res) {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: "Invalid credentials, check username or password",
+        message: 'Invalid credentials',
       });
     }
      await UserPreferences.findOneAndDelete({ username: user.usernametodelete });

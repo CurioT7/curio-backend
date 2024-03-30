@@ -112,17 +112,11 @@ const userPreferencesSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  block: [
-    {
-      username: { type: String },
-    },
-  ],
   viewBlockedPeople: [
     {
-
       username: { type: String, 
       ref: "block"
-      },
+     },
       blockTimestamp: { type: Date, default: Date.now },
 
     },

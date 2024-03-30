@@ -15,6 +15,7 @@ const Schema = mongoose.Schema;
  * @property {string} authorName - The name of the author of the post.
  * @property {mongoose.Types.ObjectId} authorID - The ID of the author of the post.
  * @property {Date} createdAt - The date and time when the post was created.
+ * @property {number} searchCount - The number of searchCount the post has received.
  * @property {number} upvotes - The number of upvotes the post has received.
  * @property {number} downvotes - The number of downvotes the post has received.
  * @property {mongoose.Types.ObjectId} belongsTo - The ID of the subreddit to which the post belongs.
@@ -55,6 +56,10 @@ const postSchema = new Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  searchCount: {
+    type: Number,
+    default: 0,
   },
   upvotes: {
     type: Number,
