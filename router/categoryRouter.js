@@ -20,7 +20,16 @@ router.get(
   "/get_specific_category",
   categoryController.getCommunitiesByCategory
 );
+/**
+ * Route to get communities from a specific category.
+ * @name GET /api/random_category
+ * @function
+ * @memberof module:routes/community/categoryRouter
+ * @param {string} path - The URL path for the route ("/api/random_category").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ */
 
-router.get("/random-category", categoryController.getRandomCommunities);
+router.get("/random_category", categoryController.getRandomCommunities);
 
 module.exports = router;

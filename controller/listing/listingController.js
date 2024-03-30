@@ -155,7 +155,7 @@ async function hotPosts (req, res) {
  * @returns {Promise<Object>} - The posts with the most comments.
  */
 
-async function mostComments (req, res) {
+async function mostComments(req, res) {
   try {
     const subredditName = req.params.subreddit;
     const subreddit = await subredditModel.findOne({ name: subredditName });
@@ -179,7 +179,15 @@ async function mostComments (req, res) {
   } catch (error) {
     return res.status(400).json({ success: false, message: "Error getting posts with most comments" });
   }
+}
 
+/**
+ * Get the top-viewed posts from a subreddit, by an interval time
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The top-viewed post
+ */
 async function getTopPostsbytime(req, res) {
   try {
     const subredditName = decodeURIComponent(req.params.subreddit);
