@@ -26,10 +26,12 @@ const userReportSchema = new Schema({
   },
   reportType: {
     type: String,
-    enum: ["username", "profile image", "banner image", "bio"],
+    required: true,
+    enum: ["username", "display name", "profile image", "banner image", "bio"],
   },
   reportReason: {
     type: String,
+    required: true,
     enum: [
       "harassment",
       "threatening violence",
@@ -44,6 +46,9 @@ const userReportSchema = new Schema({
       "self-harm or suicide",
       "spam",
     ],
+  },
+  reportDetails: {
+    type: String,
   },
 });
 

@@ -2,9 +2,8 @@
  * Validates an email address using a regular expression.
  * @param {string} email - The email address to validate.
  * @returns {boolean} - True if the email address is valid, otherwise false.
- */
-function validateEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+ */ function validateEmail(email) {
+  const emailRegex = /^[^\s@]+(?:\.[^\s@]+)*@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
 

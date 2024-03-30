@@ -9,6 +9,7 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const user = require("../models/userModel");
+const axios = require("axios");
 
 /**
  * Generate a JWT token for the user.
@@ -19,6 +20,12 @@ const user = require("../models/userModel");
 async function generateToken(userId) {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "24h" });
 }
+
+const generateTestToken = async (userId) => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: "90d",
+  });
+};
 
 /**
  * Verify a JWT token.
@@ -45,4 +52,21 @@ async function verifyFirebaseToken(token) {
   }
 }
 
-module.exports = { generateToken, verifyToken, verifyFirebaseToken };
+async function verifyGoogleToken(token) {
+  try {
+    const response = await axios.get(
+      `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`
+    );
+    return response;
+  } catch (err) {
+    throw new Error(err);
+  }
+}
+
+module.exports = {
+  generateToken,
+  verifyToken,
+  verifyFirebaseToken,
+  verifyGoogleToken,
+  generateTestToken,
+};
