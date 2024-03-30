@@ -40,5 +40,15 @@ router.get(
   "/r/:subreddit/top/:timeThreshold",
   ListingController.getTopPostsbytime
 );
+/** 
+ * Express route for retrieving the best posts.
+ * @name GET /best
+ * @function
+ * @memberof module:routes
+ * @param {string} path - The URL path for the route ("/best").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ */
+router.get("/best", ListingController.getBestPosts);
 
 module.exports = router;
