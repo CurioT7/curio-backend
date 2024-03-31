@@ -34,7 +34,14 @@ async function seedUsers(n = 10) {
       bio: faker.lorem.sentences(),
       socialLinks: [
         {
-          platform: faker.random.word(),
+          displayName: faker.random.word(),
+          platform: faker.random.arrayElement([
+            "facebook",
+            "instagram",
+            "linkedin",
+            "github",
+            "twitter",
+          ]),
           url: faker.internet.url(),
         },
       ],
@@ -139,7 +146,19 @@ async function seedPreferences(n = 5, users, subreddits) {
       locationCustomization: faker.address.city(),
       displayName: faker.name.findName(),
       about: faker.lorem.sentence(),
-      socialLinks: faker.internet.url(),
+      socialLinks: [
+        {
+          displayName: faker.random.word(),
+          platform: faker.random.arrayElement([
+            "facebook",
+            "instagram",
+            "linkedin",
+            "github",
+            "twitter",
+          ]),
+          url: faker.internet.url(),
+        },
+      ],
       images: {
         pfp: faker.image.avatar(),
         banner: faker.image.imageUrl(),
