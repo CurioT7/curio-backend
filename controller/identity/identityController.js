@@ -7,7 +7,7 @@ const User = require("../../models/userModel");
 const UserPreferences = require("../../models/userPreferences");
 const Subreddit = require("../../models/subredditModel");
 const { generateToken, verifyToken } = require("../../utils/tokens");
-const { comparePassword } = require('../../utils/passwords');
+const { comparePassword } = require("../../utils/passwords");
 require("dotenv").config();
 
 /**
@@ -160,55 +160,58 @@ async function updateUserPreferences(req, res) {
 }
 
 /**
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @returns {Object} - A response object
  * @description Mutes a community for a user
  */
 
-async function muteCommunity (req, res) {
+async function muteCommunity(req, res) {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = await verifyToken(token);
   if (!decoded) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: "Unauthorized" });
   }
   const communityToMute = req.body.communityToMute;
   try {
     const user = await User.findOne({ _id: decoded.userId });
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const community = await Subreddit.findOne({ name: communityToMute});
+    const community = await Subreddit.findOne({ name: communityToMute });
     if (!community) {
-      return res.status(404).json({ message: 'Community not found' });
+      return res.status(404).json({ message: "Community not found" });
     }
-    const userPreferences = await UserPreferences.findOne({ username: user.username });
-   
+    const userPreferences = await UserPreferences.findOne({
+      username: user.username,
+    });
+
     const communityName = community.name;
-    
-    const isCommunityMuted = userPreferences.viewMutedCommunities.some(item => item.communityName === communityName);
+
+    const isCommunityMuted = userPreferences.viewMutedCommunities.some(
+      (item) => item.communityName === communityName
+    );
 
     if (isCommunityMuted) {
-      return res.status(409).json({ message: 'Community already muted' });
+      return res.status(409).json({ message: "Community already muted" });
     }
-    
-    userPreferences.viewMutedCommunities.push({ communityName: community.name });
-    
-    await userPreferences.save();
-    
 
-    res.json({ message: 'Community successfully muted' });
-  }
-  catch (error) {
-    return res.status(500).json({ 
+    userPreferences.viewMutedCommunities.push({
+      communityName: community.name,
+    });
+
+    await userPreferences.save();
+
+    res.json({ message: "Community successfully muted" });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 }
-
 
 /**
  * @param {Object} req - Express request object
@@ -217,46 +220,51 @@ async function muteCommunity (req, res) {
  * @description Unmutes a community for a user
  */
 
-async function unmuteCommunity (req, res) {
+async function unmuteCommunity(req, res) {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = await verifyToken(token);
   if (!decoded) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: "Unauthorized" });
   }
   const communityToUnmute = req.body.communityToUnmute;
   try {
     const user = await User.findOne({ _id: decoded.userId });
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const community = await Subreddit.findOne({ name: communityToUnmute});
+    const community = await Subreddit.findOne({ name: communityToUnmute });
     if (!community) {
-      return res.status(404).json({ message: 'Community not found' });
+      return res.status(404).json({ message: "Community not found" });
     }
-    const userPreferences = await UserPreferences.findOne({ username: user.username });
-   
+    const userPreferences = await UserPreferences.findOne({
+      username: user.username,
+    });
+
     const communityName = community.name;
-    
-    const isCommunityMuted = userPreferences.viewMutedCommunities.some(item => item.communityName === communityName);
+
+    const isCommunityMuted = userPreferences.viewMutedCommunities.some(
+      (item) => item.communityName === communityName
+    );
 
     if (!isCommunityMuted) {
-      return res.status(409).json({ message: 'Community not muted' });
+      return res.status(409).json({ message: "Community not muted" });
     }
-    
+
     // Remove the community from the user's muted communities
-    userPreferences.viewMutedCommunities = userPreferences.viewMutedCommunities.filter(item => item.communityName !== communityName);
+    userPreferences.viewMutedCommunities =
+      userPreferences.viewMutedCommunities.filter(
+        (item) => item.communityName !== communityName
+      );
     await userPreferences.save();
-    
-    res.json({ message: 'Community successfully unmuted' });
-  }
-  catch (error) {
-    return res.status(500).json({ 
+
+    res.json({ message: "Community successfully unmuted" });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
- 
 }
 
 /**
@@ -266,42 +274,45 @@ async function unmuteCommunity (req, res) {
  * @description Deletes a user account
  */
 
-
-async function deleteAccount (req, res) {
+async function deleteAccount(req, res) {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = await verifyToken(token);
   if (!decoded) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: "Unauthorized" });
   }
-  
-  const { usernametodelete , password } = req.body;
+
+  const { usernametodelete, password } = req.body;
   try {
     const user = await User.findOne({ _id: decoded.userId });
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
-         });
+        message: "User not found",
+      });
     }
     const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials',
+        message: "Invalid credentials",
       });
     }
-     await UserPreferences.findOneAndDelete({ username: usernametodelete });
-     await User.findOneAndDelete({ _id: decoded.userId });
-     res.json({ message: 'Account successfully deleted' });
-  }
-  catch (error) {
-    return res.status(500).json({ 
+    await UserPreferences.findOneAndDelete({ username: usernametodelete });
+    await User.findOneAndDelete({ _id: decoded.userId });
+    return res.status(200).json({ message: 'Account successfully deleted' });  
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 }
 
-
-
-module.exports = { getMe, getUserPreferences, updateUserPreferences, muteCommunity, unmuteCommunity, deleteAccount };
+module.exports = {
+  getMe,
+  getUserPreferences,
+  updateUserPreferences,
+  muteCommunity,
+  unmuteCommunity,
+  deleteAccount,
+};
