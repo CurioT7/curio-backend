@@ -4,7 +4,9 @@ const {
   randomPost,
   getTopPosts,
   getTopPostsbytime,
-} = require("../controller/listing/listingController");
+  hotPosts,
+  mostComments
+,} = require("../controller/listing/listingController");
 const moment = require("moment");
 
 describe("randomPost", () => {
@@ -105,8 +107,8 @@ it('should return a status of 404 if the subreddit is not found', async () => {
       json: jest.fn()
     };
 
-    const subredditModel = require("../../models/subredditModel");
-    const Post = require("../../models/postModel");
+    const subredditModel = require("../models/subredditModel");
+    const Post = require("../models/postModel");
 
     subredditModel.findOne = jest.fn().mockResolvedValue(null);
 
@@ -124,8 +126,8 @@ it('should return a status of 404 if the subreddit is not found', async () => {
       json: jest.fn()
     };
 
-    const subredditModel = require("../../models/subredditModel");
-    const Post = require("../../models/postModel");
+    const subredditModel = require("../models/subredditModel");
+    const Post = require("../models/postModel");
 
     subredditModel.findOne = jest.fn().mockResolvedValue(null);
 
