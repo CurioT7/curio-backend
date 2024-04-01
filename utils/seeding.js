@@ -333,7 +333,7 @@ async function seedSubreddits(n = 5, users) {
         isUnique = true;
       } else {
         // Append a random string to make the name unique
-        name = `${name}-${faker.datatype.uuid().substring(0, 5)}`;
+        name = `${name}-${faker.datatype.uuid().substring(0, 2)}`;
       }
     }
     const theme = themes[themeIndex];
@@ -457,7 +457,7 @@ async function seedPosts(n = 20, users, subreddits) {
       title: title,
       content: content,
       authorName: users[userIndex].username,
-      linkedSubreddit: subreddits[subredditIndex]._id,
+      linkedSubreddit: subreddit._id,
       views: faker.datatype.number(),
       createdAt: faker.date.past(),
       upvotes: faker.datatype.number(),
@@ -632,7 +632,7 @@ async function updateSubredditsWithPosts(subreddits, posts) {
       max: subreddits.length - 1,
     });
     const subreddit = subreddits[subredditIndex];
-    post.subreddit = subreddit._id;
+    post.linkedSubreddit = subreddit._id;
     await post.save();
 
     subreddit.posts.push(post._id);
