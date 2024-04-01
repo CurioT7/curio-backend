@@ -185,9 +185,45 @@ async function getSubredditInfo(req, res) {
   }
 }
 
+/**
+ * Retrieves the top communities sorted by the number of members.
+ * @param {import('express').Request} req - The request object.
+ * @param {import('express').Response} res - The response object.
+ * @returns {Promise<void>} - Promise that resolves once the operation is complete.
+ */
+async function getTopCommunities(req, res) {
+  const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+  const limit = 250; // Allow 250 items per page 
+  const sortBy = "members"; // Default sorting by members 
+
+  try {
+    const skip = (page - 1) * limit;
+    const communities = await Community.aggregate([
+      {
+        $project: {
+          name: 1,
+          category:1,
+          members: { $size: "$members" }, // Count the number of members for each community
+        },
+      },
+      { $sort: { [sortBy]: -1 } }, 
+      { $skip: skip },
+      { $limit: limit },
+    ]);
+
+    res.status(200).json({ success: true, communities });
+  } catch (error) {
+    console.error("Error fetching communities:", error);
+    res
+      .status(500)
+      .json({ success: false,message: "Internal server error", error:error.message});
+  }
+}
+
 module.exports = {
   newSubreddit,
   availableSubreddit,
   createSubreddit,
   getSubredditInfo,
+  getTopCommunities,
 };
