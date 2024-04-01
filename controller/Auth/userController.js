@@ -432,6 +432,12 @@ async function verifyEmail(req, res) {
         message: "User not found",
       });
     }
+    if (user.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already verified",
+      });
+    }
     user.isVerified = true;
     await user.save();
     //generate token
