@@ -180,20 +180,12 @@ class ProfileController {
       const isOver18 = user.isOver18;
 
       // Get subreddits where the user is a moderator or creator
-      const findModeratedSubreddits = user.subreddits.filter(
-        (sub) => sub.role === "moderator" || sub.role === "creator"
+      const moderatedSubredditsUsernames = user.moderators.map(
+        (moderator) => moderator.subreddit.username
       );
-
-      // Extract subreddit IDs
-      const moderatedSubredditIds = findModeratedSubreddits.map(
-        (sub) => sub.subreddit
-      );
-
-      // Query for the subreddit details
       const moderatedSubreddits = await Subreddit.find({
-        _id: { $in: moderatedSubredditIds },
+        username: { $in: moderatedSubredditsUsernames },
       });
-
       // Calculate karma from posts and comments.
       const userPosts = await this.fetchPostsByUsername(username);
       let postKarma = 0;
@@ -266,10 +258,12 @@ class ProfileController {
       const user = await this.findUserByUsername(username);
 
       // Get the user's joined/moderated communities from the subreddits field
-      const communities = user.subreddits.map((sub) => ({
-        subreddit: sub.subreddit,
-        role: sub.role,
-      }));
+      const communitiesSubredditIds = user.subreddits.map(
+        (sub) => sub.subreddit
+      );
+      const communities = await Subreddit.find({
+        _id: { $in: communitiesSubredditIds },
+      });
 
       return res.status(200).json({ success: true, communities });
     } catch (error) {
