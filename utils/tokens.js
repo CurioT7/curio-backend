@@ -40,7 +40,7 @@ async function refreshToken(token) {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     return jwt.sign({ userId: payload.userId }, process.env.JWT_SECRET, {
-      expiresIn: "24h",
+      expiresIn: "90days",
     });
   } catch (err) {
     return null;
