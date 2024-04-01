@@ -181,10 +181,10 @@ class ProfileController {
 
       // Get subreddits where the user is a moderator or creator
       const moderatedSubredditsUsernames = user.moderators.map(
-        (moderator) => moderator.subreddit.username
+        (moderator) => moderator.subreddit
       );
       const moderatedSubreddits = await Subreddit.find({
-        username: { $in: moderatedSubredditsUsernames },
+        name: { $in: moderatedSubredditsUsernames },
       });
       // Calculate karma from posts and comments.
       const userPosts = await this.fetchPostsByUsername(username);
@@ -258,11 +258,11 @@ class ProfileController {
       const user = await this.findUserByUsername(username);
 
       // Get the user's joined/moderated communities from the subreddits field
-      const communitiesSubredditIds = user.subreddits.map(
+      const communitiesSubredditNames = user.subreddits.map(
         (sub) => sub.subreddit
       );
       const communities = await Subreddit.find({
-        _id: { $in: communitiesSubredditIds },
+        name: { $in: communitiesSubredditNames },
       });
 
       return res.status(200).json({ success: true, communities });
