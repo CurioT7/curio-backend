@@ -199,10 +199,17 @@ async function getTopPostsbytime(req, res) {
         .json({ success: false, message: "Subreddit not found" });
     }
 
-    // Get the time threshold from the URL parameter
-    const timeThreshold = moment()
-      .subtract(req.params.timeThreshold, "days")
-      .toDate();
+    // Get the time threshold based on the request
+    let timeThreshold;
+    if (req.params.time === "new") {
+      // Set time threshold to 2 hours ago
+      timeThreshold = moment().subtract(2, "hours").toDate();
+    } else {
+      // Default time threshold is 24 hours ago
+      timeThreshold = moment()
+        .subtract(req.params.timeThreshold, "days")
+        .toDate();
+    }
 
     // Find top-viewed posts sorted by upvotes and filtered by creation time
     const topPosts = await Post.find({
