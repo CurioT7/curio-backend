@@ -20,6 +20,9 @@ const friendsRoute = require("./router/friendsRouter");
 const reportRouter = require("./router/reportRouter");
 const profileRouter = require("./router/profileRouter");
 const listingRouter = require("./router/listingRouter");
+const searchRouter = require("./router/searchRouter");
+const categoryRouter = require("./router/categoryRouter");
+
 const cors = require("cors");
 
 const app = express();
@@ -75,7 +78,10 @@ app.use("/api", friendsRoute);
 
 app.use("/api", reportRouter);
 app.use("/api", listingRouter);
+app.use("/api", categoryRouter);
 app.use("/user", profileRouter);
+
+app.use("/api", searchRouter);
 
 const PORT = process.env.PORT;
 const server = app.listen(PORT, () => {

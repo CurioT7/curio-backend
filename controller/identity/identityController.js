@@ -287,10 +287,10 @@ async function deleteAccount (req, res) {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: "Invalid credentials, check username or password",
+        message: 'Invalid credentials',
       });
     }
-     await UserPreferences.findOneAndDelete({ username: user.usernametodelete });
+     await UserPreferences.findOneAndDelete({ username: usernametodelete });
      await User.findOneAndDelete({ _id: decoded.userId });
      res.json({ message: 'Account successfully deleted' });
   }

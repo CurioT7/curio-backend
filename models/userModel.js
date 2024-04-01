@@ -89,8 +89,9 @@ const userSchema = new mongoose.Schema({
   },
   socialLinks: [
     {
-      platform: String,
+      displayName: String,
       url: String,
+      platform: String,
     },
   ],
   displayName: {
@@ -181,6 +182,12 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ["creator", "moderator"],
       },
+    },
+  ],
+  hiddenPosts: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Post",
     },
   ],
 });

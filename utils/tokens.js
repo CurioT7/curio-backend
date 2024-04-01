@@ -21,6 +21,12 @@ async function generateToken(userId) {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "24h" });
 }
 
+const generateTestToken = async (userId) => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: "90d",
+  });
+};
+
 /**
  * Verify a JWT token.
  * @param {string} token - The JWT token to verify.
@@ -74,4 +80,5 @@ module.exports = {
   verifyFirebaseToken,
   verifyGoogleToken,
   refreshToken,
+  generateTestToken,
 };

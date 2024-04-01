@@ -253,6 +253,32 @@ class ProfileController {
       this.handleServerError(res, error);
     }
   };
+  /**
+   * Controller function to get joined/moderated communities by a user.
+   * @param {object} req - The request object.
+   * @param {object} res - The response object.
+   * @returns {Promise<void>} A promise that resolves once the response is sent.
+   */
+  getJoinedCommunities = async (req, res) => {
+    const username = req.params.username;
+
+    try {
+      const user = await this.findUserByUsername(username);
+
+      // Get the user's joined/moderated communities from the subreddits field
+      const communities = user.subreddits.map((sub) => ({
+        subreddit: sub.subreddit,
+        role: sub.role,
+      }));
+
+      return res.status(200).json({ success: true, communities });
+    } catch (error) {
+      console.error("Error fetching user communities:", error);
+      return res
+        .status(500)
+        .json({ success: false, error: "Failed to fetch user communities" });
+    }
+  };
 }
 
 module.exports = ProfileController;

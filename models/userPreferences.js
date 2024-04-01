@@ -85,9 +85,13 @@ const userPreferencesSchema = new mongoose.Schema({
   about: {
     type: String,
   },
-  socialLinks: {
-    type: String,
-  },
+  socialLinks: [
+    {
+      displayName: String,
+      url: String,
+      platform: String,
+    },
+  ],
   images: {
     pfp: { type: String },
     banner: { type: String },
@@ -112,29 +116,18 @@ const userPreferencesSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  block: [
-    {
-      username: { type: String },
-    },
-  ],
   viewBlockedPeople: [
     {
-
-      username: { type: String, 
-      ref: "block"
-     },
-
-
+      username: { type: String, ref: "block" },
+      blockTimestamp: { type: Date, default: Date.now },
     },
   ],
   viewMutedCommunities: [
     {
-      communityName: { 
-        type: String, 
-        ref: "subredditModel"
-
-
-      }, 
+      communityName: {
+        type: String,
+        ref: "subredditModel",
+      },
     },
   ],
   adultContent: {
