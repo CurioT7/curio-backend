@@ -6,6 +6,7 @@
 const User = require("../../models/userModel");
 const UserPreferences = require("../../models/userPreferences");
 const Subreddit = require("../../models/subredditModel");
+const block = require("../../models/block");
 const { generateToken, verifyToken } = require("../../utils/tokens");
 const { comparePassword } = require("../../utils/passwords");
 require("dotenv").config();
@@ -65,12 +66,12 @@ async function getUserPreferences(req, res) {
       username: user.username,
     })
       .populate({
-        path: "block.username", // Populate username details in blocked users
+        path: "viewBlockedPeople", // Populate username details in blocked users
         select: "username", // Only select username from User model in blocked users
       })
       .populate({
-        path: "mute.username", // Populate username details in muted users
-        select: "username", // Only select username from User model in muted users
+        path: "viewMutedCommunities", // Populate username details in muted users
+        select: "communityName", // Only select username from User model in muted users
       });
 
     if (!preferences) {
