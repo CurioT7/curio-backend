@@ -434,9 +434,12 @@ async function verifyEmail(req, res) {
     }
     user.isVerified = true;
     await user.save();
+    //generate token
+    const accessToken = await generateToken(user._id);
     return res.status(200).json({
       success: true,
-      message: "Email verified successfully",
+      message: "Email verification successful",
+      accessToken,
     });
   } catch (error) {
     return res.status(500).json({
