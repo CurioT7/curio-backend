@@ -4,9 +4,9 @@
  */
 
 const User = require("../../models/userModel");
-const UserPreferences = require("../../models/userPreferences");
+const UserPreferences = require("../../models/userPreferencesModel");
 const Subreddit = require("../../models/subredditModel");
-const block = require("../../models/block");
+const block = require("../../models/blockModel");
 const { generateToken, verifyToken } = require("../../utils/tokens");
 const { comparePassword } = require("../../utils/passwords");
 require("dotenv").config();
@@ -300,7 +300,7 @@ async function deleteAccount(req, res) {
     }
     await UserPreferences.findOneAndDelete({ username: usernametodelete });
     await User.findOneAndDelete({ _id: decoded.userId });
-    return res.status(200).json({ message: 'Account successfully deleted' });  
+    return res.status(200).json({ message: "Account successfully deleted" });
   } catch (error) {
     return res.status(500).json({
       success: false,

@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const { hashPassword } = require("../utils/passwords");
-const UserPreferences = require("./userPreferences");
+const UserPreferences = require("./userPreferencesModel");
 
 const Schema = mongoose.Schema;
 

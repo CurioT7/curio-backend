@@ -7,8 +7,8 @@ const Post = require("../models/postModel");
 const User = require("../models/userModel");
 const Subreddit = require("../models/subredditModel");
 const UserReports = require("../models/reportModel");
-const Block = require("../models/block");
-const UserPreferences = require("../models/userPreferences");
+const Block = require("../models/blockModel");
+const UserPreferences = require("../models/userPreferencesModel");
 
 async function seedUsers(n = 10) {
   const users = [];
@@ -337,55 +337,55 @@ async function seedSubreddits(n = 5, users) {
       }
     }
     const theme = themes[themeIndex];
-     let description = "";
+    let description = "";
 
-     // Generate a meaningful description based on the theme
-     switch (theme.toLowerCase()) {
-       case "technology":
-         description =
-           "A community for discussing the latest advancements in technology, from AI to blockchain.";
-         break;
-       case "science":
-         description =
-           "Explore the wonders of the universe and delve into cutting-edge scientific research.";
-         break;
-       case "art":
-         description =
-           "Celebrate creativity in all its forms, from traditional paintings to digital art.";
-         break;
-       case "books":
-         description =
-           "Dive into the world of literature and share your favorite books, authors, and literary discussions.";
-         break;
-       case "music":
-         description =
-           "Discover new tunes, discuss your favorite artists, and explore the diverse world of music genres.";
-         break;
-       case "photography":
-         description =
-           "Share your stunning photos, exchange photography tips, and appreciate the beauty of visual storytelling.";
-         break;
-       case "movies":
-         description =
-           "Discuss classic films, analyze the latest blockbusters, and explore the art of cinematography.";
-         break;
-       case "food":
-         description =
-           "From recipes to restaurant recommendations, join us to indulge in the world of gastronomy.";
-         break;
-       case "fitness":
-         description =
-           "Achieve your fitness goals, share workout routines, and motivate each other towards a healthier lifestyle.";
-         break;
-       case "travel":
-         description =
-           "Embark on virtual journeys, share travel experiences, and gather tips for your next adventure.";
-         break;
-       default:
-         description =
-           "A diverse community for engaging discussions on various topics.";
-         break;
-     }
+    // Generate a meaningful description based on the theme
+    switch (theme.toLowerCase()) {
+      case "technology":
+        description =
+          "A community for discussing the latest advancements in technology, from AI to blockchain.";
+        break;
+      case "science":
+        description =
+          "Explore the wonders of the universe and delve into cutting-edge scientific research.";
+        break;
+      case "art":
+        description =
+          "Celebrate creativity in all its forms, from traditional paintings to digital art.";
+        break;
+      case "books":
+        description =
+          "Dive into the world of literature and share your favorite books, authors, and literary discussions.";
+        break;
+      case "music":
+        description =
+          "Discover new tunes, discuss your favorite artists, and explore the diverse world of music genres.";
+        break;
+      case "photography":
+        description =
+          "Share your stunning photos, exchange photography tips, and appreciate the beauty of visual storytelling.";
+        break;
+      case "movies":
+        description =
+          "Discuss classic films, analyze the latest blockbusters, and explore the art of cinematography.";
+        break;
+      case "food":
+        description =
+          "From recipes to restaurant recommendations, join us to indulge in the world of gastronomy.";
+        break;
+      case "fitness":
+        description =
+          "Achieve your fitness goals, share workout routines, and motivate each other towards a healthier lifestyle.";
+        break;
+      case "travel":
+        description =
+          "Embark on virtual journeys, share travel experiences, and gather tips for your next adventure.";
+        break;
+      default:
+        description =
+          "A diverse community for engaging discussions on various topics.";
+        break;
+    }
     const subreddit = new Subreddit({
       name: name,
       description: description,
@@ -447,12 +447,12 @@ async function seedPosts(n = 20, users, subreddits) {
       min: 0,
       max: subreddits.length - 1,
     });
-       const subreddit = subreddits[subredditIndex];
-    
+    const subreddit = subreddits[subredditIndex];
+
     // Generate title and content based on subreddit theme
     const title = generatePostTitle(subreddit);
     const content = generatePostContent(subreddit);
-    
+
     const post = new Post({
       title: title,
       content: content,
@@ -529,25 +529,25 @@ function generatePostTitle(subreddit) {
 // Function to generate post content based on subreddit theme
 function generatePostContent(subreddit) {
   // Example logic: generate content related to the subreddit theme
-  if (subreddit.name.toLowerCase().includes('technology')) {
+  if (subreddit.name.toLowerCase().includes("technology")) {
     return "Exploring the impact of AI on various industries and its potential for reshaping the future.";
-  } else if (subreddit.name.toLowerCase().includes('science')) {
+  } else if (subreddit.name.toLowerCase().includes("science")) {
     return "Delving into recent breakthroughs in quantum mechanics and their implications for our understanding of the universe.";
-  } else if (subreddit.name.toLowerCase().includes('art')) {
+  } else if (subreddit.name.toLowerCase().includes("art")) {
     return "Analyzing the works of renowned abstract expressionist artists and their influence on contemporary art movements.";
-  } else if (subreddit.name.toLowerCase().includes('books')) {
+  } else if (subreddit.name.toLowerCase().includes("books")) {
     return "Sharing personal reviews and recommendations for compelling novels across various genres, from classics to contemporary literature.";
-  } else if (subreddit.name.toLowerCase().includes('music')) {
+  } else if (subreddit.name.toLowerCase().includes("music")) {
     return "Introducing lesser-known indie rock bands and albums that deserve more recognition, along with discussions on the evolution of the genre.";
-  } else if (subreddit.name.toLowerCase().includes('photography')) {
+  } else if (subreddit.name.toLowerCase().includes("photography")) {
     return "Sharing expert photography techniques for capturing breathtaking landscapes, along with insights into composition and post-processing.";
-  } else if (subreddit.name.toLowerCase().includes('movies')) {
+  } else if (subreddit.name.toLowerCase().includes("movies")) {
     return "Examining the stylistic elements and cultural significance of film noir classics, from iconic characters to atmospheric cinematography.";
-  } else if (subreddit.name.toLowerCase().includes('food')) {
+  } else if (subreddit.name.toLowerCase().includes("food")) {
     return "Embarking on a gastronomic journey to discover the vibrant flavors and cultural diversity of street food delicacies across different continents.";
-  } else if (subreddit.name.toLowerCase().includes('fitness')) {
+  } else if (subreddit.name.toLowerCase().includes("fitness")) {
     return "Discussing the benefits of HIIT workouts for improving cardiovascular health, building muscle strength, and maximizing calorie burn.";
-  } else if (subreddit.name.toLowerCase().includes('travel')) {
+  } else if (subreddit.name.toLowerCase().includes("travel")) {
     return "Sharing travel stories and insider tips for exploring the enchanting landscapes, rich cultures, and hidden gems of Southeast Asia.";
   } else {
     return faker.lorem.paragraph();
@@ -584,25 +584,25 @@ async function seedComments(n = 40, users, posts, subreddits) {
 }
 // Function to generate comment content based on subreddit theme
 function generateCommentContent(subreddit) {
-  if (subreddit.name.toLowerCase().includes('technology')) {
+  if (subreddit.name.toLowerCase().includes("technology")) {
     return "I think AI has the potential to revolutionize various industries, especially in the field of healthcare.";
-  } else if (subreddit.name.toLowerCase().includes('science')) {
+  } else if (subreddit.name.toLowerCase().includes("science")) {
     return "The recent discoveries in quantum mechanics are mind-blowing! It's fascinating to see how our understanding of the universe evolves.";
-  } else if (subreddit.name.toLowerCase().includes('art')) {
+  } else if (subreddit.name.toLowerCase().includes("art")) {
     return "This painting beautifully captures the essence of abstract expressionism, don't you think?";
-  } else if (subreddit.name.toLowerCase().includes('books')) {
+  } else if (subreddit.name.toLowerCase().includes("books")) {
     return "I just finished reading a gripping thriller novel. Anyone else here a fan of mystery novels?";
-  } else if (subreddit.name.toLowerCase().includes('music')) {
+  } else if (subreddit.name.toLowerCase().includes("music")) {
     return "I can't stop listening to this new indie rock band. Their music is so refreshing!";
-  } else if (subreddit.name.toLowerCase().includes('photography')) {
+  } else if (subreddit.name.toLowerCase().includes("photography")) {
     return "Wow, these landscape photos are breathtaking! The photographer really knows how to capture natural beauty.";
-  } else if (subreddit.name.toLowerCase().includes('movies')) {
+  } else if (subreddit.name.toLowerCase().includes("movies")) {
     return "The cinematography in this classic film is unparalleled. It's a timeless masterpiece.";
-  } else if (subreddit.name.toLowerCase().includes('food')) {
+  } else if (subreddit.name.toLowerCase().includes("food")) {
     return "This recipe looks delicious! I can't wait to try it out this weekend.";
-  } else if (subreddit.name.toLowerCase().includes('fitness')) {
+  } else if (subreddit.name.toLowerCase().includes("fitness")) {
     return "Does anyone have tips for staying motivated to work out regularly?";
-  } else if (subreddit.name.toLowerCase().includes('travel')) {
+  } else if (subreddit.name.toLowerCase().includes("travel")) {
     return "I recently visited Japan and had an amazing time exploring Tokyo. Can't wait to go back!";
   } else {
     return faker.lorem.sentence();
@@ -621,11 +621,11 @@ async function clearCollections() {
 }
 
 async function updateSubredditsWithPosts(subreddits, posts) {
-   for (const subreddit of subreddits) {
-     // Clear existing posts in the subreddit
-     subreddit.posts = [];
-     await subreddit.save();
-   }
+  for (const subreddit of subreddits) {
+    // Clear existing posts in the subreddit
+    subreddit.posts = [];
+    await subreddit.save();
+  }
   for (const post of posts) {
     const subredditIndex = faker.datatype.number({
       min: 0,
