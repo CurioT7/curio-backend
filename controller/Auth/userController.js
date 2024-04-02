@@ -317,6 +317,12 @@ async function changePassword(req, res) {
         .status(400)
         .json({ message: "Password doesn't meet the requirements" });
     }
+    if (oldPassword === password) {
+      return res.status(400).json({
+        success: false,
+        message: "New password cannot be the same as the old password",
+      });
+    }
 
     user.password = password;
     await user.save();
