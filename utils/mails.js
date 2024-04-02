@@ -48,7 +48,9 @@ async function resetPasswordMail(email, token) {
     html: `<h1>Password Reset</h1> 
         <p> Password reset link for your account</p>
         <br>
-        <p>Click <a href="http://localhost:3000/reset-password/${token}">here</a> to reset your password</p>`,
+        <p>Click <a href="${
+          process.env.VITE_FRONTEND_HOST || "http://localhost:3000"
+        }/resetpass/${token}">here</a> to reset your password</p>`,
   };
   await sendMail(mailOptions);
 }
