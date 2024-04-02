@@ -34,13 +34,13 @@ router.post("/me/friends", friendsController.friendRequest);
 
 /**
  * Route to cancel a friend request.
- * @name DELETE /me/friends/:username
+ * @name PATCH /me/friends/:username
  * @function
  * @memberof module:routes/friends
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-router.delete("/me/friends", friendsController.unFriendRequest);
+router.patch("/me/friends", friendsController.unFriendRequest);
 
 /**
  * Route to get user information.
