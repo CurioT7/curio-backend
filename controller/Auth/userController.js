@@ -270,6 +270,7 @@ async function resetPassword(req, res) {
     }
 
     user.password = password;
+    user.reset_token = null;
     await user.save();
     return res.status(200).json({
       success: true,
