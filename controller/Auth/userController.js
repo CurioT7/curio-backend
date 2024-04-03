@@ -10,7 +10,11 @@ const brypt = require("bcrypt");
 require("dotenv").config();
 require("../../passport/passport.js");
 
-const { generateToken, verifyToken } = require("../../utils/tokens");
+const {
+  generateToken,
+  verifyToken,
+  generateTimedToken,
+} = require("../../utils/tokens");
 const { comparePassword } = require("../../utils/passwords");
 const {
   resetPasswordMail,
@@ -173,7 +177,7 @@ async function forgotPassword(req, res) {
     });
   }
   //generate token
-  const token = await generateToken(user._id);
+  const token = await generateTimedToken(user._id, "1h");
   user.reset_token = token;
   user.save();
 
@@ -249,7 +253,7 @@ async function resetPassword(req, res) {
         message: "User not found",
       });
     }
-    if(token !== user.reset_token){
+    if (token !== user.reset_token) {
       return res.status(401).json({
         success: false,
         message: "Invalid or expired token",
