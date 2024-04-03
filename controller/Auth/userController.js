@@ -174,6 +174,8 @@ async function forgotPassword(req, res) {
   }
   //generate token
   const token = await generateToken(user._id);
+  user.reset_token = token;
+  user.save();
 
   //send email to user
   try {
@@ -247,9 +249,12 @@ async function resetPassword(req, res) {
         message: "User not found",
       });
     }
-
-    console.log(password);
-    console.log(user.password);
+    if(token !== user.reset_token){
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired token",
+      });
+    }
 
     //compare passwords
     const isMatch = await comparePassword(password, user.password);

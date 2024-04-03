@@ -190,6 +190,11 @@ const userSchema = new mongoose.Schema({
       ref: "Post",
     },
   ],
+  reset_token: { 
+     type: String,
+    }
+  
+  
 });
 
 /**
