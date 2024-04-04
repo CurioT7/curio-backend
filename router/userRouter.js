@@ -206,4 +206,6 @@ router.post("/save", contentManagementController.save);
 
 router.post("/unsave", contentManagementController.unsave);
 
+router.get("/saved_categories", contentManagementController.saved_categories);
+
 module.exports = router;

@@ -182,7 +182,7 @@ async function unsave(req,res){
  * @async
  */
 
-async function getSaved(req,res){
+async function saved_categories(req,res){
   const token = req.headers.authorization.split(" ")[1];
   const decoded = await verifyToken(token);
   if (!decoded) {
@@ -205,4 +205,4 @@ async function getSaved(req,res){
   }
 }
 
-module.exports = { hidePost, unhidePost, save, unsave, getSaved };
+module.exports = { hidePost, unhidePost, save, unsave, saved_categories };
