@@ -34,6 +34,7 @@ async function getMe(req, res) {
       language: userExists.language || "N/A",
       email: userExists.email || "N/A",
       isVerified: userExists.isVerified,
+      createdPassword: userExists.createdPassword,
     };
 
     res.json(response);

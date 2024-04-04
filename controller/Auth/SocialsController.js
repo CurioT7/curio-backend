@@ -31,6 +31,7 @@ async function webSignup(userInfo, socialMediaType) {
       password: password,
       socialMediaType: socialMediaType,
       isVerified: true,
+      createdPassword: false,
     };
     if (socialMediaType === "google") {
       newUser.googleId = userInfo.user_id;
