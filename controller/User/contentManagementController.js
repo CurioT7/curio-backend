@@ -1,5 +1,6 @@
 User = require("../../models/userModel");
 Post = require("../../models/postModel");
+Comment = require("../../models/commentModel");
 const { verifyToken } = require("../../utils/tokens");
 
 async function hidePost(req, res) {
@@ -195,9 +196,35 @@ async function saved_categories(req,res){
         .status(404)
         .json({ success: false, message: "User not found" });
     }
+    post = await Post.find({ _id: { $in: user.savedItems } });
+    comment = await Comment.find({ _id: { $in: user.savedItems } });
     return res
       .status(200)
-      .json({ success: true, savedItems: user.savedItems });
+      .json({ success: true, savedPosts: post, savedComments: comment });
+}
+catch (error) {
+  return res
+    .status(500)
+    .json({ success: false, message: "Internal server error"});
+}
+}
+async function hidden(req,res){
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    post = await Post.find({ _id: { $in: user.hiddenPosts } });
+    return res
+      .status(200)
+      .json({ success: true, hiddenPosts: post });
   } catch (error) {
     return res
       .status(500)
@@ -205,4 +232,4 @@ async function saved_categories(req,res){
   }
 }
 
-module.exports = { hidePost, unhidePost, save, unsave, saved_categories };
+module.exports = { hidePost, unhidePost, save, unsave, saved_categories, hidden };
