@@ -76,4 +76,59 @@ async function unhidePost(req, res) {
   }
 }
 
-module.exports = { hidePost, unhidePost };
+/**
+ * Save a post or comment
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Save a post or comment
+ */
+
+async function save(req,res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const category = req.body.category;
+  const id = req.body.id;
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    if(category === "post"){
+      if(user.savedItems.includes(id)){
+        return res
+        .status(400)
+        .json({ success: false, message: "Post already saved" });
+      }
+      user.savedItems.push(id);
+    }
+    else if(category === "comment"){
+      if(user.savedItems.includes(id)){
+        return res
+        .status(400)
+        .json({ success: false, message: "Comment already saved" });
+      }
+      user.savedItems.push(id);
+    }
+    else{
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid category" });
+    }
+    await user.save();
+    return res
+      .status(200)
+      .json({ success: true, message: "Saved successfully" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error"});
+  }
+}
+
+module.exports = { hidePost, unhidePost, save };

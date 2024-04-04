@@ -190,6 +190,18 @@ const userSchema = new mongoose.Schema({
       ref: "Post",
     },
   ],
+  savedItems: [ 
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Post",
+    },
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Comment",
+    }
+  ],
+
+
 });
 
 /**

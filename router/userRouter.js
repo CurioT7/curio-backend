@@ -182,4 +182,16 @@ router.post("/hide", contentManagementController.hidePost);
 
 router.post("/unhide", contentManagementController.unhidePost);
 
+/**
+ * Route to save a post or comment.
+ * @name POST/User/save
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
+router.post("/save", contentManagementController.save);
+
 module.exports = router;
