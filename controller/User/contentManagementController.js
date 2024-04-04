@@ -172,4 +172,37 @@ async function unsave(req,res){
   }
 }
 
-module.exports = { hidePost, unhidePost, save, unsave };
+/**
+ * Get saved posts and comments
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Get saved posts and comments
+ * @throws {Error} - If there is an error saving the user
+ * @async
+ */
+
+async function getSaved(req,res){
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    return res
+      .status(200)
+      .json({ success: true, savedItems: user.savedItems });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error"});
+  }
+}
+
+module.exports = { hidePost, unhidePost, save, unsave, getSaved };
