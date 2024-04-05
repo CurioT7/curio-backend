@@ -35,6 +35,7 @@ async function getMe(req, res) {
       email: userExists.email || "N/A",
       isVerified: userExists.isVerified,
       createdPassword: userExists.createdPassword,
+      connectedToGoogle: userExists.googleId ? true : false,
     };
 
     res.json(response);
