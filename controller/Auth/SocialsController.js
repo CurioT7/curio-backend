@@ -4,6 +4,7 @@ const User = require("../../models/userModel");
 const generator = require("generate-password");
 const jwt = require("jsonwebtoken");
 const { generatePassword } = require("../../utils/passwords");
+const {generateRandomUsername} = require("../../utils/username");
 const {
   generateToken,
   verifyFirebaseToken,
@@ -26,7 +27,7 @@ async function webSignup(userInfo, socialMediaType) {
     var password = generatePassword();
     var newUser = {
       //generate a random username
-      username: `user${Math.floor(Math.random() * 100000)}`,
+      username: generateRandomUsername(),
       email: userInfo.email,
       password: password,
       socialMediaType: socialMediaType,
