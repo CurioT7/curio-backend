@@ -4,6 +4,8 @@ const User = require("../../models/userModel");
 const generator = require("generate-password");
 const jwt = require("jsonwebtoken");
 const { generatePassword } = require("../../utils/passwords");
+const { generateRandomUsername } = require("../../utils/username");
+const { comparePassword } = require("../../utils/passwords");
 const {
   generateToken,
   verifyFirebaseToken,
@@ -26,7 +28,7 @@ async function webSignup(userInfo, socialMediaType) {
     var password = generatePassword();
     var newUser = {
       //generate a random username
-      username: `user${Math.floor(Math.random() * 100000)}`,
+      username: await generateRandomUsername(),
       email: userInfo.email,
       password: password,
       socialMediaType: socialMediaType,
@@ -116,6 +118,7 @@ async function connectWithGoogle(req, res) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
   }
   const googleToken = req.body.token;
+  const { password } = req.body.password;
   try {
     const response = await verifyGoogleToken(googleToken);
     if (response.status === 200) {
@@ -127,6 +130,17 @@ async function connectWithGoogle(req, res) {
         });
       }
       user = await User.findOne({ _id: decoded.userId });
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+      const isMatch = await comparePassword(password, user.password);
+      if (!isMatch) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid password" });
+      }
       user.googleId = response.data.user_id;
       await user.save();
       res.status(200).json({
