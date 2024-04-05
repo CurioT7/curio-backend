@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema({
   googleId: {
     type: String,
     trim: true,
+    default: null,
   },
   username: {
     type: String,
