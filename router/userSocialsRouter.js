@@ -20,6 +20,8 @@ router.get(
 
 router.post("/google/connect", webSocialsController.connectWithGoogle);
 
+router.post("/google/disconnect", webSocialsController.disconnectGoogle);
+
 router.get(
   "/google/connect/callback",
   passport.authenticate("google-connect"),
