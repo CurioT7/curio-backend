@@ -116,9 +116,11 @@ const generateRandomUsername = async () => {
   const noun = nouns[Math.floor(Math.random() * nouns.length)];
   const number = Math.floor(Math.random() * 9000) + 1000; // Generates a 4-digit number
   const username = `${adjective}_${noun}_${number}`;
-  if (usernameExists(username)) return generateRandomUsername();
+  // Check if the username exists asynchronously
+  const exists = await usernameExists(username);
+  if (exists) return generateRandomUsername();
 
-  return `${adjective}_${noun}_${number}`;
+  return username;
 };
 
 module.exports = { usernameExists, generateRandomUsername };
