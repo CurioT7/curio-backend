@@ -86,7 +86,8 @@ const googleAuth = async (req, res) => {
     const response = await verifyGoogleToken(token);
     if (response.status === 200) {
       let user = await User.findOne({ email: response.data.email });
-      if (!user) {
+      //if user doesn't exist or googleId is not set, create a new user
+      if (!user || !user.googleId) {
         await webSignup(response.data, "google");
       }
       user = await User.findOne({ email: response.data.email });
