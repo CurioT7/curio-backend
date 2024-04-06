@@ -271,13 +271,92 @@ async function getBestPosts(req, res) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
+async function setSuggestedSort(req, res) {
+  try {
+    const { suggestedSort } = req.body;
+    const subredditName = decodeURIComponent(req.params.subreddit);
+
+    // Find the subreddit by name
+    const subreddit = await Subreddit.findOne({ name: subredditName });
+
+    // If subreddit not found, return error
+    if (!subreddit) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subreddit not found" });
+    }
+
+    // Set the suggested sort
+    subreddit.suggestedSort = suggestedSort;
+    await subreddit.save();
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Suggested sort updated successfully" });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+/**
+ * Get the top posts for every subreddit that the user follows.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The top posts for each subreddit.
+ */
+async function getTopPostsForUser(req, res) {
+  try {
+    const username = req.body.username; // Assuming username is directly provided in the request body
+    const user = await User.findOne({ username }).populate("subreddits");
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const topPostsBySubreddit = [];
+    // const topPosts = [];
+
+    for (const subreddit of user.subreddits) {
+      console.log("subreddit", subreddit)
+      const topPosts= await Post.find({ linkedSubreddit: subreddit.subreddit }).sort(
+        { upvotes: -1 },
+      );
+      // console.log(user.subreddits)
+      //   console.log("topPosts", topPosts);
+
+      if (topPosts.length > 0) {
+        topPostsBySubreddit.push({
+          subreddit: subreddit.name,
+          posts: topPosts,
+        });
+      } else {
+        // Handle the case when no top posts are found for the subreddit
+        topPostsBySubreddit.push({ subreddit: subreddit.name, posts: [] });
+      }
+    }
+
+    return res.status(200).json({ success: true, topPostsBySubreddit });
+  } catch (error) {
+    console.error("Error fetching top posts:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
 
 module.exports = {
   randomPost,
   getTopPosts,
   newPosts,
-  hotPosts, 
+  hotPosts,
   mostComments,
   getTopPostsbytime,
   getBestPosts,
+  setSuggestedSort,
+  getTopPostsForUser,
 };
