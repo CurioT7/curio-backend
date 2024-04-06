@@ -44,9 +44,8 @@ async function getCommunitiesByCategory(req, res) {
 async function getRandomCommunities(req, res) {
   try {
     // Fetch all distinct categories from the database
-    console.log("requesting DB")
     const categories = await Subreddit.distinct("category");
-    console.log("receiving response from DB")
+
     if (categories.length === 0) {
       return res
         .status(404)
