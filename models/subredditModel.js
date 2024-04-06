@@ -137,10 +137,6 @@ const subredditSchema = new Schema({
     type: Boolean,
     default: true,
   },
-  role: {
-    type: String,
-    enum: ["moderator", "creator", "member"],
-  },
   members: [
     {
       username: {
@@ -161,6 +157,11 @@ const subredditSchema = new Schema({
       },
     },
   ],
+  suggestedSort: {
+    type: String,
+    default: "hot",
+    enum: ["hot", "new", "top", "mostComments"],
+  },
 });
 /**
  * Creates a model for the Subreddit schema.

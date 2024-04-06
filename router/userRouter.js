@@ -13,7 +13,7 @@ const passport = require("passport");
 const userController = require("../controller/Auth/userController");
 const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
-const contentManagementController = require("../controller/User/ContentManagementController");
+const contentManagementController = require("../controller/User/contentManagementController");
 
 /**
  * Route to sign up a new user.
@@ -181,5 +181,25 @@ router.post("/hide", contentManagementController.hidePost);
  */
 
 router.post("/unhide", contentManagementController.unhidePost);
+/**
+ * Route to spoiler a post.
+ * @name POST/User/spoil
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+router.post("/spoil", contentManagementController.spoilerPost);
+/**
+ * Route to unspoiler a post.
+ * @name POST/User/unspoil
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+router.post("/unspoil", contentManagementController.unspoilerPost);
 
 module.exports = router;
