@@ -2,19 +2,10 @@ version: "3"
 services:
   api:
     build:
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
       context: .
     ports:
       - "3000:3000"
     volumes:
       - /home/node/app/node_modules
       - .:/home/node/app
-  tests:
-    stdin_open: true
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    volumes:
-      - /home/node/app/node_modules
-      - .:/home/node/app
-    command: [ "npm", "run", "test" ]
