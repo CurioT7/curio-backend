@@ -96,7 +96,25 @@ router.get("/best", ListingController.getBestPosts);
  * @returns {object} Express router instance.
  */
 router.post("/r/:subreddit/suggestedSort", ListingController.setSuggestedSort);
-
+/**
+ * Express route for getting the top posts for a user.
+ * @name GET /top
+ * @function
+ * @memberof module:routes
+ * @param {string} path - The URL path for the route ("/top").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ */
 router.get("/top", ListingController.getTopPostsForUser);
+/**
+ * Express route for getting the new posts for a user.
+ * @name GET /new
+ * @function
+ * @memberof module:routes
+ * @param {string} path - The URL path for the route ("/new").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+*/
+router.get("/new", ListingController.getNewPostsForUser);
 
 module.exports = router;

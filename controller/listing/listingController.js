@@ -348,7 +348,46 @@ async function getTopPostsForUser(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
+async function getNewPostsForUser(req, res) {
+  try {
+    const username = req.body.username; // Assuming username is directly provided in the request body
+    const user = await User.findOne({ username }).populate("subreddits");
 
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const newPostsBySubreddit = [];
+    // const topPosts = [];
+
+    for (const subreddit of user.subreddits) {
+      console.log("subreddit", subreddit);
+      const newPosts = await Post.find({
+        linkedSubreddit: subreddit.subreddit,
+      }).sort({ createdAt: -1 });
+      
+
+      if (newPosts.length > 0) {
+        newPostsBySubreddit.push({
+          subreddit: subreddit.name,
+          posts: newPosts,
+        });
+      } else {
+        // Handle the case when no top posts are found for the subreddit
+        newPostsBySubreddit.push({ subreddit: subreddit.name, posts: [] });
+      }
+    }
+
+    return res.status(200).json({ success: true, newPostsBySubreddit });
+  } catch (error) {
+    console.error("Error fetching top posts:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
 module.exports = {
   randomPost,
   getTopPosts,
@@ -359,4 +398,5 @@ module.exports = {
   getBestPosts,
   setSuggestedSort,
   getTopPostsForUser,
+  getNewPostsForUser,
 };
