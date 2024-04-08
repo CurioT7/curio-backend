@@ -198,6 +198,7 @@ async function getTopCommunities(req, res) {
 
   try {
     const skip = (page - 1) * limit;
+    const totalCommunitiesCount = await Community.countDocuments();
     const communities = await Community.aggregate([
       {
         $project: {
@@ -211,7 +212,7 @@ async function getTopCommunities(req, res) {
       { $limit: limit },
     ]);
 
-    res.status(200).json({ success: true, communities });
+    res.status(200).json({ success: true, totalCommunitiesCount, communities });
   } catch (error) {
     console.error("Error fetching communities:", error);
     res
