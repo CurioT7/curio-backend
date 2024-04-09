@@ -2,10 +2,29 @@ User = require("../../models/userModel");
 Post = require("../../models/postModel");
 const { verifyToken } = require("../../utils/tokens");
 
+async function verifyHeadertoken(req, res) {
+  try {
+    //verify that token is passed in header using ternary operator
+    const token =
+      req.headers && req.headers.authorization
+        ? req.headers.authorization.split(" ")[1]
+        : res.status(401).json({ success: false, message: "Token not found" });
+    //verify token
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    return decoded;
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Error verifying token" });
+  }
+}
+
 async function hidePost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
   const postId = req.body.postId;
-  const decoded = await verifyToken(token);
+  const decoded = await verifyHeadertoken(req, res);
   if (!decoded) {
     return res.status(401).json({ message: "Unauthorized" });
   }
