@@ -197,6 +197,16 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  sharedPosts: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Post",
+      title: String,
+      isSpoiler: Boolean,
+      isNSFW: Boolean,
+      sendNotifications: Boolean,
+    },
+  ],
 });
 
 /**
