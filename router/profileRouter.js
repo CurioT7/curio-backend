@@ -82,4 +82,5 @@ router.get("/:username/overview", profileController.getOverviewInformation);
  */
 router.get("/:username/communities", profileController.getJoinedCommunities);
 
+
 module.exports = router;

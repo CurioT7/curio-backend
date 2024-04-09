@@ -182,4 +182,52 @@ router.post("/hide", contentManagementController.hidePost);
 
 router.post("/unhide", contentManagementController.unhidePost);
 
+/**
+ * Route to save a post or comment.
+ * @name POST/User/save
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
+router.post("/save", contentManagementController.save);
+
+/*
+ * Route to unsave a post or comment.
+ * @name POST/User/unsave
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
+router.post("/unsave", contentManagementController.unsave);
+
+/**
+ * Route to get saved posts and comments.
+ * @name GET/User/saved_categories
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
+router.get("/saved_categories", contentManagementController.saved_categories);
+
+/**
+ * Route to get hidden posts.
+ * @name GET/User/hidden
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
+router.get("/hidden", contentManagementController.hidden);
+
 module.exports = router;

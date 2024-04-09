@@ -191,6 +191,16 @@ const userSchema = new mongoose.Schema({
       ref: "Post",
     },
   ],
+  savedItems: [ 
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Post",
+    },
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Comment",
+    }
+  ],
   reset_token: {
     type: String,
   },
@@ -198,6 +208,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+
 });
 
 /**
