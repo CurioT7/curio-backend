@@ -4,6 +4,8 @@ const User = require("../../models/userModel");
 const generator = require("generate-password");
 const jwt = require("jsonwebtoken");
 const { generatePassword } = require("../../utils/passwords");
+const { generateRandomUsername } = require("../../utils/username");
+const { comparePassword } = require("../../utils/passwords");
 const {
   generateToken,
   verifyFirebaseToken,
@@ -26,11 +28,12 @@ async function webSignup(userInfo, socialMediaType) {
     var password = generatePassword();
     var newUser = {
       //generate a random username
-      username: `user${Math.floor(Math.random() * 100000)}`,
+      username: await generateRandomUsername(),
       email: userInfo.email,
       password: password,
       socialMediaType: socialMediaType,
       isVerified: true,
+      createdPassword: false,
     };
     if (socialMediaType === "google") {
       newUser.googleId = userInfo.user_id;
@@ -82,11 +85,12 @@ const googleAuth = async (req, res) => {
   try {
     const response = await verifyGoogleToken(token);
     if (response.status === 200) {
-      let user = await User.findOne({ email: response.data.email });
+      let user = await User.findOne({ googleId: response.data.user_id });
+      //if user doesn't exist or googleId is not set, create a new user
       if (!user) {
         await webSignup(response.data, "google");
       }
-      user = await User.findOne({ email: response.data.email });
+      user = await User.findOne({ googleId: response.data.user_id });
       const accessToken = await generateToken(user._id);
       res.status(200).json({ success: true, accessToken });
     } else {
@@ -115,6 +119,7 @@ async function connectWithGoogle(req, res) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
   }
   const googleToken = req.body.token;
+  const { password } = req.body.password;
   try {
     const response = await verifyGoogleToken(googleToken);
     if (response.status === 200) {
@@ -126,6 +131,17 @@ async function connectWithGoogle(req, res) {
         });
       }
       user = await User.findOne({ _id: decoded.userId });
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+      const isMatch = await comparePassword(password, user.password);
+      if (!isMatch) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid password" });
+      }
       user.googleId = response.data.user_id;
       await user.save();
       res.status(200).json({
@@ -141,10 +157,50 @@ async function connectWithGoogle(req, res) {
   }
 }
 
+async function disconnectGoogle(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  try {
+    if (!decoded) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    const { password } = req.body;
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    const isMatch = await comparePassword(password, user.password);
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid password" });
+    }
+    if (user.googleId === null) {
+      return res.status(400).json({
+        success: false,
+        message: "Google account is not connected",
+      });
+    }
+    user.googleId = null;
+    await user.save();
+    res.status(200).json({
+      success: true,
+      message: "Google account disconnected successfully",
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ success: false, message: "Error disconnecting account" });
+  }
+}
+
 module.exports = {
   webSignup,
   googleCallbackHandler,
   googleAuth,
   googleConnectCallbackHandler,
   connectWithGoogle,
+  disconnectGoogle,
 };

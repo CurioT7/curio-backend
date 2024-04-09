@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema({
   googleId: {
     type: String,
     trim: true,
+    default: null,
   },
   username: {
     type: String,
@@ -200,7 +201,13 @@ const userSchema = new mongoose.Schema({
       ref: "Comment",
     }
   ],
-
+  reset_token: {
+    type: String,
+  },
+  createdPassword: {
+    type: Boolean,
+    default: true,
+  },
 
 });
 

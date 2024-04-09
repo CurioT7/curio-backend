@@ -21,6 +21,10 @@ async function generateToken(userId) {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "24h" });
 }
 
+async function generateTimedToken(userId, time) {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: time });
+}
+
 const generateTestToken = async (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: "90d",
@@ -81,4 +85,5 @@ module.exports = {
   verifyGoogleToken,
   refreshToken,
   generateTestToken,
+  generateTimedToken,
 };
