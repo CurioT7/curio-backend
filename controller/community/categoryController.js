@@ -20,13 +20,6 @@ async function getCommunitiesByCategory(req, res) {
     // Query the database to find communities belonging to the specified category
     const communities = await Subreddit.find({ category: category });
 
-    if (communities.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No communities found for the specified category",
-      });
-    }
-
     res.status(200).json({ success: true, communities: communities });
   } catch (error) {
     console.error(error);
