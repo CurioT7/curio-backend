@@ -7,9 +7,7 @@
 
 const express = require("express");
 const router = express.Router();
-const ProfileController = require("../controller/profile/profileController");
-
-const profileController = new ProfileController();
+const profileController = require("../controller/profile/profileController");
 
 /**
  * Route serving user posts retrieval.
@@ -39,7 +37,7 @@ router.get("/:username/comments", profileController.getCommentsByUser);
  * @param {string} path - Express path.
  * @param {callback} middleware - Express middleware.
  */
-router.get("/:username/upvoted", profileController.getUpvotedContent);
+router.get("/upvoted", profileController.getUpvotedContent);
 
 /**
  * Route serving retrieval of downvoted comments and posts made by a specific user.
@@ -49,7 +47,7 @@ router.get("/:username/upvoted", profileController.getUpvotedContent);
  * @param {string} path - Express path.
  * @param {callback} middleware - Express middleware.
  */
-router.get("/:username/downvoted", profileController.getDownvotedContent);
+router.get("/downvoted", profileController.getDownvotedContent);
 
 /**
  * Get information about a user.
