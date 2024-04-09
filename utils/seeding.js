@@ -25,7 +25,11 @@ async function seedUsers(n = 10) {
       password: faker.internet.password(),
       googleId: faker.datatype.uuid(),
       isVerified: faker.datatype.boolean(),
-      gender: faker.random.arrayElement(["male", "female", "other"]),
+      gender: faker.random.arrayElement([
+        "male",
+        "female",
+        "i prefer not to say",
+      ]),
       language: faker.random.locale(),
       cakeDay: formattedCakeDay,
       goldAmount: faker.datatype.number(),
@@ -324,7 +328,6 @@ async function seedSubreddits(n = 5, users) {
       max: themes.length - 1,
     });
     let name = `${themes[themeIndex]} ${faker.lorem.word()}`;
-
     // Ensure uniqueness of the subreddit name
     let isUnique = false;
     while (!isUnique) {
@@ -336,6 +339,8 @@ async function seedSubreddits(n = 5, users) {
         name = `${name}-${faker.datatype.uuid().substring(0, 2)}`;
       }
     }
+    const maxLength = 21;
+    const truncatedName = name.substring(0, maxLength);
     const theme = themes[themeIndex];
     let description = "";
 
@@ -387,7 +392,7 @@ async function seedSubreddits(n = 5, users) {
         break;
     }
     const subreddit = new Subreddit({
-      name: name,
+      name: truncatedName,
       description: description,
       createdAt: faker.date.past(),
       creator:
@@ -471,6 +476,7 @@ async function seedPosts(n = 20, users, subreddits) {
       awards: faker.datatype.number(),
       media: faker.internet.url(),
       link: faker.internet.url(),
+      isSaved: faker.datatype.boolean(),
       isDraft: faker.datatype.boolean(),
     });
     // Calculate karma for the post using the virtual property
@@ -642,10 +648,18 @@ async function updateSubredditsWithPosts(subreddits, posts) {
 
 async function updateUserData(users, posts, comments, subreddits) {
   for (const user of users) {
-    if (!posts || posts.length === 0 || !comments || comments.length === 0) {
-      console.error("Posts or comments are empty or undefined.");
+    if (
+      !posts ||
+      posts.length === 0 ||
+      !comments ||
+      comments.length === 0 ||
+      !subreddits ||
+      subreddits.length === 0
+    ) {
+      console.error("Posts, comments, or subreddits are empty or undefined.");
       return;
     }
+
     // Update user posts
     const userPosts = await Post.find({ authorName: user.username }).select(
       "_id"
@@ -658,6 +672,7 @@ async function updateUserData(users, posts, comments, subreddits) {
     }).select("_id");
     user.comments = userComments.map((comment) => comment._id);
 
+    // Upvotes and downvotes are chosen randomly for demonstration
     const randomPostIndex = faker.datatype.number({
       min: 0,
       max: posts.length - 1,
@@ -666,18 +681,16 @@ async function updateUserData(users, posts, comments, subreddits) {
       min: 0,
       max: comments.length - 1,
     });
-
     user.upvotes.push({
       itemId: posts[randomPostIndex]._id,
       itemType: "Post",
     });
-
     user.downvotes.push({
       itemId: comments[randomCommentIndex]._id,
       itemType: "Comment",
     });
 
-    // Link followers and followings to existing users
+    // For followers and followings, use existing users randomly
     const randomFollowerIndex = faker.datatype.number({
       min: 0,
       max: users.length - 1,
@@ -686,23 +699,37 @@ async function updateUserData(users, posts, comments, subreddits) {
       min: 0,
       max: users.length - 1,
     });
-
     user.followers.push(users[randomFollowerIndex]._id);
     user.followings.push(users[randomFollowingIndex]._id);
 
-    // Link subreddits to users
-    const randomSubredditIndex = faker.datatype.number({
-      min: 0,
-      max: subreddits.length - 1,
-    });
-    user.subreddits.push({
-      subreddit: subreddits[randomSubredditIndex]._id,
-      role: faker.random.arrayElement(["moderator", "creator", "member"]),
-    });
+    // Clear existing user subreddits before adding new ones to avoid duplicates
+    user.subreddits = [];
+
+    // Assign user to multiple subreddits (e.g., 2 for this example) with different roles
+    for (let i = 0; i < 2; i++) {
+      const randomSubredditIndex = faker.datatype.number({
+        min: 0,
+        max: subreddits.length - 1,
+      });
+      const selectedSubreddit = subreddits[randomSubredditIndex];
+
+      // Prevent duplicate subreddit assignments
+      if (
+        !user.subreddits.some(
+          (sub) => sub.subreddit.toString() === selectedSubreddit._id.toString()
+        )
+      ) {
+        user.subreddits.push({
+          subreddit: selectedSubreddit._id,
+          role: faker.random.arrayElement(["moderator", "member"]),
+        });
+      }
+    }
 
     await user.save();
   }
 }
+
 
 async function updatePostsWithComments(posts, comments) {
   // This assumes a many-to-one relationship (many comments can belong to one post)
