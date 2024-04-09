@@ -234,7 +234,7 @@ async function getTopPostsbytime(req, res) {
   }
 }
 /**
- * Retrieves the best posts based on the proportion of upvotes to downvotes.
+ * Sorts posts based on the proportion of upvotes to downvotes.
  * @async
  * @param {Object} req - The Express request object.
  * @param {Object} res - The Express response object.
@@ -242,28 +242,25 @@ async function getTopPostsbytime(req, res) {
  */
 async function getBestPosts(req, res) {
   try {
-    // Fetch all posts from the database
-    const posts = await Post.find({});
-
-     if (posts.length === 0) {
-       return res.status(404).json({
-         success: false,
-         message: "No posts found in the database",
-       });
-     }
-    
-    // Sort the posts using the best algorithm
-    const sortedPosts = posts.sort((a, b) => {
-      const karmaA = a.upvotes - a.downvotes;
-      const karmaB = b.upvotes - b.downvotes;
-
-      // Calculate the proportion of upvotes to downvotes for each post
-      const proportionA = karmaA > 0 ? karmaA / (karmaA + a.downvotes) : 0;
-      const proportionB = karmaB > 0 ? karmaB / (karmaB + b.downvotes) : 0;
-
-      // Sort posts based on the proportion of upvotes to downvotes
-      return proportionB - proportionA;
-    });
+    const sortedPosts = await Post.aggregate([
+      {
+        $addFields: {
+          karma: {
+            $cond: {
+              if: { $gt: ["$upvotes", "$downvotes"] },
+              then: {
+                $divide: [
+                  { $subtract: ["$upvotes", "$downvotes"] },
+                  { $add: ["$upvotes", "$downvotes"] },
+                ],
+              },
+              else: 0,
+            },
+          },
+        },
+      },
+      { $sort: { karma: -1 } },
+    ]);
 
     res.status(200).json({ success: true, SortedPosts: sortedPosts });
   } catch (error) {
@@ -271,6 +268,7 @@ async function getBestPosts(req, res) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
+
 
 module.exports = {
   randomPost,
