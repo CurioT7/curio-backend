@@ -13,7 +13,7 @@ const passport = require("passport");
 const userController = require("../controller/Auth/userController");
 const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
-const contentManagementController = require("../controller/User/ContentManagementController");
+const contentManagementController = require("../controller/User/contentManagementController");
 
 /**
  * Route to sign up a new user.
@@ -195,14 +195,14 @@ router.post("/unhide", contentManagementController.unhidePost);
 router.post("/save", contentManagementController.save);
 
 /*
-    * Route to unsave a post or comment.
-    * @name POST/User/unsave
-    * @function
-    * @memberof module:UserRoutes
-    * @inner
-    * @param {string} path - Express route path
-    * @param {Function} middleware - Middleware function for route
-    */
+ * Route to unsave a post or comment.
+ * @name POST/User/unsave
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
 
 router.post("/unsave", contentManagementController.unsave);
 
