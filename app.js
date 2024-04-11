@@ -33,6 +33,7 @@ const app = express();
  */
 async function connectToDatabase() {
   try {
+    process.exit(3);
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
