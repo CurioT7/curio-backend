@@ -13,7 +13,7 @@ const passport = require("passport");
 const userController = require("../controller/Auth/userController");
 const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
-const contentManagementController = require("../controller/User/ContentManagementController");
+const contentManagementController = require("../controller/User/contentManagementController");
 
 /**
  * Route to sign up a new user.
