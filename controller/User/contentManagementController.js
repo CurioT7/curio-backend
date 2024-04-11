@@ -1,6 +1,7 @@
 User = require("../../models/userModel");
 Post = require("../../models/postModel");
 Comment = require("../../models/commentModel");
+Subreddit = require("../../models/subredditModel");
 const { verifyToken } = require("../../utils/tokens");
 const multer = require("multer");
 
@@ -230,7 +231,7 @@ async function hidden(req, res) {
   }
 }
 
-async function submitPost(req, res, user) {
+async function submitPostToProfile(req, res, user) {
   try {
     const post = new Post({
       title: req.body.title,
@@ -266,13 +267,14 @@ async function submitPostToSubreddit(req, res, user) {
       isNSFW: req.body.isNSFW,
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
-      linkedSubreddit: subreddit._id,
+      linkedSubreddit: subreddit,
     });
     await post.save();
     return res
       .status(201)
       .json({ success: true, message: "Post created successfully" });
   } catch (error) {
+    console.log(error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
@@ -297,7 +299,7 @@ async function submit(req, res) {
 
     // File upload successful, continue with submitting post
     if (destination === "profile") {
-      return await submitPost(req, res, user);
+      return await submitPostToProfile(req, res, user);
     } else if (destination === "subreddit") {
       return await submitPostToSubreddit(req, res, user);
     } else {
