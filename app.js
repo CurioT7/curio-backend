@@ -22,6 +22,7 @@ const profileRouter = require("./router/profileRouter");
 const listingRouter = require("./router/listingRouter");
 const searchRouter = require("./router/searchRouter");
 const categoryRouter = require("./router/categoryRouter");
+const postRouter = require("./router/postRouter");
 
 const cors = require("cors");
 
@@ -82,6 +83,7 @@ app.use("/api", categoryRouter);
 app.use("/user", profileRouter);
 
 app.use("/api", searchRouter);
+app.use("/api", postRouter);
 
 const PORT = process.env.PORT;
 const server = app.listen(PORT, () => {
