@@ -434,43 +434,49 @@ async function unlockItem(req, res) {
   }
 }
 
-// async function getItemInfo(req, res) {
-//   try {
-//     const token = req.headers.authorization.split(" ")[1];
+/**
+ * Retrieves information about a specific item based on its type.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The JSON response containing the item information.
+ */
+async function getItemInfo(req, res) {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
 
-//     const objectID = req.body.objectID;
-//     const objectType = req.body.objectType;
+    const objectID = req.body.objectID;
+    const objectType = req.body.objectType;
 
-//     const decoded = await verifyToken(token);
-//     if (!decoded) {
-//       return res.status(401).json({ message: "Unauthorized" });
-//     }
-//     const user = await User.findOne({ _id: decoded.userId });
-//     if (!user) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "User not found" });
-//     }
-//     if (objectType === "post")
-//     {
-//       const item = await Post.findOne({ _id: objectID });
-//     }
-//      if (objectType === "comment") {
-//        const item = await Comment.findOne({ _id: objectID });
-//      }
-//      if (objectType === "subreddit") {
-//        const item = await Subreddit.findOne({ _id: objectID });
-//      }
-//      if (!item) {
-//        return res
-//          .status(404)
-//          .json({ success: false, message: "Item not found" });
-//      }
-//   }
-//   catch {
-    
-//   }
-// }
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    let item; // Declare item using let to allow reassignment
+
+    if (objectType === "post") {
+      item = await Post.findOne({ _id: objectID });
+    }
+    else if (objectType === "comment") {
+      item = await Comment.findOne({ _id: objectID });
+    }
+    else if (objectType === "subreddit") {
+      item = await Subreddit.findOne({ _id: objectID });
+    }
+    if (!item) {
+      return res.status(404).json({ success: false, message: "Item not found" });
+    } else {
+      return res.status(200).json({ success: true, item });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ success: false, message: "Internal server error", error:error });
+  }
+}
+
 
 module.exports = {
   hidePost,
@@ -482,4 +488,5 @@ module.exports = {
   submit,
   lockItem,
   unlockItem,
+  getItemInfo,
 };

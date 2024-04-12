@@ -267,7 +267,7 @@ router.post(
 );
 
 /**
- * Route handler for locking a post item.
+ * Route for locking a post item.
  * @param {Object} req - The request object.
  * @param {Object} res - The response object.
  * @returns {Object} The JSON response indicating success or failure.
@@ -278,12 +278,19 @@ router.post(
 );
 
 /**
- * Route handler for unlocking a post item.
+ * Route for unlocking a post item.
  * @param {Object} req - The request object.
  * @param {Object} res - The response object.
  * @returns {Object} The JSON response indicating success or failure.
  */
 router.post("/unlock", contentManagementController.unlockItem);
 
+/**
+ * Route for retrieving information about a specific item.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The JSON response containing the item information or an error message.
+ */
+router.get("/info", contentManagementController.getItemInfo);
 
 module.exports = router;
