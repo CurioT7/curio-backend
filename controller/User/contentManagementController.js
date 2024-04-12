@@ -1,11 +1,22 @@
-User = require("../../models/userModel");
-Post = require("../../models/postModel");
-Comment = require("../../models/commentModel");
-Subreddit = require("../../models/subredditModel");
+const User = require("../../models/userModel");
+const Post = require("../../models/postModel");
+require("dotenv").config();
+const Comment = require("../../models/commentModel");
+const Subreddit = require("../../models/subredditModel");
 const { verifyToken } = require("../../utils/tokens");
 const multer = require("multer");
+const { s3, sendFileToS3, generateRandomId } = require("../../utils/s3-bucket");
+const PutObjectCommand = require("@aws-sdk/client-s3");
 
-const upload = multer({ dest: "uploads/" });
+/**
+ * Hide a post
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Hide a post
+ * @throws {Error} - If there is an error hiding the post
+ * @async
+ */
 
 async function hidePost(req, res) {
   const token = req.headers.authorization.split(" ")[1];
@@ -209,6 +220,16 @@ async function saved_categories(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
+
+/**
+ * Get hidden posts
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Get hidden posts
+ * @throws {Error} - If there is an error saving the user
+ * @async
+ */
 async function hidden(req, res) {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = await verifyToken(token);
@@ -231,7 +252,17 @@ async function hidden(req, res) {
   }
 }
 
-async function submitPostToProfile(req, res, user) {
+/**
+ * Submit a post
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Submit a post
+ * @throws {Error} - If there is an error saving the user
+ * @async
+ */
+
+async function submitPostToProfile(req, res, user, imageKey) {
   try {
     const post = new Post({
       title: req.body.title,
@@ -240,6 +271,7 @@ async function submitPostToProfile(req, res, user) {
       isNSFW: req.body.isNSFW,
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
+      media: imageKey,
     });
     await post.save();
     return res
@@ -252,7 +284,7 @@ async function submitPostToProfile(req, res, user) {
   }
 }
 
-async function submitPostToSubreddit(req, res, user) {
+async function submitPostToSubreddit(req, res, user, imageKey) {
   try {
     const subreddit = await Subreddit.findOne({ name: req.body.subreddit });
     if (!subreddit) {
@@ -268,6 +300,7 @@ async function submitPostToSubreddit(req, res, user) {
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
       linkedSubreddit: subreddit,
+      media: imageKey,
     });
     await post.save();
     return res
@@ -281,6 +314,16 @@ async function submitPostToSubreddit(req, res, user) {
   }
 }
 
+/**
+ * Submit a post
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Submit a post
+ * @throws {Error} - If there is an error saving the user
+ * @async
+ * @returns {Object} - A response object
+ */
 async function submit(req, res) {
   try {
     const token = req.headers.authorization.split(" ")[1];
@@ -296,12 +339,22 @@ async function submit(req, res) {
         .status(404)
         .json({ success: false, message: "User not found" });
     }
+    var imageKey;
 
-    // File upload successful, continue with submitting post
+    if (req.file) {
+      imageKey = await sendFileToS3(req, res);
+      if (!imageKey) {
+        return res.status(500).json({
+          success: false,
+          message: "Server Error: Cannot Upload Image",
+        });
+      }
+    }
+
     if (destination === "profile") {
-      return await submitPostToProfile(req, res, user);
+      return await submitPostToProfile(req, res, user, imageKey);
     } else if (destination === "subreddit") {
-      return await submitPostToSubreddit(req, res, user);
+      return await submitPostToSubreddit(req, res, user, imageKey);
     } else {
       return res
         .status(400)

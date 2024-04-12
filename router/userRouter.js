@@ -15,18 +15,11 @@ const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
 const contentManagementController = require("../controller/User/contentManagementController");
 
+
+
 // Set up multer middleware for file uploads
 const multer = require("multer");
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/"); // Specify the destination directory for uploaded files
-  },
-  filename: function (req, file, cb) {
-    // Generate a unique filename for the uploaded file
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + "-" + file.originalname);
-  },
-});
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
