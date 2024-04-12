@@ -268,11 +268,10 @@ async function getJoinedCommunities(req, res) {
   try {
     const user = await findUserByUsername(username);
 
-    // Get the user's joined/moderated communities from the subreddits field
-    const subredditIds = user.subreddits.map((sub) => sub.subreddit);
+    const subredditNames = user.subreddits.map((sub) => sub.subreddit);
 
     const communities = await Subreddit.find({
-      _id: { $in: subredditIds },
+      name: { $in: subredditNames }, 
     }).exec();
 
     return res.status(200).json({ success: true, communities });
@@ -283,6 +282,7 @@ async function getJoinedCommunities(req, res) {
       .json({ success: false, error: "Failed to fetch user communities" });
   }
 }
+
  
 
 module.exports = {
