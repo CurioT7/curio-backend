@@ -293,4 +293,15 @@ router.post("/unlock", contentManagementController.unlockItem);
  */
 router.get("/info", contentManagementController.getItemInfo);
 
+/**
+ * Route handler for casting a vote on a post or a comment.
+ * @name POST /vote
+ * @function
+ * @memberof module:routes/contentManagement
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @returns {Object} JSON response indicating success or failure.
+ */
+router.post("/vote", contentManagementController.castVote);
+
 module.exports = router;
