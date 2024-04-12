@@ -155,7 +155,7 @@ async function deleteComments(req, res) {
     return res.status(404).json({ message: "User not found" });
   }
   try {
-    const {commentId}  = req.body;
+    const commentId = decodeURIComponent(req.params.commentId);
     const comment = await Comment.findById(commentId);
 
     if (!comment) {

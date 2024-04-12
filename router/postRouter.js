@@ -13,6 +13,6 @@ router.patch("/updatecomments", postController.updatePostComments);
 router.post("/comments", postController.createComments);
 
 // Route to delete comments for a post.
-router.delete("/deletecomments", postController.deleteComments);
+router.delete("/deletecomments/:commentId", postController.deleteComments);
 
 module.exports = router;
