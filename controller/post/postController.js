@@ -12,9 +12,7 @@ const Comment = require("../../models/commentModel");
 const mongoose = require("mongoose");
 async function getPostComments(req, res) {
   try {
-    const postId = req.params.postId;
-
-    console.log("postId:", postId);
+    const postId = decodeURIComponent(req.params.postId);
 
     const post = await Post.findById(postId);
 
