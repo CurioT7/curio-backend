@@ -13,6 +13,7 @@ const {
   verifyGoogleToken,
 } = require("../../utils/tokens");
 const axios = require("axios");
+const { fi } = require("faker/lib/locales");
 
 /**
  * Sign up a user using web authentication with social media.
@@ -92,6 +93,11 @@ const googleAuth = async (req, res) => {
       }
       user = await User.findOne({ googleId: response.data.user_id });
       const accessToken = await generateToken(user._id);
+      if (user.gender === null) {
+        return res
+          .status(200)
+          .json({ success: true, accessToken, firstTime: true });
+      }
       res.status(200).json({ success: true, accessToken });
     } else {
       res.status(400).json({ success: false, message: "Token is invalid" });
