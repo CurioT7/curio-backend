@@ -13,9 +13,10 @@ const mongoose = require("mongoose");
 async function getPostComments(req, res) {
   try {
     const postId = req.params.postId;
-    const query = { "_id.$oid": postId };
 
-    const post = await Post.findOne();
+    console.log("postId:", postId);
+
+    const post = await Post.findById(postId);
 
     if (!post) {
       return res
