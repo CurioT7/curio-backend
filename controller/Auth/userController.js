@@ -70,7 +70,7 @@ async function signUp(req, res) {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  const { username, email, password } = req.body;
+  const { username, email, password, gender } = req.body;
   try {
     //validate email
     if (!validateEmail(email)) {
@@ -92,7 +92,13 @@ async function signUp(req, res) {
         .json({ message: "Password doesn't meet the requirements" });
     }
 
-    const user = new User({ username, email, password, isVerified: false });
+    const user = new User({
+      username,
+      email,
+      password,
+      isVerified: false,
+      gender,
+    });
     //save user to database
     await user.save();
 
