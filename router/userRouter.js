@@ -266,4 +266,24 @@ router.post(
   contentManagementController.submit
 );
 
+/**
+ * Route handler for locking a post item.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The JSON response indicating success or failure.
+ */
+router.post(
+  "/lock",
+  contentManagementController.lockItem
+);
+
+/**
+ * Route handler for unlocking a post item.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The JSON response indicating success or failure.
+ */
+router.post("/unlock", contentManagementController.unlockItem);
+
+
 module.exports = router;

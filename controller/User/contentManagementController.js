@@ -314,6 +314,164 @@ async function submit(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
+
+/**
+ * Locks a post item if the user has the necessary permissions.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The JSON response indicating success or failure.
+ */
+async function lockItem(req, res) {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    const itemID = req.body.itemID;
+    const item = await Post.findOneAndUpdate(
+      { _id: itemID },
+      { isLocked: true },
+      { new: true }
+    );
+    if (!item) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+    } else {
+      // Check if the user is a moderator or creator of the linked subreddit
+      const subredditOfPost = await Subreddit.findById(item.linkedSubreddit);
+
+      const subredditRole = user.subreddits.find(
+        (sub) => sub.subreddit === subredditOfPost.name
+      );
+      if (
+        !subredditRole ||
+        (subredditRole.role !== "moderator" && subredditRole.role !== "creator")
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "User is not authorized to lock posts in this subreddit",
+        });
+      }
+      else {
+        return res
+          .status(200)
+          .json({ success: true, message: "Post locked successfully" });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
+/**
+ * Unlocks a post item if the user has the necessary permissions.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The JSON response indicating success or failure.
+ */
+async function unlockItem(req, res) {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    const itemID = req.body.itemID;
+    const item = await Post.findOneAndUpdate(
+      { _id: itemID },
+      { isLocked: false},
+      { new: true }
+    );
+    if (!item) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+    } else {
+      // Check if the user is a moderator or creator of the linked subreddit
+      const subredditOfPost = await Subreddit.findById(item.linkedSubreddit);
+
+      const subredditRole = user.subreddits.find(
+        (sub) => sub.subreddit === subredditOfPost.name
+      );
+      if (
+        !subredditRole ||
+        (subredditRole.role !== "moderator" && subredditRole.role !== "creator")
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "User is not authorized to unlock posts in this subreddit",
+        });
+      } else {
+        return res
+          .status(200)
+          .json({ success: true, message: "Post unlocked successfully" });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
+// async function getItemInfo(req, res) {
+//   try {
+//     const token = req.headers.authorization.split(" ")[1];
+
+//     const objectID = req.body.objectID;
+//     const objectType = req.body.objectType;
+
+//     const decoded = await verifyToken(token);
+//     if (!decoded) {
+//       return res.status(401).json({ message: "Unauthorized" });
+//     }
+//     const user = await User.findOne({ _id: decoded.userId });
+//     if (!user) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+//     }
+//     if (objectType === "post")
+//     {
+//       const item = await Post.findOne({ _id: objectID });
+//     }
+//      if (objectType === "comment") {
+//        const item = await Comment.findOne({ _id: objectID });
+//      }
+//      if (objectType === "subreddit") {
+//        const item = await Subreddit.findOne({ _id: objectID });
+//      }
+//      if (!item) {
+//        return res
+//          .status(404)
+//          .json({ success: false, message: "Item not found" });
+//      }
+//   }
+//   catch {
+    
+//   }
+// }
+
 module.exports = {
   hidePost,
   unhidePost,
@@ -322,4 +480,6 @@ module.exports = {
   saved_categories,
   hidden,
   submit,
+  lockItem,
+  unlockItem,
 };
