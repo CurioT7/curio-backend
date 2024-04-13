@@ -209,6 +209,14 @@ async function editPostContent(req, res) {
     return res.status(404).json({ message: "User not found" });
   }
   try {
+    const { postId, content } = req.body;
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ success: false, message: "Post not found." });
+    }
+    post.content = content;
+    await post.save();
+    return res.status(200).json({ success: true, post });
 
   } catch (err) {
     console.log(err);

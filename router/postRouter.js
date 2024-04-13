@@ -18,4 +18,7 @@ router.delete("/deletecomments/:commentId", postController.deleteComments);
 // Route to delete a post.
 router.delete("/deletepost/:postId", postController.deletePost);
 
+// Route to edit post content.
+router.patch("/editusertext", postController.editPostContent);
+
 module.exports = router;
