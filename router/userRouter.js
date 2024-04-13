@@ -257,6 +257,16 @@ router.post(
   contentManagementController.submit
 );
 
-router.post("/share", contentManagementController.share);
+/**
+ * Route to delete a post.
+ * @name DELETE/User/delete
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ */
 
+router.post("/share", contentManagementController.sharePost);
+
+router.get("/share/:postId", contentManagementController.getPostLink);
 module.exports = router;
