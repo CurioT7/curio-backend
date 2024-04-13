@@ -172,10 +172,55 @@ async function deleteComments(req, res) {
   }
 }
 
+
+async function deletePost (req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const user = await User.findOne({ _id: decoded.userId });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  try {
+    const postId = req.params.postId;
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ success: false, message: "Post not found." });
+    } 
+    await post.deleteOne();
+    return res.status(200).json({ success: true, message: "Post deleted successfully." });
+  }
+  catch (err) {
+    console.log(err);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+}
+
+async function editPostContent(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const user = await User.findOne({ _id: decoded.userId });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  try {
+
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+}
+
 module.exports = {
    getPostComments,  
    updatePostComments, 
    createComments,
-  deleteComments
-
+   deleteComments, 
+   deletePost, 
+   editPostContent
   };

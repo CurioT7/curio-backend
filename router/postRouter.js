@@ -15,4 +15,7 @@ router.post("/comments", postController.createComments);
 // Route to delete comments for a post.
 router.delete("/deletecomments/:commentId", postController.deleteComments);
 
+// Route to delete a post.
+router.delete("/deletepost/:postId", postController.deletePost);
+
 module.exports = router;
