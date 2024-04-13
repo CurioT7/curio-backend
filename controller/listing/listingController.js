@@ -38,18 +38,16 @@ async function randomPost(req, res) {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 }
-
 /**
- * Get the top-viewed posts from a subreddit, or a random post if there are no top-viewed posts.
+ * Get posts from a subreddit based on the type of posts requested.
  * @async
- * @param {Object} req - The Express request object.
+ *  @param {Object} req - The Express request object.
  * @param {Object} res - The Express response object.
- * @returns {Promise<Object>} - The top-viewed post or a random post.
+ * @returns {Object} - The response object containing the posts.
  */
-async function getTopPosts(req, res) {
+async function getPosts(req, res) {
   try {
     const subredditName = decodeURIComponent(req.params.subreddit);
-    // Find the subreddit
     const subreddit = await Subreddit.findOne({ name: subredditName });
 
     if (!subreddit) {
@@ -58,135 +56,70 @@ async function getTopPosts(req, res) {
         .json({ success: false, message: "Subreddit not found" });
     }
 
-    // Find top-viewed posts sorted by upvotes in descending order
-    const topPosts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
-      upvotes: -1,
-    });
+    let posts = [];
 
-    if (topPosts.length > 0) {
-      // If top-viewed posts exist, increment views of the first post
-      for (const post of topPosts) {
-        await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } });
-      }
-      return res.status(200).json({ success: true, post: topPosts });
-    } else {
-      return res
-        .status(404)
-        .json({ success: false, message: "No top posts found" });
-    }
-  } catch (error) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Error getting top post" });
-  }
-}
-
-/**
- * Get the newest posts from a subreddit.
- * @async
- * @param {Object} req - The Express request object.
- * @param {Object} res - The Express response object.
- * @returns {Promise<Object>} - The newest posts.
- */
-
-async function newPosts(req, res) {
-  try {
-    const subredditName = decodeURIComponent(req.params.subreddit);
-    const subreddit = await Subreddit.findOne({ name: subredditName });
-    if (!subreddit) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Subreddit not found" });
+    switch (req.params.type) {
+      case "top":
+        posts = await getTopPosts(subreddit._id);
+        break;
+      case "new":
+        posts = await getNewPosts(subreddit._id);
+        break;
+      case "hot":
+        posts = await getHotPosts(subreddit._id);
+        break;
+      case "most_commented":
+        posts = await getMostCommentedPosts(subreddit._id);
+        break;
+      default:
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid post type" });
     }
 
-    const posts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
-      createdAt: -1,
-    });
-
-    for (const post of posts) {
-      await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } });
-    }
+    // Increment views for all fetched posts
+    await incrementViews(posts);
 
     return res.status(200).json({ success: true, posts });
   } catch (error) {
+    console.error("Error getting posts:", error);
     return res
-      .status(400)
-      .json({ success: false, message: "Error getting new posts" });
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 }
 
-/**
- * Get the hot posts from a subreddit.
- * @async
- * @param {Object} req - The Express request object.
- * @param {Object} res - The Express response object.
- * @returns {Promise<Object>} - The hot posts.
- */
-
-async function hotPosts(req, res) {
-  try {
-    const subredditName = decodeURIComponent(req.params.subreddit);
-    const subreddit = await Subreddit.findOne({ name: subredditName });
-    if (!subreddit) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Subreddit not found" });
-    }
-
-    const posts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
-      views: -1,
-    });
-
-    for (const post of posts) {
-      await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } });
-    }
-
-    return res.status(200).json({ success: true, posts });
-  } catch (error) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Error getting hot posts" });
-  }
+async function incrementViews(posts) {
+  const postIds = posts.map((post) => post._id);
+  await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 }
 
-/**
- * Get the posts with the most comments from a subreddit.
- * @async
- * @param {Object} req - The Express request object.
- * @param {Object} res - The Express response object.
- * @returns {Promise<Object>} - The posts with the most comments.
- */
+async function getTopPosts(subredditId) {
+  return await Post.find({ linkedSubreddit: subredditId }).sort({
+    upvotes: -1,
+  });
+}
 
-async function mostComments(req, res) {
-  try {
-    const subredditName = decodeURIComponent(req.params.subreddit);
-    const subreddit = await Subreddit.findOne({ name: subredditName });
+async function getNewPosts(subredditId) {
+  return await Post.find({ linkedSubreddit: subredditId }).sort({
+    createdAt: -1,
+  });
+}
 
-    if (!subreddit) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Subreddit not found" });
-    }
+async function getHotPosts(subredditId) {
+  return await Post.find({ linkedSubreddit: subredditId }).sort({ views: -1 });
+}
 
-    const posts = await Post.find({ linkedSubreddit: subreddit._id }).populate({
-      path: "comments",
-      select: "_id",
-    });
-    posts.forEach((post) => {
-      post.numComments = post.comments.length; // Number of comments is the length of the comments array
-    });
-
-    posts.sort((a, b) => b.numComments - a.numComments);
-
-    return res.status(200).json({ success: true, posts });
-  } catch (error) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Error getting posts with most comments",
-      });
-  }
+async function getMostCommentedPosts(subredditId) {
+  const posts = await Post.find({ linkedSubreddit: subredditId }).populate({
+    path: "comments",
+    select: "_id",
+  });
+  posts.forEach((post) => {
+    post.numComments = post.comments.length;
+  });
+  posts.sort((a, b) => b.numComments - a.numComments);
+  return posts;
 }
 
 /**
@@ -309,21 +242,25 @@ async function setSuggestedSort(req, res) {
   }
 }
 /**
- * Get the top posts for every subreddit that the user follows.
+ * Get posts from the subreddits that the user is subscribed to.
  * @async
  * @param {Object} req - The Express request object.
  * @param {Object} res - The Express response object.
- * @returns {Promise<Object>} - The top posts for each subreddit.
+ * @returns {Object} - The response object containing the posts by subreddit.
+ * @throws {Error} - If there is an error fetching the user or posts.
+ * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+ * @async
  */
-async function getTopPostsForUser(req, res) {
+async function getUserPosts(req, res) {
   try {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = await verifyToken(token);
     if (!decoded) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const username = decoded.username;
-    const user = await User.findOne({ username }).populate("subreddits");
+    const user = await User.findOne({ _id: decoded.userId }).populate(
+      "subreddits"
+    );
 
     if (!user) {
       return res
@@ -331,87 +268,62 @@ async function getTopPostsForUser(req, res) {
         .json({ success: false, message: "User not found" });
     }
 
-    const topPostsBySubreddit = [];
+    const { type } = req.params;
 
-    for (const subreddit of user.subreddits) {
-      const topPosts = await Post.find({
-        linkedSubreddit: subreddit.subreddit,
-      }).sort({
-        upvotes: -1,
-      });
-
-      if (topPosts.length > 0) {
-        topPostsBySubreddit.push({
-          subreddit: subreddit.name,
-          posts: topPosts,
-        });
-      } else {
-        topPostsBySubreddit.push({ subreddit: subreddit.name, posts: [] });
+    const fetchPosts = async (subreddit) => {
+      switch (type) {
+        case "top":
+          return Post.find({ linkedSubreddit: subreddit.subreddit })
+            .sort({ upvotes: -1 })
+            .then((posts) => {
+              return posts.map((post) => {
+                return {
+                  subreddit: subreddit.name,
+                  post: post,
+                };
+              });
+            });
+        case "new":
+          return Post.find({ linkedSubreddit: subreddit.subreddit })
+            .sort({ createdAt: -1 })
+            .then((posts) => {
+              return posts.map((post) => {
+                return {
+                  subreddit: subreddit.name,
+                  post: post,
+                };
+              });
+            });
+        default:
+          return Promise.reject("Invalid posts type");
       }
-    }
+    };
 
-    return res.status(200).json({ success: true, topPostsBySubreddit });
+    const subredditPosts = await Promise.all(user.subreddits.map(fetchPosts));
+
+    const flattenedPosts = subredditPosts.flat();
+
+    // Increment the views of all fetched posts by 1
+    await Promise.all(
+      flattenedPosts.map(({ post }) =>
+        Post.updateOne({ _id: post._id }, { $inc: { views: 1 } })
+      )
+    );
+
+    return res.status(200).json({ success: true, posts: flattenedPosts });
   } catch (error) {
-    console.error("Error fetching top posts for user:", error);
+    console.error("Error fetching user posts:", error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
   }
 }
 
-async function getNewPostsForUser(req, res) {
-  try {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    const username = decodedToken.username;
-    const user = await User.findOne({ username }).populate("subreddits");
-
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
-
-    const newPostsBySubreddit = [];
-
-    for (const subreddit of user.subreddits) {
-      const newPosts = await Post.find({
-        linkedSubreddit: subreddit.subreddit,
-      }).sort({
-        createdAt: -1,
-      });
-
-      if (newPosts.length > 0) {
-        newPostsBySubreddit.push({
-          subreddit: subreddit.name,
-          posts: newPosts,
-        });
-      } else {
-        newPostsBySubreddit.push({ subreddit: subreddit.name, posts: [] });
-      }
-    }
-
-    return res.status(200).json({ success: true, newPostsBySubreddit });
-  } catch (error) {
-    console.error("Error fetching new posts for user:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
-  }
-}
 module.exports = {
   randomPost,
-  getTopPosts,
-  newPosts,
-  hotPosts,
-  mostComments,
+  getPosts,
   getTopPostsbytime,
   getBestPosts,
   setSuggestedSort,
-  getTopPostsForUser,
-  getNewPostsForUser,
+  getUserPosts,
 };
