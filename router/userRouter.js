@@ -268,5 +268,15 @@ router.post(
 
 router.post("/share", contentManagementController.sharePost);
 
+/**
+ * Route to get a post link.
+ * @name GET/User/share/:postId
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ */
+
 router.get("/share/:postId", contentManagementController.getPostLink);
+
 module.exports = router;

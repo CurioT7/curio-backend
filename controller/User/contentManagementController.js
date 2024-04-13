@@ -369,6 +369,17 @@ async function submit(req, res) {
   }
 }
 
+/**
+ * Share a post to profile or subreddit
+ * @param {Object} user - User object
+ * @param {Object} crossPostData - Crosspost data
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Share a post to profile or subreddit
+ * @throws {Error} - If there is an error sharing the post
+ * @async
+ */
+
 async function shareCrossPost(user, crossPostData, res) {
   try {
     const post = await Post.findOne({ _id: crossPostData.postId });
@@ -436,6 +447,16 @@ async function sharePost(req, res) {
   const crossPostData = req.body;
   shareCrossPost(user, crossPostData, res );
 }
+
+/**
+ * Get post link
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Get post link
+ * @throws {Error} - If there is an error getting the post link
+ * @async
+ */
 
 async function getPostLink(req, res) {
   try{
