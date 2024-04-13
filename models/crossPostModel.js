@@ -3,6 +3,10 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const crossPostSchema = new Schema({
+  title: {
+    type: String,
+    required: true,
+  },
   linkedPost: {
     type: Schema.Types.ObjectId,
     ref: "Post",
@@ -12,10 +16,10 @@ const crossPostSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Subreddit",
   },
-  authorID: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
+  authorName: {
+    type: String,
     required: true,
+    ref: "User",
   },
   createdAt: {
     type: Date,
