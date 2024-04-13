@@ -125,16 +125,14 @@ async function connectWithGoogle(req, res) {
   try {
     const response = await verifyGoogleToken(googleToken);
     if (response.status === 200) {
-      let user = await User.findOne({ googleId: response.data.user_id });
+      let user = await User.findOne({ _id: decoded.userId });
 
-      if (user) {
+      if (user && user.googleId) {
         return res.status(400).json({
           success: false,
           message: "Google account already connected",
         });
       }
-
-      user = await User.findOne({ _id: decoded.userId });
 
       if (!user) {
         return res
