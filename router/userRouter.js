@@ -15,8 +15,6 @@ const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
 const contentManagementController = require("../controller/User/contentManagementController");
 
-
-
 // Set up multer middleware for file uploads
 const multer = require("multer");
 const storage = multer.memoryStorage();
@@ -258,5 +256,7 @@ router.post(
   upload.single("media"),
   contentManagementController.submit
 );
+
+router.post("/share", contentManagementController.share);
 
 module.exports = router;

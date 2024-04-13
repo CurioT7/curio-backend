@@ -380,7 +380,6 @@ async function shareCrossPost(req, res, user, postId) {
     if (destination === "profile") {
       const crossPost = new CrossPost({
         title: req.body.title,
-        content: post.content,
         authorID: user._id,
         isNSFW: req.body.isNSFW,
         isSpoiler: req.body.isSpoiler,
@@ -427,8 +426,7 @@ async function shareCrossPost(req, res, user, postId) {
 
 async function share(req, res) {
   const user = await authorizeUser(req, res);
-  const postId = req.body.postId;
-  const shareType = req.body.shareType;
+  const crossPost
   if (shareType === "CrossPost") {
     shareCrossPost(req, res, user, postId);
   }
@@ -446,4 +444,5 @@ module.exports = {
   saved_categories,
   hidden,
   submit,
+  share,
 };
