@@ -21,4 +21,10 @@ router.delete("/deletepost/:postId", postController.deletePost);
 // Route to edit post content.
 router.patch("/editusertext", postController.editPostContent);
 
+// Route to mark a post as NSFW.
+router.post("/marknsfw", postController.markPostNSFW);
+
+// Route to unmark a post as NSFW.
+router.post("/unmarknsfw", postController.unmarkPostNSFW);
+
 module.exports = router;
