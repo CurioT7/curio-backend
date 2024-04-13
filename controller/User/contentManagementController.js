@@ -588,6 +588,104 @@ async function castVote(req, res) {
   }
 }
 
+/**
+ * Add a post to the user's browsing history.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response indicating success or failure.
+ */
+async function addToHistory(req, res) {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+    const postID = req.body.postID;
+
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const post = await Post.findOne({ _id: postID });
+    if (!post) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+    }
+
+    // Check if the post is already in the user's recentPosts
+    const isAlreadyInHistory = user.recentPosts.some((recentPost) =>
+      recentPost.equals(post._id)
+    );
+
+    // If the post is not already in the user's recentPosts, add it
+    if (!isAlreadyInHistory) {
+      // If recentPosts array length is 10, remove the oldest post
+      if (user.recentPosts.length >= 10) {
+        user.recentPosts.shift(); 
+      }
+      user.recentPosts.push(post._id); // Add the new post at the end
+      await user.save();
+    } else {
+      return res
+        .status(400)
+        .json({ success: true, message: "Post already exists in history" });
+    }
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Post added to history" });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error", error: error });
+  }
+}
+
+/**
+ * Retrieve the user's browsing history.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response containing the recent posts.
+ */
+async function getHistory(req, res) {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Retrieve post details for all posts in recentPosts
+    const recentPostIds = user.recentPosts;
+    const recentPostDetails = await Post.find({ _id: { $in: recentPostIds } });
+
+    return res
+      .status(200)
+      .json({ success: true, recentPosts: recentPostDetails });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error", error: error });
+  }
+}
+
+
 module.exports = {
   hidePost,
   unhidePost,
@@ -600,4 +698,6 @@ module.exports = {
   unlockItem,
   getItemInfo,
   castVote,
+  addToHistory,
+  getHistory,
 };

@@ -208,7 +208,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
-
+  recentPosts: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Post",
+    },
+  ]
 });
 
 /**

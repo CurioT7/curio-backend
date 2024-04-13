@@ -304,4 +304,27 @@ router.get("/info", contentManagementController.getItemInfo);
  */
 router.post("/vote", contentManagementController.castVote);
 
+/**
+ * Add a post to the user's browsing history.
+ * @name POST /history
+ * @function
+ * @memberof router
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response indicating success or failure.
+ */
+router.post("/history", contentManagementController.addToHistory);
+
+/**
+ * Retrieve the user's browsing history.
+ * @name GET /getHistory
+ * @function
+ * @memberof router
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response containing the recent posts.
+ */
+router.get("/getHistory", contentManagementController.getHistory);
+
+
 module.exports = router;
