@@ -383,6 +383,137 @@ async function getUserPosts(req, res) {
   }
 }
 
+/**
+ * Sort comments for a post within a subreddit based on the specified type.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The sorted comments.
+ * @throws {Error} - If an error occurs while sorting the comments.
+ * @throws {Error} - If the specified subreddit is not found.
+ * @throws {Error} - If the specified post is not found in the subreddit.
+ * @throws {Error} - If the specified comment type is invalid.
+ * @throws {Error} - If an error occurs while fetching the comments.
+ * @throws {Error} - If an error occurs while sorting the comments.
+ * @throws {Error} - If an error occurs while fetching the post.
+ * @throws {Error} - If an error occurs while sorting the comments.
+
+ */
+async function sortComments(req, res) {
+  const subredditName = decodeURIComponent(req.params.subreddit);
+  const subreddit = await Subreddit.findOne({ name: subredditName });
+  if (!subreddit) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Subreddit not found" });
+  }
+
+  const postID = decodeURIComponent(req.params.postID);
+  const post = await Post.findOne({
+    _id: postID,
+    linkedSubreddit: subreddit._id,
+  });
+  if (!post) {
+    return res.status(404).json({
+      success: false,
+      message: "Post not found in the specified subreddit",
+    });
+  }
+
+  let comments;
+  switch (req.params.type) {
+    case "top":
+      comments = await getTopComments(subreddit._id, post._id);
+      break;
+    case "new":
+      comments = await getNewComments(subreddit._id, post._id);
+      break;
+    case "best":
+      comments = await getBestComments(subreddit._id, post._id);
+      break;
+    default:
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid comment type" });
+  }
+
+  return res.status(200).json({ success: true, comments });
+}
+
+/**
+ * Get the top comments for a post within a subreddit.
+ * @param {mongoose.Types.ObjectId} subredditId - The ID of the subreddit.
+ * @param {mongoose.Types.ObjectId} postId - The ID of the post.
+ * @returns {Array} - The top comments for the post.
+ */
+async function getTopComments(subredditId, postId) {
+  try {
+    // Fetch the post
+    const post = await Post.findOne({ _id: postId, linkedSubreddit: subredditId }).populate('comments');
+
+    if (!post) {
+      return [];
+    }
+
+    // Sort comments by upvotes in descending order
+    return post.comments.sort((a, b) => b.upvotes - a.upvotes);
+  } catch (error) {
+    console.error("Error getting top comments:", error);
+    return [];
+  }
+}
+
+/**
+ * Get the newest comments for a post within a subreddit.
+ * @param {mongoose.Types.ObjectId} subredditId - The ID of the subreddit.
+ * @param {mongoose.Types.ObjectId} postId - The ID of the post.
+ * @returns {Array} - The newest comments for the post.
+ */
+async function getNewComments(subredditId, postId) {
+  try {
+    // Fetch the post
+    const post = await Post.findOne({ _id: postId, linkedSubreddit: subredditId }).populate('comments');
+
+    if (!post) {
+      return [];
+    }
+
+    // Sort comments by createdAt in descending order (newest first)
+    return post.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } catch (error) {
+    console.error("Error getting new comments:", error);
+    return [];
+  }
+}
+
+/**
+ * Get the best comments for a post within a subreddit.
+ * @param {mongoose.Types.ObjectId} subredditId - The ID of the subreddit.
+ * @param {mongoose.Types.ObjectId} postId - The ID of the post.
+ * @returns {Array} - The best comments for the post.
+ */
+async function getBestComments(subredditId, postId) {
+  try {
+    // Fetch the post
+    const post = await Post.findOne({ _id: postId, linkedSubreddit: subredditId }).populate('comments');
+
+    if (!post) {
+      return [];
+    }
+
+    // Sort comments based on the proportion of upvotes to downvotes
+    return post.comments.sort((a, b) => {
+      const karmaA = a.upvotes - a.downvotes;
+      const karmaB = b.upvotes - b.downvotes;
+      const proportionA = karmaA > 0 ? karmaA / (karmaA + a.downvotes) : 0;
+      const proportionB = karmaB > 0 ? karmaB / (karmaB + b.downvotes) : 0;
+      return proportionB - proportionA;
+    });
+  } catch (error) {
+    console.error("Error getting best comments:", error);
+    return [];
+  }
+}
 module.exports = {
   randomPost,
   getTopPosts,
@@ -393,4 +524,5 @@ module.exports = {
   getBestPosts,
   setSuggestedSort,
   getUserPosts,
+  sortComments,
 };

@@ -108,4 +108,6 @@ router.post("/r/:subreddit/suggestedSort", ListingController.setSuggestedSort);
 */
 router.get("/user/:type", ListingController.getUserPosts);
 
+router.get("/r/:subreddit/:postID/:type", ListingController.sortComments);
+
 module.exports = router;
