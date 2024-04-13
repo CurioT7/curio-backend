@@ -1,9 +1,10 @@
 const User = require("../../models/userModel");
 const Post = require("../../models/postModel");
+const CrossPost = require("../../models/crossPostModel");
 require("dotenv").config();
 const Comment = require("../../models/commentModel");
 const Subreddit = require("../../models/subredditModel");
-const { verifyToken } = require("../../utils/tokens");
+const { verifyToken, authorizeUser } = require("../../utils/tokens");
 const multer = require("multer");
 const { s3, sendFileToS3, generateRandomId } = require("../../utils/s3-bucket");
 const PutObjectCommand = require("@aws-sdk/client-s3");
@@ -367,6 +368,76 @@ async function submit(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
+
+async function shareCrossPost(req, res, user, postId) {
+  try {
+    const post = await Post.findOne({ _id: postId });
+    if (!post) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+    }
+    if (destination === "profile") {
+      const crossPost = new CrossPost({
+        title: req.body.title,
+        content: post.content,
+        authorID: user._id,
+        isNSFW: req.body.isNSFW,
+        isSpoiler: req.body.isSpoiler,
+        isOC: post.req.body.isOC,
+        linkedPost: post,
+      });
+      post.shares += 1;
+      await post.save();
+      await crossPost.save();
+      return res
+        .status(201)
+        .json({ success: true, message: "Post shared successfully" });
+    } else if (destination === "subreddit") {
+      const subreddit = await Subreddit.findOne({ name: req.body.subreddit });
+      if (!subreddit) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Subreddit not found" });
+      }
+      const crossPost = new CrossPost({
+        title: post.title,
+        content: post.content,
+        authorID: user._id,
+        isNSFW: post.isNSFW,
+        isSpoiler: post.isSpoiler,
+        isOC: post.isOC,
+        linkedPost: post,
+        linkedSubreddit: subreddit,
+      });
+      post.shares += 1;
+      await crossPost.save();
+    }
+    await post.save();
+    return res
+      .status(201)
+      .json({ success: true, message: "Post shared successfully" });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
+async function share(req, res) {
+  const user = await authorizeUser(req, res);
+  const postId = req.body.postId;
+  const shareType = req.body.shareType;
+  if (shareType === "CrossPost") {
+    shareCrossPost(req, res, user, postId);
+  }
+  if (shareType === "link") {
+    //TODO shareLink function
+    shareLink(req, res, user, postId);
+  }
+}
+
 module.exports = {
   hidePost,
   unhidePost,
