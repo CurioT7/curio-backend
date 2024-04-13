@@ -309,7 +309,7 @@ async function setSuggestedSort(req, res) {
   }
 }
 /**
- * Get the top posts for every subreddit that the user follows.
+ * Get the top, hot, new posts for every subreddit that the user follows.
  * @async
  * @param {Object} req - The Express request object.
  * @param {Object} res - The Express response object.
@@ -350,6 +350,17 @@ async function getUserPosts(req, res) {
         case "new":
           return Post.find({ linkedSubreddit: subreddit.subreddit })
             .sort({ createdAt: -1 })
+            .then((posts) => {
+              return posts.map((post) => {
+                return {
+                  subreddit: subreddit.name,
+                  post: post,
+                };
+              });
+            });
+        case "hot":
+          return Post.find({ linkedSubreddit: subreddit.subreddit })
+            .sort({ views: -1 })
             .then((posts) => {
               return posts.map((post) => {
                 return {
