@@ -8,8 +8,9 @@
 
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const user = require("../models/userModel");
+const User = require("../models/userModel");
 const axios = require("axios");
+const { userExist } = require("../controller/Auth/userController");
 
 /**
  * Generate a JWT token for the user.
@@ -78,6 +79,20 @@ async function verifyGoogleToken(token) {
   }
 }
 
+async function authorizeUser(req, res) {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(payload.userId);
+    if (!user) {
+      res.status(401).json({ error: "User not found" });
+    }
+    return user;
+  } catch (err) {
+    res.status(401).json({ error: "Unauthorized" });
+  }
+}
+
 module.exports = {
   generateToken,
   verifyToken,
@@ -86,4 +101,5 @@ module.exports = {
   refreshToken,
   generateTestToken,
   generateTimedToken,
+  authorizeUser,
 };

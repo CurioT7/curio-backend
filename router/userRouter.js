@@ -15,8 +15,6 @@ const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
 const contentManagementController = require("../controller/User/contentManagementController");
 
-
-
 // Set up multer middleware for file uploads
 const multer = require("multer");
 const storage = multer.memoryStorage();
@@ -258,5 +256,27 @@ router.post(
   upload.single("media"),
   contentManagementController.submit
 );
+
+/**
+ * Route to delete a post.
+ * @name DELETE/User/delete
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ */
+
+router.post("/share", contentManagementController.sharePost);
+
+/**
+ * Route to get a post link.
+ * @name GET/User/share/:postId
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ */
+
+router.get("/share/:postId", contentManagementController.getPostLink);
 
 module.exports = router;

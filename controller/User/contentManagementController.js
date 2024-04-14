@@ -3,7 +3,7 @@ const Post = require("../../models/postModel");
 require("dotenv").config();
 const Comment = require("../../models/commentModel");
 const Subreddit = require("../../models/subredditModel");
-const { verifyToken } = require("../../utils/tokens");
+const { verifyToken, authorizeUser } = require("../../utils/tokens");
 const multer = require("multer");
 const { s3, sendFileToS3, generateRandomId } = require("../../utils/s3-bucket");
 const PutObjectCommand = require("@aws-sdk/client-s3");
@@ -272,6 +272,7 @@ async function submitPostToProfile(req, res, user, imageKey) {
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
       media: imageKey,
+      sendReplies: req.body.sendReplies,
     });
     await post.save();
     return res
@@ -301,6 +302,7 @@ async function submitPostToSubreddit(req, res, user, imageKey) {
       isOC: req.body.isOC,
       linkedSubreddit: subreddit,
       media: imageKey,
+      sendReplies: req.body.sendReplies,
     });
     await post.save();
     return res
@@ -367,6 +369,119 @@ async function submit(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
+
+/**
+ * Share a post to profile or subreddit
+ * @param {Object} user - User object
+ * @param {Object} crossPostData - Crosspost data
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Share a post to profile or subreddit
+ * @throws {Error} - If there is an error sharing the post
+ * @async
+ */
+
+async function shareCrossPost(user, crossPostData, res) {
+  try {
+    const post = await Post.findOne({ _id: crossPostData.postId });
+    if (!post) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+    }
+
+    if (crossPostData.destination === "profile") {
+      const crossPost = new Post({
+        title: crossPostData.title ? crossPostData.title : post.title,
+        authorName: user.username,
+        content: post.content,
+        isNSFW: crossPostData.isNSFW,
+        isSpoiler: crossPostData.isSpoiler,
+        isOC: crossPostData.isOC,
+        originalPostId: post._id,
+        sendReplies: crossPostData.sendReplies,
+      });
+      post.shares += 1;
+      await post.save();
+      await crossPost.save();
+      return res
+        .status(201)
+        .json({ success: true, message: "Post shared successfully" });
+    } else if (crossPostData.destination === "subreddit") {
+      const subreddit = await Subreddit.findOne({
+        name: crossPostData.subreddit,
+      });
+      if (!subreddit) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Subreddit not found" });
+      }
+      const crossPost = new Post({
+        title: crossPostData.title ? crossPostData.title : post.title,
+        authorName: user.username,
+        content: post.content,
+        isNSFW: crossPostData.isNSFW,
+        isSpoiler: crossPostData.isSpoiler,
+        isOC: crossPostData.isOC,
+        originalPostId: post._id,
+        linkedSubreddit: subreddit._id,
+        sendReplies: crossPostData.sendReplies,
+      });
+      post.shares += 1;
+      await post.save();
+      await crossPost.save();
+      return res
+        .status(201)
+        .json({ success: true, message: "Post shared successfully" });
+    } else {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid destination" });
+    }
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
+async function sharePost(req, res) {
+  const user = await authorizeUser(req, res);
+  const crossPostData = req.body;
+  shareCrossPost(user, crossPostData, res);
+}
+
+/**
+ * Get post link
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Get post link
+ * @throws {Error} - If there is an error getting the post link
+ * @async
+ */
+
+async function getPostLink(req, res) {
+  try {
+    const postId = decodeURIComponent(req.params.postId);
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+    }
+    let postLink = `${
+      process.env.VITE_FRONTEND_HOST || "http://localhost:5173"
+    }/post/${post._id}`;
+    return res.status(200).json({ success: true, postLink });
+  } catch {
+    return res
+      .status(500)
+      .json({ success: falses, message: "Internal server error" });
+  }
+}
+
 module.exports = {
   hidePost,
   unhidePost,
@@ -375,4 +490,6 @@ module.exports = {
   saved_categories,
   hidden,
   submit,
+  sharePost,
+  getPostLink,
 };
