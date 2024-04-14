@@ -17,6 +17,7 @@ require("dotenv").config();
  * @returns {object} - Express response object
  */
 const mongoose = require("mongoose");
+
 async function getPostComments(req, res) {
   try {
     const postId = decodeURIComponent(req.params.postId);
