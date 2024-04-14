@@ -1,7 +1,9 @@
 const {
   hidePost,
   unhidePost,
-} = require("../controller/User/ContentManagementController");
+  spoilerPost,
+  unspoilerPost,
+} = require("../controller/User/contentManagementController");
 const { verifyToken } = require("../utils/tokens");
 const User = require("../models/userModel");
 const Post = require("../models/postModel");
@@ -187,5 +189,93 @@ describe("unhidePost function", () => {
       success: false,
       message: "Post not found",
     });
+  });  
+});
+
+describe("spoilerPost function", () => {
+  // Successfully mark a post as spoiler with valid token and post ID
+  it("should mark a post as spoiler when given a valid token and post ID", async () => {
+    const req = {
+      headers: {
+        authorization: "Bearer validToken",
+      },
+      body: {
+        idpost: "validPostId",
+      },
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+    const decoded = {
+      userId: "validUserId",
+    };
+    const findOneMock = jest.fn().mockResolvedValue({
+      _id: "validPostId",
+      authorID: "validUserId",
+      isSpoiler: false,
+      save: jest.fn(),
+    });
+    jest.spyOn(Post, "findOne").mockReturnValueOnce(findOneMock);
+    const verifyToken = jest.fn().mockResolvedValue(decoded);
+    jest
+      .spyOn(require("../../utils/tokens"), "verifyToken")
+      .mockReturnValueOnce(verifyToken);
+
+    await spoilerPost(req, res);
+
+    expect(verifyToken).toHaveBeenCalledWith("validToken");
+    expect(findOneMock).toHaveBeenCalledWith({
+      _id: "validPostId",
+      authorID: "validUserId",
+    });
+    expect(findOneMock().isSpoiler).toBe(true);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      message: "Post marked as spoiler successfully",
+    });
+  });
+});
+
+describe("unspoilerPost function", () => {
+  // Verify that the function returns a 200 status code and a success message when the post is successfully unmarked as a spoiler.
+  it("should return a 200 status code and a success message when the post is successfully unmarked as a spoiler", async () => {
+    const req = {
+      headers: {
+        authorization: "Bearer token",
+      },
+      body: {
+        idpost: "post123",
+      },
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+    const findOneMock = jest.fn().mockResolvedValue({
+      _id: "post123",
+      authorID: "user123",
+      isSpoiler: true,
+      save: jest.fn(),
+    });
+    jest.spyOn(Post, "findOne").mockReturnValueOnce(findOneMock);
+    const verifyToken = jest.fn().mockResolvedValue({ userId: "user123" });
+    jest
+      .spyOn(require("../../utils/tokens"), "verifyToken")
+      .mockReturnValueOnce(verifyToken);
+
+    await unspoilerPost(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      message: "Post unmarked as spoiler successfully",
+    });
+    expect(findOneMock).toHaveBeenCalledWith({
+      _id: "post123",
+      authorID: "user123",
+    });
+    expect(findOneMock().save).toHaveBeenCalled();
   });
 });

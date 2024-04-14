@@ -65,9 +65,8 @@ async function getTopPosts(req, res) {
 
     if (topPosts.length > 0) {
       // If top-viewed posts exist, increment views of the first post
-      for (const post of topPosts) {
-        await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } });
-      }
+          await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
+
       return res.status(200).json({ success: true, post: topPosts });
     } else {
       return res
@@ -103,9 +102,7 @@ async function newPosts(req, res) {
       createdAt: -1,
     });
 
-    for (const post of posts) {
-      await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } });
-    }
+      await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
 
     return res.status(200).json({ success: true, posts });
   } catch (error) {
@@ -137,9 +134,7 @@ async function hotPosts(req, res) {
       views: -1,
     });
 
-    for (const post of posts) {
-      await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } });
-    }
+    await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
 
     return res.status(200).json({ success: true, posts });
   } catch (error) {
@@ -180,12 +175,10 @@ async function mostComments(req, res) {
 
     return res.status(200).json({ success: true, posts });
   } catch (error) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Error getting posts with most comments",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Error getting posts with most comments",
+    });
   }
 }
 
@@ -449,7 +442,10 @@ async function sortComments(req, res) {
 async function getTopComments(subredditId, postId) {
   try {
     // Fetch the post
-    const post = await Post.findOne({ _id: postId, linkedSubreddit: subredditId }).populate('comments');
+    const post = await Post.findOne({
+      _id: postId,
+      linkedSubreddit: subredditId,
+    }).populate("comments");
 
     if (!post) {
       return [];
@@ -472,14 +468,19 @@ async function getTopComments(subredditId, postId) {
 async function getNewComments(subredditId, postId) {
   try {
     // Fetch the post
-    const post = await Post.findOne({ _id: postId, linkedSubreddit: subredditId }).populate('comments');
+    const post = await Post.findOne({
+      _id: postId,
+      linkedSubreddit: subredditId,
+    }).populate("comments");
 
     if (!post) {
       return [];
     }
 
     // Sort comments by createdAt in descending order (newest first)
-    return post.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return post.comments.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
   } catch (error) {
     console.error("Error getting new comments:", error);
     return [];
@@ -495,7 +496,10 @@ async function getNewComments(subredditId, postId) {
 async function getBestComments(subredditId, postId) {
   try {
     // Fetch the post
-    const post = await Post.findOne({ _id: postId, linkedSubreddit: subredditId }).populate('comments');
+    const post = await Post.findOne({
+      _id: postId,
+      linkedSubreddit: subredditId,
+    }).populate("comments");
 
     if (!post) {
       return [];
@@ -525,4 +529,5 @@ module.exports = {
   setSuggestedSort,
   getUserPosts,
   sortComments,
+  getTopComments,
 };
