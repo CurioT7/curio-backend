@@ -15,4 +15,16 @@ router.post("/comments", postController.createComments);
 // Route to delete comments for a post.
 router.delete("/deletecomments/:commentId", postController.deleteComments);
 
+// Route to delete a post.
+router.delete("/deletepost/:postId", postController.deletePost);
+
+// Route to edit post content.
+router.patch("/editusertext", postController.editPostContent);
+
+// Route to mark a post as NSFW.
+router.post("/marknsfw", postController.markPostNSFW);
+
+// Route to unmark a post as NSFW.
+router.post("/unmarknsfw", postController.unmarkPostNSFW);
+
 module.exports = router;
