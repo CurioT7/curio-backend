@@ -262,36 +262,43 @@ async function hidden(req, res) {
  * @async
  */
 
-async function submitPostToProfile(req, res, user, imageKey) {
-  try {
-    const post = new Post({
-      title: req.body.title,
-      content: req.body.content,
-      authorName: user.username,
-      isNSFW: req.body.isNSFW,
-      isSpoiler: req.body.isSpoiler,
-      isOC: req.body.isOC,
-      media: imageKey,
-      sendReplies: req.body.sendReplies,
-    });
-    await post.save();
-    return res
-      .status(201)
-      .json({ success: true, message: "Post created successfully" });
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
-  }
-}
+// async function submitPostToProfile(req, res, user, imageKey) {
+//   let subreddit;
+//   if(req.body.subreddit){
 
-async function submitPostToSubreddit(req, res, user, imageKey) {
+//   }
+//   try {
+//     const post = new Post({
+//       title: req.body.title,
+//       content: req.body.content,
+//       authorName: user.username,
+//       isNSFW: req.body.isNSFW,
+//       isSpoiler: req.body.isSpoiler,
+//       isOC: req.body.isOC,
+//       media: imageKey,
+//       sendReplies: req.body.sendReplies,
+//     });
+//     await post.save();
+//     return res
+//       .status(201)
+//       .json({ success: true, message: "Post created successfully" });
+//   } catch (error) {
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Internal server error" });
+//   }
+// }
+
+async function submitPost(req, res, user, imageKey) {
   try {
-    const subreddit = await Subreddit.findOne({ name: req.body.subreddit });
-    if (!subreddit) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Subreddit not found" });
+    let subreddit;
+    if (req.body.subreddit) {
+      subreddit = await Subreddit.findOne({ name: req.body.subreddit });
+      if (!subreddit) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Subreddit not found" });
+      }
     }
     const post = new Post({
       title: req.body.title,
@@ -300,7 +307,7 @@ async function submitPostToSubreddit(req, res, user, imageKey) {
       isNSFW: req.body.isNSFW,
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
-      linkedSubreddit: subreddit,
+      linkedSubreddit: subreddit ? subreddit._id : null,
       media: imageKey,
       sendReplies: req.body.sendReplies,
     });
@@ -352,16 +359,7 @@ async function submit(req, res) {
         });
       }
     }
-
-    if (destination === "profile") {
-      return await submitPostToProfile(req, res, user, imageKey);
-    } else if (destination === "subreddit") {
-      return await submitPostToSubreddit(req, res, user, imageKey);
-    } else {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid destination" });
-    }
+    return await submitPost(req, res, user, imageKey);
   } catch (error) {
     console.log(error);
     return res
@@ -384,31 +382,9 @@ async function submit(req, res) {
 async function shareCrossPost(user, crossPostData, res) {
   try {
     const post = await Post.findOne({ _id: crossPostData.postId });
-    if (!post) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Post not found" });
-    }
-
-    if (crossPostData.destination === "profile") {
-      const crossPost = new Post({
-        title: crossPostData.title ? crossPostData.title : post.title,
-        authorName: user.username,
-        content: post.content,
-        isNSFW: crossPostData.isNSFW,
-        isSpoiler: crossPostData.isSpoiler,
-        isOC: crossPostData.isOC,
-        originalPostId: post._id,
-        sendReplies: crossPostData.sendReplies,
-      });
-      post.shares += 1;
-      await post.save();
-      await crossPost.save();
-      return res
-        .status(201)
-        .json({ success: true, message: "Post shared successfully" });
-    } else if (crossPostData.destination === "subreddit") {
-      const subreddit = await Subreddit.findOne({
+    let subreddit;
+    if (crossPostData.subreddit) {
+      subreddit = await Subreddit.findOne({
         name: crossPostData.subreddit,
       });
       if (!subreddit) {
@@ -416,28 +392,29 @@ async function shareCrossPost(user, crossPostData, res) {
           .status(404)
           .json({ success: false, message: "Subreddit not found" });
       }
-      const crossPost = new Post({
-        title: crossPostData.title ? crossPostData.title : post.title,
-        authorName: user.username,
-        content: post.content,
-        isNSFW: crossPostData.isNSFW,
-        isSpoiler: crossPostData.isSpoiler,
-        isOC: crossPostData.isOC,
-        originalPostId: post._id,
-        linkedSubreddit: subreddit._id,
-        sendReplies: crossPostData.sendReplies,
-      });
-      post.shares += 1;
-      await post.save();
-      await crossPost.save();
-      return res
-        .status(201)
-        .json({ success: true, message: "Post shared successfully" });
-    } else {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid destination" });
     }
+    if (!post) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+    }
+    const crossPost = new Post({
+      title: crossPostData.title ? crossPostData.title : post.title,
+      authorName: user.username,
+      content: post.content,
+      isNSFW: crossPostData.isNSFW,
+      isSpoiler: crossPostData.isSpoiler,
+      isOC: crossPostData.isOC,
+      originalPostId: post._id,
+      sendReplies: crossPostData.sendReplies,
+      linkedSubreddit: subreddit ? subreddit._id : null,
+    });
+    post.shares += 1;
+    await post.save();
+    await crossPost.save();
+    return res
+      .status(201)
+      .json({ success: true, message: "Post shared successfully" });
   } catch (error) {
     console.log(error);
     return res
