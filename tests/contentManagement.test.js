@@ -7,7 +7,7 @@ const {
   saved_categories,
   submit,
   sharePost,
-  getPostLink,,
+  getPostLink,
   lockItem,
   unlockItem,
   getItemInfo,
