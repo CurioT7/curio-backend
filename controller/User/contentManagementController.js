@@ -298,7 +298,12 @@ async function submitPost(req, res, user, imageKey) {
       voteLength: req.body.voteLength ? req.body.voteLength : null,
     });
     await post.save();
+    // Add post to user's posts
+    user.posts.push(post._id);
+    await user.save();
     if (subreddit) {
+      subreddit.posts.push(post._id);
+      await subreddit.save();
     }
     return res
       .status(201)
@@ -397,6 +402,13 @@ async function shareCrossPost(user, crossPostData) {
   post.shares += 1;
   await post.save();
   await crossPost.save();
+  // Add post to user's posts
+  user.posts.push(crossPost._id);
+  await user.save();
+  if (subreddit) {
+    subreddit.posts.push(post._id);
+    await subreddit.save();
+  }
 }
 
 /**
