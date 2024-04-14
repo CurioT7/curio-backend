@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const brypt = require("bcrypt");
 const { verifyToken } = require("../../utils/tokens");
+const { getFileFromS3 } = require("../../utils/s3-bucket");
 
 /**
  * Finds a user by their username.
@@ -47,6 +48,7 @@ async function fetchPostsByUsername(username) {
     post.views += 1;
     await post.save();
   }
+
   return posts;
 }
 
@@ -73,6 +75,12 @@ async function getPostsByUser(req, res, next) {
     const user = await findUserByUsername(username);
     // Fetch posts by the user
     const posts = await fetchPostsByUsername(username);
+    for (let post of posts) {
+      if (post.media) {
+        const media = await getFileFromS3(post.media);
+        post.media = media;
+      }
+    }
     res.status(200).json(posts);
   } catch (error) {
     handleServerError(res, error);
@@ -113,7 +121,7 @@ async function getVotedContent(req, res, next, voteType) {
     if (!decoded) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-     const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findOne({ _id: decoded.userId });
 
     if (!user) {
       return res.status(404).json({
@@ -271,7 +279,7 @@ async function getJoinedCommunities(req, res) {
     const subredditNames = user.subreddits.map((sub) => sub.subreddit);
 
     const communities = await Subreddit.find({
-      name: { $in: subredditNames }, 
+      name: { $in: subredditNames },
     }).exec();
 
     return res.status(200).json({ success: true, communities });
@@ -282,8 +290,6 @@ async function getJoinedCommunities(req, res) {
       .json({ success: false, error: "Failed to fetch user communities" });
   }
 }
-
- 
 
 module.exports = {
   getJoinedCommunities,

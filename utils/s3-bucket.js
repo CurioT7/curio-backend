@@ -1,7 +1,8 @@
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const multerS3 = require("multer-s3");
 const crypto = require("crypto");
 const sharp = require("sharp");
+const { isAsyncFunction } = require("util/types");
 
 // AWS S3 configuration
 const bucketName = process.env.BUCKET_NAME;
@@ -47,7 +48,22 @@ async function sendFileToS3(req) {
   }
 }
 
+async function getFileFromS3(key) {
+  const params = {
+    Bucket: bucketName,
+    Key: key,
+  };
+  const command = new GetObjectCommand(params);
+  try {
+    const data = await s3.send(command);
+    return data;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+}
+
 const randomImageName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
 
-module.exports = { s3, sendFileToS3 };
+module.exports = { s3, sendFileToS3, getFileFromS3};
