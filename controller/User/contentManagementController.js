@@ -56,6 +56,16 @@ async function hidePost(req, res) {
   }
 }
 
+/**
+ * Unhide a post
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Unhide a post
+ * @throws {Error} - If there is an error unhiding the post
+ * @async
+ */
+
 async function unhidePost(req, res) {
   const token = req.headers.authorization.split(" ")[1];
   const postId = req.body.postId;
