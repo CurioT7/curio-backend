@@ -272,6 +272,7 @@ async function submitPostToProfile(req, res, user, imageKey) {
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
       media: imageKey,
+      sendReplies: req.body.sendReplies,
     });
     await post.save();
     return res
@@ -301,6 +302,7 @@ async function submitPostToSubreddit(req, res, user, imageKey) {
       isOC: req.body.isOC,
       linkedSubreddit: subreddit,
       media: imageKey,
+      sendReplies: req.body.sendReplies,
     });
     await post.save();
     return res
@@ -397,6 +399,7 @@ async function shareCrossPost(user, crossPostData, res) {
         isSpoiler: crossPostData.isSpoiler,
         isOC: crossPostData.isOC,
         originalPostId: post._id,
+        sendReplies: crossPostData.sendReplies,
       });
       post.shares += 1;
       await post.save();
@@ -422,6 +425,7 @@ async function shareCrossPost(user, crossPostData, res) {
         isOC: crossPostData.isOC,
         originalPostId: post._id,
         linkedSubreddit: subreddit._id,
+        sendReplies: crossPostData.sendReplies,
       });
       post.shares += 1;
       await post.save();

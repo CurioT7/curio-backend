@@ -121,6 +121,10 @@ const postSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Post",
   },
+  sendReplies: {
+    type: Boolean,
+    default: false,
+  },
 });
 // Define a virtual property to calculate karma
 postSchema.virtual("karma").get(function () {
