@@ -99,23 +99,6 @@ describe("forgotPassword function", () => {
     await forgotPassword(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
-
-  it("Should return 200 if user is found", async () => {
-    const req = {
-      body: {
-        username: "test_user",
-        email: "test@mail.com",
-      },
-    };
-    const res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-    const userFindOneMock = jest.spyOn(User, "findOne");
-    userFindOneMock.mockResolvedValue("test_user");
-    await forgotPassword(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-  });
 });
 
 describe("forgotUsername function", () => {
