@@ -5,6 +5,7 @@
  */
 
 const mongoose = require("mongoose");
+const { options } = require("../router/profileRouter");
 const Schema = mongoose.Schema;
 
 /**
@@ -42,7 +43,6 @@ const postSchema = new Schema({
   },
   content: {
     type: String,
-    required: true,
   },
   authorName: {
     type: String,
@@ -124,6 +124,12 @@ const postSchema = new Schema({
   sendReplies: {
     type: Boolean,
     default: false,
+  },
+  options: {
+    type: Object,
+  },
+  voteLength: {
+    type: Number,
   },
 });
 // Define a virtual property to calculate karma

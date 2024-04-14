@@ -22,10 +22,22 @@ async function generateToken(userId) {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "24h" });
 }
 
+/**
+ * Generate a JWT token for the user with a specific expiration time.
+ * @param {string} userId - The user ID.
+ * @param {string} time - The expiration time for the token.
+ * @returns {Promise<string>} - A promise that resolves with the JWT token.
+ */
+
 async function generateTimedToken(userId, time) {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: time });
 }
 
+/**
+ * Generate a test JWT token for the user.
+ * @param {string} userId - The user ID.
+ * @returns {Promise<string>} - A promise that resolves with the JWT token.
+ */
 const generateTestToken = async (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: "90d",
@@ -46,6 +58,11 @@ async function verifyToken(token) {
     return null;
   }
 }
+/**
+ * Refresh a JWT token.
+ * @param {string} token - The JWT token to refresh.
+ * @returns {Promise<string>} - A promise that resolves with the new JWT token.
+ */
 
 async function refreshToken(token) {
   try {
@@ -58,7 +75,13 @@ async function refreshToken(token) {
   }
 }
 
-//Verify token sent from firebase
+/**
+ * Verify a Firebase token.
+ * @param {string} token - The Firebase token to verify.
+ * @returns {Promise<Object>} - A promise that resolves with the token payload.
+ * @throws {Error} - If there is an error verifying the token.
+ */
+
 async function verifyFirebaseToken(token) {
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
@@ -67,6 +90,13 @@ async function verifyFirebaseToken(token) {
     throw new Error(err);
   }
 }
+
+/**
+ * Verify a Google token.
+ * @param {string} token - The Google token to verify.
+ * @returns {Promise<Object>} - A promise that resolves with the token payload.
+ * @throws {Error} - If there is an error verifying the token.
+ */
 
 async function verifyGoogleToken(token) {
   try {
@@ -79,17 +109,21 @@ async function verifyGoogleToken(token) {
   }
 }
 
-async function authorizeUser(req, res) {
+/**
+ * Authorize a user by verifying the JWT token in the request headers.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Object} - The user object.
+ * @throws {Error} - If the user is not authorized.
+ */
+
+async function authorizeUser(token) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(payload.userId);
-    if (!user) {
-      res.status(401).json({ error: "User not found" });
-    }
-    return user;
+    return user; // Return the user object if token is valid
   } catch (err) {
-    res.status(401).json({ error: "Unauthorized" });
+    return null; // Return null if token is invalid
   }
 }
 
