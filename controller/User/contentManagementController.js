@@ -1,6 +1,5 @@
 const User = require("../../models/userModel");
 const Post = require("../../models/postModel");
-const CrossPost = require("../../models/crossPostModel");
 require("dotenv").config();
 const Comment = require("../../models/commentModel");
 const Subreddit = require("../../models/subredditModel");
@@ -387,16 +386,17 @@ async function shareCrossPost(user, crossPostData, res) {
       return res
         .status(404)
         .json({ success: false, message: "Post not found" });
-      }
+    }
 
     if (crossPostData.destination === "profile") {
-      const crossPost = new CrossPost({
-        title: crossPostData.title,
+      const crossPost = new Post({
+        title: crossPostData.title ? crossPostData.title : post.title,
         authorName: user.username,
+        content: post.content,
         isNSFW: crossPostData.isNSFW,
-        isSpoiler:crossPostData.isSpoiler,
+        isSpoiler: crossPostData.isSpoiler,
         isOC: crossPostData.isOC,
-        linkedPost: post._id,
+        originalPostId: post._id,
       });
       post.shares += 1;
       await post.save();
@@ -404,36 +404,36 @@ async function shareCrossPost(user, crossPostData, res) {
       return res
         .status(201)
         .json({ success: true, message: "Post shared successfully" });
-    } 
-    else if (crossPostData.destination === "subreddit") {
-      const subreddit = await Subreddit.findOne({ name: crossPostData.subreddit });
+    } else if (crossPostData.destination === "subreddit") {
+      const subreddit = await Subreddit.findOne({
+        name: crossPostData.subreddit,
+      });
       if (!subreddit) {
         return res
           .status(404)
           .json({ success: false, message: "Subreddit not found" });
       }
-      const crossPost = new CrossPost({
-        title: crossPostData.title,
-        authorName: post.authorName,
+      const crossPost = new Post({
+        title: crossPostData.title ? crossPostData.title : post.title,
+        authorName: user.username,
+        content: post.content,
         isNSFW: crossPostData.isNSFW,
-        isSpoiler:crossPostData.isSpoiler,
+        isSpoiler: crossPostData.isSpoiler,
         isOC: crossPostData.isOC,
-        linkedPost: post._id,
+        originalPostId: post._id,
         linkedSubreddit: subreddit._id,
       });
       post.shares += 1;
       await post.save();
       await crossPost.save();
       return res
-      .status(201)
-      .json({ success: true, message: "Post shared successfully" });
-    }
-    else {
+        .status(201)
+        .json({ success: true, message: "Post shared successfully" });
+    } else {
       return res
         .status(400)
         .json({ success: false, message: "Invalid destination" });
     }
-
   } catch (error) {
     console.log(error);
     return res
@@ -445,7 +445,7 @@ async function shareCrossPost(user, crossPostData, res) {
 async function sharePost(req, res) {
   const user = await authorizeUser(req, res);
   const crossPostData = req.body;
-  shareCrossPost(user, crossPostData, res );
+  shareCrossPost(user, crossPostData, res);
 }
 
 /**
@@ -459,17 +459,22 @@ async function sharePost(req, res) {
  */
 
 async function getPostLink(req, res) {
-  try{
+  try {
     const postId = decodeURIComponent(req.params.postId);
     const post = await Post.findById(postId);
     if (!post) {
-      return res.status(404).json({ success: false, message: "Post not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
     }
-    let postLink = `${process.env.VITE_FRONTEND_HOST || "http://localhost:5173"}/post/${post._id}`
+    let postLink = `${
+      process.env.VITE_FRONTEND_HOST || "http://localhost:5173"
+    }/post/${post._id}`;
     return res.status(200).json({ success: true, postLink });
-  }
-  catch{
-    return res.status(500).json({ success: falses, message: "Internal server error" });
+  } catch {
+    return res
+      .status(500)
+      .json({ success: falses, message: "Internal server error" });
   }
 }
 
