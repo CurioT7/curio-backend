@@ -343,7 +343,7 @@ async function submit(req, res) {
     var imageKey;
 
     if (req.file) {
-      imageKey = await sendFileToS3(req, res);
+      imageKey = await sendFileToS3(req);
       if (!imageKey) {
         return res.status(500).json({
           success: false,

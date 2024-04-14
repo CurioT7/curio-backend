@@ -22,7 +22,7 @@ const s3 = new S3Client({
  * @param {Object} file - The file to send to the S3 bucket.
  */
 
-async function sendFileToS3(req, res) {
+async function sendFileToS3(req) {
   //resize image
   const buffer = await sharp(req.file.buffer)
     .resize({ height: 400, width: 400, fit: "contain" })
@@ -39,7 +39,7 @@ async function sendFileToS3(req, res) {
   const command = new PutObjectCommand(uploadParams);
   try {
     const data = await s3.send(command);
-    console.log("Successfully uploaded file to S3", data);
+    console.log("Successfully uploaded file to S3");
     return uploadParams.Key;
   } catch (error) {
     console.log(error);
