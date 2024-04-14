@@ -117,9 +117,8 @@ async function verifyGoogleToken(token) {
  * @throws {Error} - If the user is not authorized.
  */
 
-async function authorizeUser(req) {
+async function authorizeUser(token) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(payload.userId);
     return user; // Return the user object if token is valid
