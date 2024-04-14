@@ -1,5 +1,11 @@
 const User = require("../models/userModel");
 
+/**
+ * Check if a username exists in the database.
+ * @param {string} username - The username to check.
+ * @returns {Promise<boolean>} A promise that resolves with a boolean indicating if the username exists.
+ */
+
 async function usernameExists(username) {
   const user = await User.findOne({ username });
   return user !== null;
@@ -110,6 +116,11 @@ const nouns = [
   "Enigma",
   "Bliss",
 ];
+
+/**
+ * Generates a random username using an adjective, noun, and a 4-digit number
+ * @returns {Promise<string>} A unique username
+ */
 
 const generateRandomUsername = async () => {
   const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];

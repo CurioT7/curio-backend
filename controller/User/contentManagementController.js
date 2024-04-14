@@ -262,33 +262,6 @@ async function hidden(req, res) {
  * @async
  */
 
-// async function submitPostToProfile(req, res, user, imageKey) {
-//   let subreddit;
-//   if(req.body.subreddit){
-
-//   }
-//   try {
-//     const post = new Post({
-//       title: req.body.title,
-//       content: req.body.content,
-//       authorName: user.username,
-//       isNSFW: req.body.isNSFW,
-//       isSpoiler: req.body.isSpoiler,
-//       isOC: req.body.isOC,
-//       media: imageKey,
-//       sendReplies: req.body.sendReplies,
-//     });
-//     await post.save();
-//     return res
-//       .status(201)
-//       .json({ success: true, message: "Post created successfully" });
-//   } catch (error) {
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "Internal server error" });
-//   }
-// }
-
 async function submitPost(req, res, user, imageKey) {
   try {
     let subreddit;
@@ -333,6 +306,7 @@ async function submitPost(req, res, user, imageKey) {
  * @async
  * @returns {Object} - A response object
  */
+
 async function submit(req, res) {
   try {
     const token = req.headers.authorization.split(" ")[1];
@@ -379,54 +353,65 @@ async function submit(req, res) {
  * @async
  */
 
-async function shareCrossPost(user, crossPostData, res) {
-  try {
-    const post = await Post.findOne({ _id: crossPostData.postId });
-    let subreddit;
-    if (crossPostData.subreddit) {
-      subreddit = await Subreddit.findOne({
-        name: crossPostData.subreddit,
-      });
-      if (!subreddit) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Subreddit not found" });
-      }
-    }
-    if (!post) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Post not found" });
-    }
-    const crossPost = new Post({
-      title: crossPostData.title ? crossPostData.title : post.title,
-      authorName: user.username,
-      content: post.content,
-      isNSFW: crossPostData.isNSFW,
-      isSpoiler: crossPostData.isSpoiler,
-      isOC: crossPostData.isOC,
-      originalPostId: post._id,
-      sendReplies: crossPostData.sendReplies,
-      linkedSubreddit: subreddit ? subreddit._id : null,
+async function shareCrossPost(user, crossPostData) {
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+  const post = await Post.findOne({ _id: crossPostData.postId });
+  let subreddit;
+  if (crossPostData.subreddit) {
+    subreddit = await Subreddit.findOne({
+      name: crossPostData.subreddit,
     });
-    post.shares += 1;
-    await post.save();
-    await crossPost.save();
-    return res
+    if (!subreddit) {
+      throw new Error("Subreddit not found");
+    }
+  }
+  if (!post) {
+    throw new Error("Post not found");
+  }
+  const crossPost = new Post({
+    title: crossPostData.title ? crossPostData.title : post.title,
+    authorName: user.username,
+    content: post.content,
+    isNSFW: crossPostData.isNSFW,
+    isSpoiler: crossPostData.isSpoiler,
+    isOC: crossPostData.isOC,
+    originalPostId: post._id,
+    sendReplies: crossPostData.sendReplies,
+    linkedSubreddit: subreddit ? subreddit._id : null,
+  });
+  post.shares += 1;
+  await post.save();
+  await crossPost.save();
+}
+
+/**
+ * Share a post to profile or subreddit
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Share a post to profile or subreddit
+ * @throws {Error} - If there is an error sharing the post
+ * @async
+ * @returns {Object} - A response object
+ */
+
+async function sharePost(req, res) {
+  const user = await authorizeUser(req, res);
+  if (!user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const crossPostData = req.body;
+  try {
+    await shareCrossPost(user, crossPostData);
+    res
       .status(201)
       .json({ success: true, message: "Post shared successfully" });
   } catch (error) {
     console.log(error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
-}
-
-async function sharePost(req, res) {
-  const user = await authorizeUser(req, res);
-  const crossPostData = req.body;
-  shareCrossPost(user, crossPostData, res);
 }
 
 /**
