@@ -75,5 +75,3 @@ If you need to seed your database with initial data:
 - **npm test**: Run all unit tests.
 - **npm run dev**: Run the project using Nodemon for automatic reloading during development.
 - **npm start**: Run the project using Node.js. Use this command in production or when Nodemon is not needed.
-
-
