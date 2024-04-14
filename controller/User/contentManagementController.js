@@ -7,6 +7,7 @@ const { verifyToken, authorizeUser } = require("../../utils/tokens");
 const multer = require("multer");
 const { s3, sendFileToS3, generateRandomId } = require("../../utils/s3-bucket");
 const PutObjectCommand = require("@aws-sdk/client-s3");
+const { options } = require("../../router/profileRouter");
 
 /**
  * Hide a post
@@ -280,9 +281,11 @@ async function submitPost(req, res, user, imageKey) {
       isNSFW: req.body.isNSFW,
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
-      linkedSubreddit: subreddit ? subreddit._id : null,
+      linkedSubreddit: req.body.subreddit ? subreddit._id : null,
       media: imageKey,
       sendReplies: req.body.sendReplies,
+      options: req.body.options ? req.body.options : null,
+      voteLength: req.body.voteLength ? req.body.voteLength : null,
     });
     await post.save();
     return res
@@ -309,14 +312,7 @@ async function submitPost(req, res, user, imageKey) {
 
 async function submit(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-    //profile or subreddit
-    const destination = req.body.destination;
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await authorizeUser(req, res);
     if (!user) {
       return res
         .status(404)
