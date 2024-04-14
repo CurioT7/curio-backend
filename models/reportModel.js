@@ -27,13 +27,22 @@ const userReportSchema = new Schema({
   reportType: {
     type: String,
     required: true,
-    enum: ["username", "display name", "profile image", "banner image", "bio"],
+    enum: ["username", "display name", "profile image", "banner image", "bio","post","comment"],
+  },
+  itemID: {
+    type: String,
+    default: null,
+  },
+  linkedSubreddit: {
+    type: String,
+    default: null,
   },
   reportReason: {
     type: String,
     required: true,
     enum: [
-      "harassment",
+      "rule break"
+,     "harassment",
       "threatening violence",
       "hate",
       "minor abuse or sexualization",
@@ -45,6 +54,7 @@ const userReportSchema = new Schema({
       "trademark violation",
       "self-harm or suicide",
       "spam",
+      "contributer program violation"
     ],
   },
   reportDetails: {
