@@ -298,6 +298,8 @@ async function submitPost(req, res, user, imageKey) {
       voteLength: req.body.voteLength ? req.body.voteLength : null,
     });
     await post.save();
+    if (subreddit) {
+    }
     return res
       .status(201)
       .json({ success: true, message: "Post created successfully" });
