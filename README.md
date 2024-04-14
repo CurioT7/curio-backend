@@ -1,5 +1,3 @@
-Here's a README template in Markdown format that explains how to run the project described by your Node.js code snippet:
-
 # Curio Backend
 
 This is a Reddit Clone project.
