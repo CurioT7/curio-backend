@@ -351,6 +351,17 @@ async function getUserPosts(req, res) {
                 };
               });
             });
+        case "hot":
+          return Post.find({ linkedSubreddit: subreddit.subreddit })
+            .sort({ views: -1 })
+            .then((posts) => {
+              return posts.map((post) => {
+                return {
+                  subreddit: subreddit.name,
+                  post: post,
+                };
+              });
+            });
         default:
           return Promise.reject("Invalid posts type");
       }
