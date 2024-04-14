@@ -131,6 +131,10 @@ const postSchema = new Schema({
   voteLength: {
     type: Number,
   },
+  isLocked: {
+    type: Boolean,
+    default: false,
+  },
 });
 // Define a virtual property to calculate karma
 postSchema.virtual("karma").get(function () {

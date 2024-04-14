@@ -125,10 +125,10 @@ async function getVotedContent(req, res, next, voteType) {
     let filterFunction;
     if (voteType === "upvotes") {
       filterFunction = (vote) =>
-        vote.itemType === "Post" || vote.itemType === "Comment";
+        vote.itemType === "post" || vote.itemType === "comment";
     } else if (voteType === "downvotes") {
       filterFunction = (vote) =>
-        vote.itemType === "Post" || vote.itemType === "Comment";
+        vote.itemType === "post" || vote.itemType === "comment";
     } else {
       return res
         .status(400)

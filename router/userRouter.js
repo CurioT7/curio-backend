@@ -279,4 +279,65 @@ router.post("/share", contentManagementController.sharePost);
 
 router.get("/share/:postId", contentManagementController.getPostLink);
 
+/**
+ * Route for locking a post item.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The JSON response indicating success or failure.
+ */
+router.post(
+  "/lock",
+  contentManagementController.lockItem
+);
+
+/**
+ * Route for unlocking a post item.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The JSON response indicating success or failure.
+ */
+router.post("/unlock", contentManagementController.unlockItem);
+
+/**
+ * Route for retrieving information about a specific item.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The JSON response containing the item information or an error message.
+ */
+router.get("/info", contentManagementController.getItemInfo);
+
+/**
+ * Route handler for casting a vote on a post or a comment.
+ * @name POST /vote
+ * @function
+ * @memberof module:routes/contentManagement
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @returns {Object} JSON response indicating success or failure.
+ */
+router.post("/vote", contentManagementController.castVote);
+
+/**
+ * Add a post to the user's browsing history.
+ * @name POST /history
+ * @function
+ * @memberof router
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response indicating success or failure.
+ */
+router.post("/history", contentManagementController.addToHistory);
+
+/**
+ * Retrieve the user's browsing history.
+ * @name GET /getHistory
+ * @function
+ * @memberof router
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response containing the recent posts.
+ */
+router.get("/getHistory", contentManagementController.getHistory);
+
+
 module.exports = router;

@@ -124,7 +124,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         default: 0,
-        enum: ["Post", "Comment"],
+        enum: ["post", "comment"],
       },
     },
   ],
@@ -138,7 +138,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         default: 0,
-        enum: ["Post", "Comment"],
+        enum: ["post", "comment"],
       },
     },
   ],
@@ -208,7 +208,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
-
+  recentPosts: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Post",
+    },
+  ]
 });
 
 /**
