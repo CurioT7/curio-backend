@@ -2,7 +2,9 @@ const Subreddit = require("../../models/subredditModel");
 const Post = require("../../models/postModel");
 const moment = require("moment");
 const { verifyToken } = require("../../utils/tokens");
-
+const User = require("../../models/userModel");
+const { filterHiddenPosts } = require("../../utils/posts");
+const { decode } = require("jsonwebtoken");
 /**
  * Get a random post from a subreddit.
  * @async
@@ -323,10 +325,10 @@ async function getUserPosts(req, res) {
     if (!decoded) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const user = await User.findOne({ _id: decoded.userId }).populate(
-      "subreddits"
+   const user = await User.findOne({ _id: decoded.userId }).populate(
+     "subreddits"
     );
-
+    
     if (!user) {
       return res
         .status(404)
@@ -379,14 +381,17 @@ async function getUserPosts(req, res) {
 
     const flattenedPosts = subredditPosts.flat();
 
-    // Increment the views of all fetched posts by 1
+    // Filter out hidden posts
+    const filteredPosts = await filterHiddenPosts(flattenedPosts, user);
+
+    // Increment the views of all fetched and filtered posts by 1
     await Promise.all(
-      flattenedPosts.map(({ post }) =>
+      filteredPosts.map(({ post }) =>
         Post.updateOne({ _id: post._id }, { $inc: { views: 1 } })
       )
     );
 
-    return res.status(200).json({ success: true, posts: flattenedPosts });
+    return res.status(200).json({ success: true, posts: filteredPosts });
   } catch (error) {
     console.error("Error fetching user posts:", error);
     return res
@@ -394,7 +399,6 @@ async function getUserPosts(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
-
 /**
  * Sort comments for a post within a subreddit based on the specified type.
  * @async

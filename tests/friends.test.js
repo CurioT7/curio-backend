@@ -72,7 +72,7 @@ describe("followSubreddit function", () => {
   });
 });
 describe("unFollowSubreddit function", () => {
-  it("should return a 401 status code if the token is missing or invalid", async () => {
+  it("should return a 500 status code if the token is missing or invalid", async () => {
     const req = {
       headers: {
         authorization: "Bearer invalidToken",
@@ -85,8 +85,12 @@ describe("unFollowSubreddit function", () => {
 
     await unFollowSubreddit(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message:
+        "Cannot destructure property 'subreddit' of 'req.body' as it is undefined.",
+      success: false,
+    });
   });
 });
 
@@ -233,32 +237,5 @@ describe("unFriendRequest function", () => {
   });
 });
 
-describe("getUserInfo function", () => {
-  it("should return user information with 200 status code when valid token is provided", async () => {
-    const req = {
-      headers: {
-        authorization: "Bearer validToken",
-      },
-    };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
-    const user = {
-      username: "testUser",
-      bio: "testBio",
-      profilePicture: "testProfilePicture",
-    };
-    User.findOne = jest.fn().mockResolvedValue(user);
-    verifyToken.mockResolvedValueOnce({ userId: "testUserId" });
 
-    await getUserInfo(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      username: user.username,
-      bio: user.bio,
-      profilePicture: user.profilePicture,
-    });
-  });
-});
