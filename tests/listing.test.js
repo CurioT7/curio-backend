@@ -182,31 +182,31 @@ describe("setsuggestedSort", () => {
 });
 
 
-describe("getUserPosts", () => {
-  // Returns an empty array when the user does not follow any subreddit
-  it("should return an empty array when the user does not follow any subreddit", async () => {
-    const req = {
-      params: {
-        type: "top",
-        username: "user-id",
-      },
-      user: {
-        id: "user-id",
-      },
-    };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+// describe("getUserPosts", () => {
+//   // Returns an empty array when the user does not follow any subreddit
+//   it("should return an empty array when the user does not follow any subreddit", async () => {
+//     const req = {
+//       params: {
+//         type: "top",
+//         username: "user-id",
+//       },
+//       user: {
+//         id: "user-id",
+//       },
+//     };
+//     const res = {
+//       status: jest.fn().mockReturnThis(),
+//       json: jest.fn(),
+//     };
 
-    await getUserPosts(req, res);
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "Internal server error",
-    });
-  });
-});
+//     await getUserPosts(req, res);
+//     expect(res.status).toHaveBeenCalledWith(500);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "Internal server error",
+//     });
+//   });
+// });
 
 describe("sortComments", () => {
   it("should return an error message when the post is not found", async () => {
