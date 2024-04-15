@@ -15,6 +15,7 @@ const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
 const contentManagementController = require("../controller/User/contentManagementController");
 
+
 // Set up multer middleware for file uploads
 const multer = require("multer");
 const storage = multer.memoryStorage();
@@ -192,6 +193,26 @@ router.post("/hide", contentManagementController.hidePost);
  */
 
 router.post("/unhide", contentManagementController.unhidePost);
+/**
+ * Route to spoiler a post.
+ * @name POST/User/spoil
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+router.post("/spoil", contentManagementController.spoilerPost);
+/**
+ * Route to unspoiler a post.
+ * @name POST/User/unspoil
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+router.post("/unspoil", contentManagementController.unspoilerPost);
 
 /**
  * Route to save a post or comment.

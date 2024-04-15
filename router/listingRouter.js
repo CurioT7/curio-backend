@@ -86,5 +86,28 @@ router.get(
  * @returns {object} Express router instance.
  */
 router.get("/best", ListingController.getBestPosts);
+/**
+ * Express route for setting the suggested sort of a subreddit.
+ * @name POST /r/:subreddit
+ * @function
+ * @memberof module:routes
+ * @param {string} path - The URL path for the route ("/r/:subreddit").
+ * @param {function} middleware - The controller function to handle the POST request.
+ * @returns {object} Express router instance.
+ */
+router.post("/r/:subreddit/suggestedSort", ListingController.setSuggestedSort);
+
+/**
+ * Express route for getting the new posts for a user.
+ * @name GET /new
+ * @function
+ * @memberof module:routes
+ * @param {string} path - The URL path for the route ("/user/:type").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+*/
+router.get("/user/:type", ListingController.getUserPosts);
+
+router.get("/r/:subreddit/:postID/:type", ListingController.sortComments);
 
 module.exports = router;
