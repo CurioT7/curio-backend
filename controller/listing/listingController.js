@@ -1,6 +1,7 @@
 const Subreddit = require("../../models/subredditModel");
 const Post = require("../../models/postModel");
 const moment = require("moment");
+const { checkCrossPosts, filterHiddenPosts } = require("../../utils/posts");
 
 
 /**
@@ -261,7 +262,6 @@ async function getBestPosts(req, res) {
       },
       { $sort: { karma: -1 } },
     ]);
-
     res.status(200).json({ success: true, SortedPosts: sortedPosts });
   } catch (error) {
     console.error(error);

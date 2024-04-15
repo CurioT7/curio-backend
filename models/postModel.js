@@ -5,7 +5,6 @@
  */
 
 const mongoose = require("mongoose");
-const { options } = require("../router/profileRouter");
 const Schema = mongoose.Schema;
 
 /**

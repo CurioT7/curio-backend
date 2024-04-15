@@ -6,6 +6,8 @@ const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const brypt = require("bcrypt");
 const { verifyToken } = require("../../utils/tokens");
+const { checkCrossPosts } = require("../../utils/posts");
+
 
 /**
  * Finds a user by their username.
@@ -41,13 +43,14 @@ function handleServerError(res, error) {
  * @returns {Promise<Array>} A Promise that resolves to an array of posts made by the user.
  */
 async function fetchPostsByUsername(username) {
-  const posts = await Post.find({ authorName: username });
+  const userPosts = await Post.find({ authorName: username });
+  const crossPosts = await checkCrossPosts(userPosts);
   // Increment the view count for each post
-  for (const post of posts) {
-    post.views += 1;
-    await post.save();
-  }
-  return posts;
+  await Post.updateMany(
+    { _id: { $in: userPosts.map((post) => post._id) } }, 
+    { $inc: { views: 1 } } 
+  );
+  return allPosts;
 }
 
 /**
@@ -89,7 +92,7 @@ async function getPostsByUser(req, res, next) {
 async function getCommentsByUser(req, res, next) {
   try {
     const { username } = req.params;
-    const user = await findUserByUsername(username);
+    await findUserByUsername(username);
     // Fetch comments by the user
     const comments = await fetchCommentsByUsername(username);
     res.status(200).json(comments);
