@@ -101,9 +101,8 @@ async function newPosts (req, res) {
       createdAt: -1
      });
 
-     for (const post of posts) {
-      await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } });
-    }
+     const postIds = posts.map(post => post._id);
+        await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
     
     return res.status(200).json({ success: true, posts });
@@ -134,9 +133,8 @@ async function hotPosts (req, res) {
       views: -1
      });
 
-      for (const post of posts) {
-      await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } });
-     } 
+     const postIds = posts.map(post => post._id);
+     await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
     
     return res.status(200).json({ success: true, posts });
 
