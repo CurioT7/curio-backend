@@ -65,7 +65,7 @@ async function getTopPosts(req, res) {
 
     if (topPosts.length > 0) {
       // If top-viewed posts exist, increment views of the first post
-          await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
+      await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
 
       return res.status(200).json({ success: true, post: topPosts });
     } else {
@@ -102,11 +102,9 @@ async function newPosts(req, res) {
       createdAt: -1,
     });
 
-
-      await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
-     const postIds = posts.map(post => post._id);
-        await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
-
+    await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
+    const postIds = posts.map((post) => post._id);
+    await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
     return res.status(200).json({ success: true, posts });
   } catch (error) {
@@ -138,13 +136,11 @@ async function hotPosts(req, res) {
       views: -1,
     });
 
+    await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
+    const postIds = posts.map((post) => post._id);
+    await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
-     await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
-     const postIds = posts.map(post => post._id);
-     await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
-    
     return res.status(200).json({ success: true, posts });
-
 
     return res.status(200).json({ success: true, posts });
   } catch (error) {
@@ -262,20 +258,6 @@ async function getBestPosts(req, res) {
         message: "No posts found in the database",
       });
     }
-
-    // Sort the posts using the best algorithm
-    const sortedPosts = posts.sort((a, b) => {
-      const karmaA = a.upvotes - a.downvotes;
-      const karmaB = b.upvotes - b.downvotes;
-
-      // Calculate the proportion of upvotes to downvotes for each post
-      const proportionA = karmaA > 0 ? karmaA / (karmaA + a.downvotes) : 0;
-      const proportionB = karmaB > 0 ? karmaB / (karmaB + b.downvotes) : 0;
-
-      // Sort posts based on the proportion of upvotes to downvotes
-      return proportionB - proportionA;
-    });
-
     const sortedPosts = await Post.aggregate([
       {
         $addFields: {
@@ -295,7 +277,6 @@ async function getBestPosts(req, res) {
       },
       { $sort: { karma: -1 } },
     ]);
-
 
     res.status(200).json({ success: true, SortedPosts: sortedPosts });
   } catch (error) {
