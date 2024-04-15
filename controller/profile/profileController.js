@@ -113,7 +113,7 @@ async function getVotedContent(req, res, next, voteType) {
     if (!decoded) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-     const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findOne({ _id: decoded.userId });
 
     if (!user) {
       return res.status(404).json({
@@ -271,7 +271,7 @@ async function getJoinedCommunities(req, res) {
     const subredditNames = user.subreddits.map((sub) => sub.subreddit);
 
     const communities = await Subreddit.find({
-      name: { $in: subredditNames }, 
+      name: { $in: subredditNames },
     }).exec();
 
     return res.status(200).json({ success: true, communities });
@@ -282,8 +282,6 @@ async function getJoinedCommunities(req, res) {
       .json({ success: false, error: "Failed to fetch user communities" });
   }
 }
-
- 
 
 module.exports = {
   getJoinedCommunities,
