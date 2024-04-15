@@ -66,7 +66,6 @@ async function getTopPosts(req, res) {
     if (topPosts.length > 0) {
       // If top-viewed posts exist, increment views of the first post
       await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
-
       return res.status(200).json({ success: true, post: topPosts });
     } else {
       return res
@@ -102,7 +101,6 @@ async function newPosts(req, res) {
       createdAt: -1,
     });
 
-    await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
     const postIds = posts.map((post) => post._id);
     await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
@@ -136,13 +134,11 @@ async function hotPosts(req, res) {
       views: -1,
     });
 
-    await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
     const postIds = posts.map((post) => post._id);
     await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
     return res.status(200).json({ success: true, posts });
 
-    return res.status(200).json({ success: true, posts });
   } catch (error) {
     return res
       .status(400)
