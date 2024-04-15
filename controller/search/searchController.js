@@ -21,9 +21,8 @@ async function search(req, res) {
             return res.status(404).json({ message: "No posts found for the given query" });
         }
         
-        for (const post of posts) {
-            await Post.updateOne({ _id: post._id }, { $inc: { searchCount: 1 } });
-        }
+        const postIds = posts.map(post => post._id);
+        await Post.updateMany({ _id: { $in: postIds } }, { $inc: { searchCount: 1 } });
 
         res.status(200).json({
             users,
