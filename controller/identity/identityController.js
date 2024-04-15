@@ -142,13 +142,16 @@ async function updateUserPreferences(req, res) {
     "unsubscribeFromAllEmails",
   ];
 
-  preferencesFields.forEach((field) => {
+  const commonFields = preferencesFields.filter(field => ["gender", "language", "images", "socialLinks", "displayName"].includes(field));
+  commonFields.forEach((field) => {
     if (req.body[field] !== undefined) {
       updateFields[field] = req.body[field];
     }
   });
 
   try {
+    await User.updateOne({ _id: user._id }, updateFields);
+    
     const preferences = await UserPreferences.findOneAndUpdate(
       { username: user.username },
       updateFields,
