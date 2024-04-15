@@ -5,6 +5,7 @@
  */
 
 const mongoose = require("mongoose");
+// const { options } = require("../router/profileRouter");
 const Schema = mongoose.Schema;
 
 /**
@@ -42,7 +43,6 @@ const postSchema = new Schema({
   },
   content: {
     type: String,
-    required: true,
   },
   authorName: {
     type: String,
@@ -110,6 +110,28 @@ const postSchema = new Schema({
     type: String,
   },
   isDraft: {
+    type: Boolean,
+    default: false,
+  },
+  isSaved: {
+    type: Boolean,
+    default: false,
+  },
+  originalPostId: {
+    type: Schema.Types.ObjectId,
+    ref: "Post",
+  },
+  sendReplies: {
+    type: Boolean,
+    default: false,
+  },
+  options: {
+    type: Object,
+  },
+  voteLength: {
+    type: Number,
+  },
+  isLocked: {
     type: Boolean,
     default: false,
   },

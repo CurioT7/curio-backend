@@ -15,6 +15,18 @@ const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
 const contentManagementController = require("../controller/User/contentManagementController");
 
+
+// Set up multer middleware for file uploads
+const multer = require("multer");
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 MB
+  },
+});
+
 /**
  * Route to sign up a new user.
  * @name POST/auth/signup
@@ -201,5 +213,152 @@ router.post("/spoil", contentManagementController.spoilerPost);
  * @param {Function} middleware - Middleware function for route
  */
 router.post("/unspoil", contentManagementController.unspoilerPost);
+
+/**
+ * Route to save a post or comment.
+ * @name POST/User/save
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
+router.post("/save", contentManagementController.save);
+
+/*
+ * Route to unsave a post or comment.
+ * @name POST/User/unsave
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
+router.post("/unsave", contentManagementController.unsave);
+
+/**
+ * Route to get saved posts and comments.
+ * @name GET/User/saved_categories
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
+router.get("/saved_categories", contentManagementController.saved_categories);
+
+/**
+ * Route to get hidden posts.
+ * @name GET/User/hidden
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
+router.get("/hidden", contentManagementController.hidden);
+
+/**
+ * Route to submit a post.
+ * @name POST/User/submit
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function} middleware - Middleware function for route
+ */
+
+router.post(
+  "/submit",
+  upload.single("media"),
+  contentManagementController.submit
+);
+
+/**
+ * Route to delete a post.
+ * @name DELETE/User/delete
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ */
+
+router.post("/share", contentManagementController.sharePost);
+
+/**
+ * Route to get a post link.
+ * @name GET/User/share/:postId
+ * @function
+ * @memberof module:UserRoutes
+ * @inner
+ * @param {string} path - Express route path
+ */
+
+router.get("/share/:postId", contentManagementController.getPostLink);
+
+/**
+ * Route for locking a post item.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The JSON response indicating success or failure.
+ */
+router.post(
+  "/lock",
+  contentManagementController.lockItem
+);
+
+/**
+ * Route for unlocking a post item.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The JSON response indicating success or failure.
+ */
+router.post("/unlock", contentManagementController.unlockItem);
+
+/**
+ * Route for retrieving information about a specific item.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The JSON response containing the item information or an error message.
+ */
+router.get("/info", contentManagementController.getItemInfo);
+
+/**
+ * Route handler for casting a vote on a post or a comment.
+ * @name POST /vote
+ * @function
+ * @memberof module:routes/contentManagement
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @returns {Object} JSON response indicating success or failure.
+ */
+router.post("/vote", contentManagementController.castVote);
+
+/**
+ * Add a post to the user's browsing history.
+ * @name POST /history
+ * @function
+ * @memberof router
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response indicating success or failure.
+ */
+router.post("/history", contentManagementController.addToHistory);
+
+/**
+ * Retrieve the user's browsing history.
+ * @name GET /getHistory
+ * @function
+ * @memberof router
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response containing the recent posts.
+ */
+router.get("/getHistory", contentManagementController.getHistory);
+
 
 module.exports = router;

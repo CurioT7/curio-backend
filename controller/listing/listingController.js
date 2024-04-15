@@ -102,7 +102,11 @@ async function newPosts(req, res) {
       createdAt: -1,
     });
 
+
       await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
+     const postIds = posts.map(post => post._id);
+        await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
+
 
     return res.status(200).json({ success: true, posts });
   } catch (error) {
@@ -134,7 +138,13 @@ async function hotPosts(req, res) {
       views: -1,
     });
 
-    await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
+
+     await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
+     const postIds = posts.map(post => post._id);
+     await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
+    
+    return res.status(200).json({ success: true, posts });
+
 
     return res.status(200).json({ success: true, posts });
   } catch (error) {
@@ -235,7 +245,7 @@ async function getTopPostsbytime(req, res) {
   }
 }
 /**
- * Retrieves the best posts based on the proportion of upvotes to downvotes.
+ * Sorts posts based on the proportion of upvotes to downvotes.
  * @async
  * @param {Object} req - The Express request object.
  * @param {Object} res - The Express response object.
@@ -265,6 +275,27 @@ async function getBestPosts(req, res) {
       // Sort posts based on the proportion of upvotes to downvotes
       return proportionB - proportionA;
     });
+
+    const sortedPosts = await Post.aggregate([
+      {
+        $addFields: {
+          karma: {
+            $cond: {
+              if: { $gt: ["$upvotes", "$downvotes"] },
+              then: {
+                $divide: [
+                  { $subtract: ["$upvotes", "$downvotes"] },
+                  { $add: ["$upvotes", "$downvotes"] },
+                ],
+              },
+              else: 0,
+            },
+          },
+        },
+      },
+      { $sort: { karma: -1 } },
+    ]);
+
 
     res.status(200).json({ success: true, SortedPosts: sortedPosts });
   } catch (error) {
@@ -529,6 +560,7 @@ async function getBestComments(subredditId, postId) {
     return [];
   }
 }
+
 module.exports = {
   randomPost,
   getTopPosts,
