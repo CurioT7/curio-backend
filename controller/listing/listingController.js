@@ -4,6 +4,7 @@ const moment = require("moment");
 const { verifyToken } = require("../../utils/tokens");
 const User = require("../../models/userModel");
 const { filterHiddenPosts } = require("../../utils/posts");
+const { decode } = require("jsonwebtoken");
 /**
  * Get a random post from a subreddit.
  * @async
@@ -319,14 +320,15 @@ async function setSuggestedSort(req, res) {
  */
 async function getUserPosts(req, res) {
   try {
-    // const token = req.headers.authorization.split(" ")[1];
-    // const decoded = await verifyToken(token);
-    // if (!decoded) {
-    //   return res.status(401).json({ message: "Unauthorized" });
-    // }
-    const username= req.body.username; 
-    const user = await User.findOne({ username }).populate("subreddits");
-
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+   const user = await User.findOne({ _id: decoded.userId }).populate(
+     "subreddits"
+    );
+    
     if (!user) {
       return res
         .status(404)
