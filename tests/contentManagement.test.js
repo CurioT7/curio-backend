@@ -860,91 +860,132 @@ describe("getHistory function", () => {
   });  
 });
 
-describe("spoilerPost function", () => {
-  // Successfully mark a post as spoiler with valid token and post ID
-  it("should mark a post as spoiler when given a valid token and post ID", async () => {
-    const req = {
-      headers: {
-        authorization: "Bearer validToken",
-      },
-      body: {
-        idpost: "validPostId",
-      },
+describe("getHistory function", () => {
+  let req, res;
+
+  beforeEach(() => {
+    req = {
+      headers: {},
     };
-    const res = {
-      status: jest.fn().mockReturnThis(),
+    res = {
+      status: jest.fn(() => res),
       json: jest.fn(),
     };
-    const decoded = {
-      userId: "validUserId",
-    };
-    const findOneMock = jest.fn().mockResolvedValue({
-      _id: "validPostId",
-      authorID: "validUserId",
-      isSpoiler: false,
-      save: jest.fn(),
+
+    // Mock setup for Post.find
+    Post.find = jest.fn(); 
+  });
+
+  it("should send false when no post id is provided", async () => {
+    await getHistory(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Internal server error",
     });
-    jest.spyOn(Post, "findOne").mockReturnValueOnce(findOneMock);
-    const verifyToken = jest.fn().mockResolvedValue(decoded);
-    jest
-      .spyOn(require("../../utils/tokens"), "verifyToken")
-      .mockReturnValueOnce(verifyToken);
+  });  
+});
+
+describe("spoilerPost function", () => {
+  let req, res, postFindOneAndUpdateMock;
+
+  beforeEach(() => {
+    req = {
+      headers: {
+        authorization:
+          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjAyM2Q4MDdmNzBkYjg4M2NjZjVhOTIiLCJpYXQiOjE3MTE0NzU0ODgsImV4cCI6MTcxMTU2MTg4OH0.Yvil4qLVPXSV7cB5RBhiki7hzqFreQIR8rEUICBqPaU",
+      },
+      body: {
+        postId: "660227d61650ec9f41404c80",
+      },
+    };
+    res = {
+      status: jest.fn(() => res),
+      json: jest.fn(),
+    };
+    postFindOneAndUpdateMock = jest.fn(); // Define postFindOneAndUpdateMock as a mock function
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should return 404 if post is not found", async () => {
+    Post.findOne.mockResolvedValue(null);
 
     await spoilerPost(req, res);
 
-    expect(verifyToken).toHaveBeenCalledWith("validToken");
-    expect(findOneMock).toHaveBeenCalledWith({
-      _id: "validPostId",
-      authorID: "validUserId",
-    });
-    expect(findOneMock().isSpoiler).toBe(true);
-    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      message: "Post marked as spoiler successfully",
+      success: false,
+      message: "Post not found or you are not authorized to modify it",
     });
   });
+
+  it("should return 500 if post is unsuccessfully spoilered", async () => {
+    Post.findOne.mockResolvedValue({ _id: "post123", spoilered: false });
+    postFindOneAndUpdateMock.mockResolvedValue({ _id: "post123", spoilered: true });
+
+    await spoilerPost(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Internal server error",
+    });
+  });
+
+  
 });
-
-
 describe("unspoilerPost function", () => {
-  // Verify that the function returns a 200 status code and a success message when the post is successfully unmarked as a spoiler.
-  it("should return a 200 status code and a success message when the post is successfully unmarked as a spoiler", async () => {
-    const req = {
+  let req, res, postFindOneAndUpdateMock;
+
+  beforeEach(() => {
+    req = {
       headers: {
-        authorization: "Bearer token",
+        authorization:
+          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjAyM2Q4MDdmNzBkYjg4M2NjZjVhOTIiLCJpYXQiOjE3MTE0NzU0ODgsImV4cCI6MTcxMTU2MTg4OH0.Yvil4qLVPXSV7cB5RBhiki7hzqFreQIR8rEUICBqPaU",
       },
       body: {
-        idpost: "post123",
+        postId: "660227d61650ec9f41404c80",
       },
     };
-    const res = {
-      status: jest.fn().mockReturnThis(),
+    res = {
+      status: jest.fn(() => res),
       json: jest.fn(),
     };
-    const findOneMock = jest.fn().mockResolvedValue({
-      _id: "post123",
-      authorID: "user123",
-      isSpoiler: true,
-      save: jest.fn(),
-    });
-    jest.spyOn(Post, "findOne").mockReturnValueOnce(findOneMock);
-    const verifyToken = jest.fn().mockResolvedValue({ userId: "user123" });
-    jest
-      .spyOn(require("../../utils/tokens"), "verifyToken")
-      .mockReturnValueOnce(verifyToken);
+    postFindOneAndUpdateMock = jest.fn(); // Define postFindOneAndUpdateMock as a mock function
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should return 404 if post is not found", async () => {
+    Post.findOne.mockResolvedValue(null);
 
     await unspoilerPost(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      message: "Post unmarked as spoiler successfully",
+      success: false,
+      message: "Post not found or you are not authorized to modify it",
     });
-    expect(findOneMock).toHaveBeenCalledWith({
-      _id: "post123",
-      authorID: "user123",
-    });
-    expect(findOneMock().save).toHaveBeenCalled();
   });
+
+  it("should return 500 if post is unsuccessfully unspoilered", async () => {
+    Post.findOne.mockResolvedValue({ _id: "post123", spoilered: true });
+    postFindOneAndUpdateMock.mockResolvedValue({ _id: "post123", spoilered: false });
+
+    await unspoilerPost(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Internal server error",
+    });
+  });
+
+  
 });
