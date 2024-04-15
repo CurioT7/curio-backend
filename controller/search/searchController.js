@@ -12,7 +12,7 @@ const Post = require("../../models/postModel");
  */
 async function search(req, res) {
     try {
-        const { query } = req.body;
+        const { query } = req.params;
         const users = await User.find({ username: { $regex: query, $options: "i" } });
         const subreddits = await Subreddit.find({ name: { $regex: query, $options: "i" } });
         const posts = await Post.find({ title: { $regex: query, $options: "i" } });
