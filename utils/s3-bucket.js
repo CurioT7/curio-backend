@@ -52,6 +52,11 @@ async function sendFileToS3(req) {
   }
 }
 
+/*
+ * Retrieves a file from an S3 bucket.
+ * @param {String} imageKey - The key of the image to retrieve from the S3 bucket.
+ */
+
 async function getFilesFromS3(imageKey) {
   const command = new GetObjectCommand({
     Bucket: bucketName,
@@ -64,4 +69,4 @@ async function getFilesFromS3(imageKey) {
 const randomImageName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
 
-module.exports = { s3, sendFileToS3 };
+module.exports = { s3, sendFileToS3, getFilesFromS3 };
