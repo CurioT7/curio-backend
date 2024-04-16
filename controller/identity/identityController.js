@@ -105,7 +105,17 @@ async function updateUserPreferences(req, res) {
     return res.status(404).json({ message: "User not found" });
   }
 
-  const updateFields = {};
+  const commonUpdateFields = {};
+  const preferencesUpdateFields = {};
+
+  const commonFields = [
+    "gender",
+    "language",
+    "images",
+    "socialLinks",
+    "displayName"
+  ];
+
   const preferencesFields = [
     "gender",
     "language",
@@ -142,19 +152,22 @@ async function updateUserPreferences(req, res) {
     "unsubscribeFromAllEmails",
   ];
 
-  const commonFields = preferencesFields.filter(field => ["gender", "language", "images", "socialLinks", "displayName"].includes(field));
-  commonFields.forEach((field) => {
-    if (req.body[field] !== undefined) {
-      updateFields[field] = req.body[field];
+  Object.keys(req.body).forEach(field => {
+    if (commonFields.includes(field)) {
+      commonUpdateFields[field] = req.body[field];
+      preferencesUpdateFields[field] = req.body[field];
+
+    } else if (preferencesFields.includes(field)) {
+      preferencesUpdateFields[field] = req.body[field];
     }
   });
 
   try {
-    await User.updateOne({ _id: user._id }, updateFields);
+    await User.updateOne({ _id: user._id }, commonUpdateFields);
     
     const preferences = await UserPreferences.findOneAndUpdate(
       { username: user.username },
-      updateFields,
+      preferencesUpdateFields,
       { new: true, upsert: true }
     );
 
