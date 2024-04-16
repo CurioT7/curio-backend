@@ -1,7 +1,12 @@
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} = require("@aws-sdk/client-s3");
 const multerS3 = require("multer-s3");
 const crypto = require("crypto");
 const sharp = require("sharp");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 // AWS S3 configuration
 const bucketName = process.env.BUCKET_NAME;
@@ -45,6 +50,15 @@ async function sendFileToS3(req) {
     console.log(error);
     return null;
   }
+}
+
+async function getFilesFromS3(imageKey) {
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: imageKey,
+  });
+  const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+  return url;
 }
 
 const randomImageName = (bytes = 32) =>
