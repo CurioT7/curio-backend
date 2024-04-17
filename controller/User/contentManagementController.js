@@ -436,6 +436,7 @@ async function shareCrossPost(user, crossPostData) {
   const post = await Post.findOne({ _id: crossPostData.postId });
   let subreddit;
   if (crossPostData.subreddit) {
+    subreddit = await Subreddit.findOne({ name: crossPostData.subreddit });
     if (!subreddit) {
       throw new Error("Subreddit not found");
     }
