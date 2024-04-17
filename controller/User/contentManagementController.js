@@ -481,9 +481,14 @@ async function shareCrossPost(user, crossPostData) {
  */
 
 async function sharePost(req, res) {
-  const user = await authorizeUser(req, res);
-  if (!user) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
     return res.status(401).json({ message: "Unauthorized" });
+  }
+  const user = await User.findOne({ _id: decoded.userId });
+  if (!user) {
+    return res.status(404).json({ success: false, message: "User not found" });
   }
   const crossPostData = req.body;
   try {
@@ -526,7 +531,6 @@ async function getPostLink(req, res) {
       .json({ success: falses, message: "Internal server error" });
   }
 }
-
 
 /**
  * Locks a post item if the user has the necessary permissions.
@@ -573,8 +577,7 @@ async function lockItem(req, res) {
           success: false,
           message: "User is not authorized to lock posts in this subreddit",
         });
-      }
-      else {
+      } else {
         return res
           .status(200)
           .json({ success: true, message: "Post locked successfully" });
@@ -611,7 +614,7 @@ async function unlockItem(req, res) {
     const itemID = req.body.itemID;
     const item = await Post.findOneAndUpdate(
       { _id: itemID },
-      { isLocked: false},
+      { isLocked: false },
       { new: true }
     );
     if (!item) {
@@ -666,27 +669,31 @@ async function getItemInfo(req, res) {
     }
     const user = await User.findOne({ _id: decoded.userId });
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
-    let item; 
+    let item;
 
     if (objectType === "post") {
       item = await Post.findOne({ _id: objectID });
-    }
-    else if (objectType === "comment") {
+    } else if (objectType === "comment") {
       item = await Comment.findOne({ _id: objectID });
-    }
-    else if (objectType === "subreddit") {
+    } else if (objectType === "subreddit") {
       item = await Subreddit.findOne({ _id: objectID });
     }
     if (!item) {
-      return res.status(404).json({ success: false, message: "Item not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not found" });
     } else {
       return res.status(200).json({ success: true, item });
     }
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ success: false, message: "Internal server error", error:error });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error", error: error });
   }
 }
 
@@ -751,12 +758,11 @@ async function castVote(req, res) {
           // If found in downvotes, remove the existing vote from downvotes
           item.downvotes -= 1;
           user.downvotes.splice(existingDownvoteIndex, 1);
-        }
-        else {
+        } else {
           // If direction is 0 and user hasn't voted yet, return success without making any changes
-            return res
-              .status(200)
-              .json({ success: true, message: "No vote to remove" });
+          return res
+            .status(200)
+            .json({ success: true, message: "No vote to remove" });
         }
       }
 
@@ -771,14 +777,11 @@ async function castVote(req, res) {
       (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
     );
     if (existingVoteIndex !== -1) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "User has already voted on this item",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "User has already voted on this item",
+      });
     }
-
 
     // If direction is not 0 and user hasn't voted yet, add the vote to user's upvotes/downvotes and update item's upvotes/downvotes accordingly
     if (direction === 1) {
@@ -840,7 +843,7 @@ async function addToHistory(req, res) {
     if (!isAlreadyInHistory) {
       // If recentPosts array length is 10, remove the oldest post
       if (user.recentPosts.length >= 10) {
-        user.recentPosts.shift(); 
+        user.recentPosts.shift();
       }
       user.recentPosts.push(post._id); // Add the new post at the end
       await user.save();
@@ -897,7 +900,6 @@ async function getHistory(req, res) {
       .json({ success: false, message: "Internal server error", error: error });
   }
 }
-
 
 module.exports = {
   hidePost,
