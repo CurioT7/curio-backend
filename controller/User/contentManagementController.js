@@ -436,12 +436,12 @@ async function shareCrossPost(user, crossPostData) {
   const post = await Post.findOne({ _id: crossPostData.postId });
   let subreddit;
   if (crossPostData.subreddit) {
-    subreddit = await Subreddit.findOne({
-      name: crossPostData.subreddit,
-    });
     if (!subreddit) {
       throw new Error("Subreddit not found");
     }
+    subreddit = await Subreddit.findOne({
+      name: crossPostData.subreddit,
+    });
   }
   if (!post) {
     throw new Error("Post not found");
@@ -491,6 +491,16 @@ async function sharePost(req, res) {
     return res.status(404).json({ success: false, message: "User not found" });
   }
   const crossPostData = req.body;
+  if (crossPostData.subreddit) {
+    const subreddit = await Subreddit.findOne({
+      name: crossPostData.subreddit,
+    });
+    if (!subreddit) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subreddit not found" });
+    }
+  }
   try {
     await shareCrossPost(user, crossPostData);
     res
