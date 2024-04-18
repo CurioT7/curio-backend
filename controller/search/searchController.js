@@ -11,28 +11,36 @@ const Post = require("../../models/postModel");
  * @returns {Promise<Object>} - The search results.
  */
 async function search(req, res) {
-    try {
-        const { query } = req.body;
-        const users = await User.find({ username: { $regex: query, $options: "i" } });
-        const subreddits = await Subreddit.find({ name: { $regex: query, $options: "i" } });
-        const posts = await Post.find({ title: { $regex: query, $options: "i" } });
+  try {
+    const { query } = req.body;
+    const users = await User.find({
+      username: { $regex: query, $options: "i" },
+    });
+    const subreddits = await Subreddit.find({
+      name: { $regex: query, $options: "i" },
+    });
+    const posts = await Post.find({ title: { $regex: query, $options: "i" } });
 
-        if (posts.length === 0) {
-            return res.status(404).json({ message: "No posts found for the given query" });
-        }
-        
-        const postIds = posts.map(post => post._id);
-        await Post.updateMany({ _id: { $in: postIds } }, { $inc: { searchCount: 1 } });
-
-        res.status(200).json({
-            users,
-            subreddits,
-            posts,
-        });
-
-    } catch (error) {
-        res.status(500).json({ message: "Internal server error" });
+    if (posts.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No posts found for the given query" });
     }
+
+    const postIds = posts.map((post) => post._id);
+    await Post.updateMany(
+      { _id: { $in: postIds } },
+      { $inc: { searchCount: 1 } }
+    );
+
+    res.status(200).json({
+      users,
+      subreddits,
+      posts,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
 }
 
 /**
@@ -44,20 +52,61 @@ async function search(req, res) {
  */
 
 async function trendingSearches(req, res) {
-    try {
-        const posts = await Post.find().sort({ searchCount:-1, createdAt: -1 }).limit(5);
+  try {
+    const posts = await Post.find()
+      .sort({ searchCount: -1, createdAt: -1 })
+      .limit(5);
 
-        res.status(200).json({
-            success: true,
-            posts,
-        });
-    } catch (error) {
-        res.status(500).json({ message: "Internal server error" });
-    }
+    res.status(200).json({
+      success: true,
+      posts,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+/**
+ * Get search suggestions for users and subreddits.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The search suggestions.
+ * @throws {Error} - If there is an error getting the search suggestions.
+ * @returns {Promise<Object>} - The search suggestions.
+ */
+
+async function searchSuggestions(req, res) {
+  try {
+    //get query and convert to string
+    const query = decodeURIComponent(req.params.query).toString();
+
+    //get users usernames
+    const users = await User.find({
+      username: { $regex: query, $options: "i" },
+    })
+      .select("username")
+      .limit(5);
+
+    //get subreddits names
+    const subreddits = await Subreddit.find({
+      name: { $regex: query, $options: "i" },
+    })
+      .select("name")
+      .limit(5);
+
+    res.status(200).json({
+      users,
+      subreddits,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 }
 
 module.exports = {
-    search,
-    trendingSearches,
+  search,
+  trendingSearches,
+  searchSuggestions,
 };
-
