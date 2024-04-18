@@ -1,3 +1,26 @@
+const jwt = require("jsonwebtoken");
+const User = require("../models/userModel");
+const { verifyToken } = require("../utils/tokens");
+
+//protected route
+const auth = async (req, res, next) => {
+  try {
+    const token = req.header.authorization.split(" ")[1];
+    const payload = await verifyToken(token);
+    const user = await User.findOne({
+      _id: payload.userId,
+    });
+
+    if (!user) {
+      res.status(401).send({ error: "Not authorized to access this resource" });
+    }
+
+    next();
+  } catch (error) {
+    res.status(401).send({ error: "Not authorized to access this resource" });
+  }
+};
+
 /**
  * Validates an email address using a regular expression.
  * @param {string} email - The email address to validate.
@@ -18,4 +41,4 @@ function validatePassword(password) {
   return passwordRegex.test(password);
 }
 
-module.exports = { validateEmail, validatePassword };
+module.exports = { validateEmail, validatePassword, auth };
