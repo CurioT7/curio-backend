@@ -191,7 +191,7 @@ const userSchema = new mongoose.Schema({
       ref: "Post",
     },
   ],
-  savedItems: [ 
+  savedItems: [
     {
       type: Schema.Types.ObjectId,
       ref: "Post",
@@ -199,7 +199,7 @@ const userSchema = new mongoose.Schema({
     {
       type: Schema.Types.ObjectId,
       ref: "Comment",
-    }
+    },
   ],
   reset_token: {
     type: String,
@@ -213,7 +213,11 @@ const userSchema = new mongoose.Schema({
       type: Schema.Types.ObjectId,
       ref: "Post",
     },
-  ]
+  ],
+  karma: {
+    type: Number,
+    default: 0,
+  },
 });
 
 /**

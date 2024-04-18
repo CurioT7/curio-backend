@@ -85,23 +85,32 @@ async function searchSuggestions(req, res) {
     const users = await User.find({
       username: { $regex: query, $options: "i" },
     })
-      .select("username")
+      .select("username profilePicture karma")
       .limit(5);
 
-    //get subreddits names
-    const subreddits = await Subreddit.find({
-      name: { $regex: query, $options: "i" },
-    })
-      .select("name")
-      .limit(5);
-
+    const subreddits = await Subreddit.aggregate([
+      {
+        $match: { name: { $regex: query, $options: "i" } },
+      },
+      {
+        $project: {
+          name: 1,
+          icon: 1,
+          members: { $size: "$members" },
+        },
+      },
+      {
+        $limit: 5,
+      },
+    ]);
     res.status(200).json({
+      success: true,
       users,
       subreddits,
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
 
