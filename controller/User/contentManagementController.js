@@ -655,8 +655,8 @@ async function getItemInfo(req, res) {
   try {
     const token = req.headers.authorization.split(" ")[1];
 
-    const objectID = req.body.objectID;
-    const objectType = req.body.objectType;
+     const objectID = req.query.objectID;
+     const objectType = req.query.objectType;
 
     const decoded = await verifyToken(token);
     if (!decoded) {
