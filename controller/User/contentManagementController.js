@@ -344,7 +344,7 @@ async function submitPost(req, res, user, imageKey) {
     }
     const post = new Post({
       title: req.body.title,
-      content: req.body.content,
+      content: req.body.content && req.body.content,
       authorName: user.username,
       isNSFW: req.body.isNSFW,
       isSpoiler: req.body.isSpoiler,
@@ -436,13 +436,12 @@ async function shareCrossPost(user, crossPostData) {
   const post = await Post.findOne({ _id: crossPostData.postId });
   let subreddit;
   if (crossPostData.subreddit) {
-    subreddit = await Subreddit.findOne({ name: crossPostData.subreddit });
-    if (!subreddit) {
-      throw new Error("Subreddit not found");
-    }
     subreddit = await Subreddit.findOne({
       name: crossPostData.subreddit,
     });
+    if (!subreddit) {
+      throw new Error("Subreddit not found");
+    }
   }
   if (!post) {
     throw new Error("Post not found");
@@ -482,26 +481,11 @@ async function shareCrossPost(user, crossPostData) {
  */
 
 async function sharePost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
+  const user = await authorizeUser(req, res);
+  if (!user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({ success: false, message: "User not found" });
-  }
   const crossPostData = req.body;
-  if (crossPostData.subreddit) {
-    const subreddit = await Subreddit.findOne({
-      name: crossPostData.subreddit,
-    });
-    if (!subreddit) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Subreddit not found" });
-    }
-  }
   try {
     await shareCrossPost(user, crossPostData);
     res
