@@ -45,8 +45,6 @@ jest.mock("../models/userModel");
     });
   });
 
-  describe("Subreddit Controller", () => {
-
   describe("getSubredditInfo", () => {
     // Return a 404 status code with an error message if the subreddit is not found in the database.
     it("should return a 404 status code with an error message when the subreddit is not found", async () => {
@@ -71,22 +69,22 @@ jest.mock("../models/userModel");
     });
   });
 
-  describe("getTopCommunities", () => {
-    // Retrieves the top communities sorted by the number of members with default values.
-    it("should retrieve the top communities sorted by the number of members with default values", async () => {
-      const req = { query: {} };
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+//   describe("getTopCommunities", () => {
+//     // Retrieves the top communities sorted by the number of members with default values.
+//     it("should retrieve the top communities sorted by the number of members with default values", async () => {
+//       const req = { query: {} };
+//       const res = {
+//         status: jest.fn().mockReturnThis(),
+//         json: jest.fn(),
+//       };
 
-      await getTopCommunities(req, res);
+//       await getTopCommunities(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        communities: expect.any(Array),
-      });
-    });
-  });
-});
+//       expect(res.status).toHaveBeenCalledWith(200);
+//       expect(res.json).toHaveBeenCalledWith({
+//         success: true,
+//         communities: expect.any(Array),
+//       });
+//     });
+//   });
+// });

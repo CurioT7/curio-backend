@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema({
   googleId: {
     type: String,
     trim: true,
+    default: null,
   },
   username: {
     type: String,
@@ -123,7 +124,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         default: 0,
-        enum: ["Post", "Comment"],
+        enum: ["post", "comment"],
       },
     },
   ],
@@ -137,7 +138,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         default: 0,
-        enum: ["Post", "Comment"],
+        enum: ["post", "comment"],
       },
     },
   ],
@@ -190,11 +191,29 @@ const userSchema = new mongoose.Schema({
       ref: "Post",
     },
   ],
-  reset_token: { 
-     type: String,
+  savedItems: [ 
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Post",
+    },
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Comment",
     }
-  
-  
+  ],
+  reset_token: {
+    type: String,
+  },
+  createdPassword: {
+    type: Boolean,
+    default: true,
+  },
+  recentPosts: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Post",
+    },
+  ]
 });
 
 /**
