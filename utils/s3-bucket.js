@@ -29,9 +29,7 @@ const s3 = new S3Client({
 
 async function sendFileToS3(req) {
   //resize image
-  const buffer = await sharp(req.file.buffer)
-    .resize({ height: 400, width: 400, fit: "contain" })
-    .toBuffer();
+  const buffer = req.file.buffer;
 
   //send media to s3
   const file = req.file;
@@ -39,12 +37,12 @@ async function sendFileToS3(req) {
     Bucket: bucketName,
     Key: randomImageName(),
     Body: buffer,
-    CibtebtType: file.mimetype,
+    ContentType: file.mimetype,
   };
+
   const command = new PutObjectCommand(uploadParams);
   try {
-    const data = await s3.send(command);
-    console.log("Successfully uploaded file to S3");
+    await s3.send(command);
     return uploadParams.Key;
   } catch (error) {
     console.log(error);
