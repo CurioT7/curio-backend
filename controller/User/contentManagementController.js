@@ -705,7 +705,7 @@ async function castVote(req, res) {
   try {
     const token = req.headers.authorization.split(" ")[1];
     const itemID = req.body.itemID;
-    const itemName = req.body.itemName;
+    const itemName = req.body.itemName.toLowerCase();
     const direction = req.body.direction;
 
     const decoded = await verifyToken(token);
@@ -733,6 +733,8 @@ async function castVote(req, res) {
         .json({ success: false, message: "Item not found" });
     }
 
+    const itemAuthor = await User.findOne({ username: item.authorName });
+
     if (direction === 0) {
       // Find the existing vote in upvotes
       const existingUpvoteIndex = user.upvotes.findIndex(
@@ -743,6 +745,7 @@ async function castVote(req, res) {
         //If found in upvotes,remove the existing vote from upvotes
         item.upvotes -= 1;
         user.upvotes.splice(existingUpvoteIndex, 1);
+        itemAuthor.karma -= 1;
       } else {
         // If not found in upvotes, find in downvotes
         const existingDownvoteIndex = user.downvotes.findIndex(
@@ -753,6 +756,7 @@ async function castVote(req, res) {
           // If found in downvotes, remove the existing vote from downvotes
           item.downvotes -= 1;
           user.downvotes.splice(existingDownvoteIndex, 1);
+          itemAuthor.karma += 1;
         } else {
           // If direction is 0 and user hasn't voted yet, return success without making any changes
           return res
@@ -761,7 +765,7 @@ async function castVote(req, res) {
         }
       }
 
-      await Promise.all([item.save(), user.save()]);
+      await Promise.all([item.save(), user.save(), itemAuthor.save()]);
       return res
         .status(200)
         .json({ success: true, message: "Vote removed successfully" });
@@ -782,12 +786,14 @@ async function castVote(req, res) {
     if (direction === 1) {
       item.upvotes += 1;
       user.upvotes.push({ itemId: itemID, itemType: itemName, direction });
+      itemAuthor.karma += 1;
     } else if (direction === -1) {
       item.downvotes += 1;
       user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
+      itemAuthor.karma -= 1;
     }
 
-    await Promise.all([item.save(), user.save()]);
+    await Promise.all([item.save(), user.save(), itemAuthor.save()]);
     return res
       .status(200)
       .json({ success: true, message: "Vote casted successfully" });
