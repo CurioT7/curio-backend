@@ -75,6 +75,14 @@ async function createComments(req, res) {
         return res.status(403).json({ success: false, message: "Post is locked. Cannot add a comment." });
       }
 
+      // check if user is authorized to comment
+      if (post.linkedSubreddit.privacyMode === "private") {
+        const isMember = post.linkedSubreddit.members.includes(user._id);
+        if (!isMember) {
+          return res.status(403).json({ success: false, message: "You are not authorized to comment on this post." });
+        }
+      }
+
       const comment = new Comment({
         content,
         authorName: user.username,
@@ -87,7 +95,9 @@ async function createComments(req, res) {
       });
   
       await comment.save();
-  
+      post.comments.push(comment._id);
+      await post.save();
+    
       return res.status(201).json({ success: true, comment });
 
   } catch (err) {
@@ -122,6 +132,11 @@ async function updatePostComments(req, res) {
 
     if (!comment) {
       return res.status(404).json({ success: false,  message: "comment not found" });
+    }
+
+    // check if user is authorized to edit comment
+    if (comment.authorName !== user.username) {
+      return res.status(403).json({ success: false, message: "You are not authorized to edit this comment." });
     }
 
     comment.content = content;
@@ -162,6 +177,16 @@ async function deleteComments(req, res) {
     if (!comment) {
       return res.status(404).json({ success: false,  message: "comment not found" });
     }
+
+    // Check if the user is the author of the comment
+    const isAuthor = comment.authorName === user.username;
+    // Check if the user is a moderator of the subreddit
+    const isModerator = comment.linkedSubreddit.moderators;
+
+    if (!isAuthor && !isModerator) {
+      return res.status(403).json({ success: false, message: "You are not authorized to delete this comment." });
+    }
+
     await Comment.deleteOne({ _id: commentId });
     return res.status(200).json({ success: true, message: "comment deleted successfully" });
 
@@ -190,6 +215,15 @@ async function deletePost (req, res) {
     if (!post) {
       return res.status(404).json({ success: false, message: "Post not found." });
     } 
+    // Check if the user is the author of the post
+    const isAuthor = post.authorName === user.username;
+    // Check if the user is a moderator of the subreddit
+    const isModerator = post.linkedSubreddit.moderators;
+
+    if (!isAuthor && !isModerator) {
+        return res.status(403).json({ success: false, message: "You are not authorized to delete this post." });
+    }
+
     await post.deleteOne();
     return res.status(200).json({ success: true, message: "Post deleted successfully." });
   }
@@ -215,6 +249,11 @@ async function editPostContent(req, res) {
     if (!post) {
       return res.status(404).json({ success: false, message: "Post not found." });
     }
+    // check if user is authorized to edit post
+    if (post.authorName !== user.username) {
+      return res.status(403).json({ success: false, message: "You are not authorized to edit this post." });
+    }
+
     post.content = content;
     await post.save();
     return res.status(200).json({ success: true, post });
@@ -242,6 +281,7 @@ async function markPostNSFW(req, res) {
     if (!post) {
       return res.status(404).json({ success: false, message: "Post not found." });
     }
+    
     post.isNSFW = true;
     await post.save();
     return res.status(200).json({ success: true, post });
