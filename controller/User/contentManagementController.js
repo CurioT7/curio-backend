@@ -349,11 +349,11 @@ async function submitPost(req, res, user, imageKey) {
       isNSFW: req.body.isNSFW,
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
-      linkedSubreddit: req.body.subreddit ? subreddit._id : null,
+      linkedSubreddit: req.body.subreddit && req.body.subreddit,
       media: imageKey,
       sendReplies: req.body.sendReplies,
-      options: req.body.options ? req.body.options : null,
-      voteLength: req.body.voteLength ? req.body.voteLength : null,
+      options: req.body.options && req.body.options,
+      voteLength: req.body.voteLength && req.body.voteLength,
     });
     await post.save();
     // Add post to user's posts
