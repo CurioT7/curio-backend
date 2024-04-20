@@ -27,18 +27,21 @@ const s3 = new S3Client({
  * @param {Object} file - The file to send to the S3 bucket.
  */
 
-async function sendFileToS3(req) {
+async function sendFileToS3(file) {
   //resize image
-  const buffer = req.file.buffer;
+  const buffer = file.buffer;
+  console.log(file.mimetype.split("/")[1]);
 
   //send media to s3
-  const file = req.file;
+
   const uploadParams = {
     Bucket: bucketName,
-    Key: randomImageName(),
+    Key: randomImageName() + "." + file.mimetype.split("/")[1],
     Body: buffer,
     ContentType: file.mimetype,
   };
+
+  console.log(uploadParams.Key);
 
   const command = new PutObjectCommand(uploadParams);
   try {
@@ -56,12 +59,17 @@ async function sendFileToS3(req) {
  */
 
 async function getFilesFromS3(imageKey) {
-  const command = new GetObjectCommand({
-    Bucket: bucketName,
-    Key: imageKey,
-  });
-  const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
-  return url;
+  try {
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: imageKey,
+    });
+    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    return url;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
 }
 
 const randomImageName = (bytes = 32) =>
