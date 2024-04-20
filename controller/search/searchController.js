@@ -29,11 +29,6 @@ async function search(req, res) {
         .json({ message: "No posts found for the given query" });
     }
 
-    const postIds = posts.map((post) => post._id);
-    await Post.updateMany(
-      { _id: { $in: postIds } },
-      { $inc: { searchCount: 1 } }
-    );
     if (posts.length === 0) {
       return res
         .status(404)
@@ -46,14 +41,6 @@ async function search(req, res) {
       { $inc: { searchCount: 1 } }
     );
 
-    res.status(200).json({
-      users,
-      subreddits,
-      posts,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
-  }
     res.status(200).json({
       users,
       subreddits,
@@ -145,6 +132,14 @@ async function searchSuggestions(req, res) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
+
+/**
+ * Increment the search count of a post.
+ * @async
+ * @param {Object} post - The post object.
+ * @throws {Error} - If there is an error incrementing the search count.
+ * @returns {Promise<void>} - The search count of the post.
+ */
 async function incSearchCount(post)
 {
   try {
@@ -158,6 +153,14 @@ async function incSearchCount(post)
     res.status(500).json({ message: "Internal server error" });
   }
 }
+
+/**
+ * Authorize a user based on a token.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The user object.
+ */
 async function authorize(req, res){
   try {
   const token = req.headers.authorization.split(" ")[1];
@@ -175,6 +178,14 @@ async function authorize(req, res){
   res.status(500).json({ message: "Internal server error" });
 }}
 
+/**
+ * Search for comments or posts based on a query and type.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The search results.
+ * @throws {Error} - If there is an error searching for comments or posts.
+ */
 async function searchCommentsOrPosts(req, res) {
   try {
     const query = decodeURIComponent(req.params.query);
@@ -317,4 +328,5 @@ module.exports = {
   search,
   trendingSearches,
   searchCommentsOrPosts,
+  searchSuggestions,
 };
