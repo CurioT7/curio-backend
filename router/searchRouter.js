@@ -29,7 +29,7 @@ router.get("/search/:query", searchController.search);
 
 
 // route to handle GET requests for searching comments
-router.get("/searchComments/:query/:subreddit?", searchController.searchComments);
+router.get("/searchComments/:query/:type/:subreddit?", searchController.searchCommentsOrPosts);
 
 module.exports = router;
 
