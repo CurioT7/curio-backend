@@ -193,7 +193,7 @@ async function getSubredditInfo(req, res) {
  */
 async function getTopCommunities(req, res) {
   const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
-  const limit = 250; // Allow 250 items per page 
+  const limit = 10; // Allow 10 items per page 
   const sortBy = "members"; // Default sorting by members 
 
   try {
