@@ -784,6 +784,7 @@ async function castVote(req, res) {
       } by ${user.username}.`,
       recipient: item.author._id,
     });
+
     await notification.save();
 
     // If direction is not 0 and user hasn't voted yet, add the vote to user's upvotes/downvotes and update item's upvotes/downvotes accordingly

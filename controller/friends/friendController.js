@@ -458,7 +458,7 @@ async function followSubreddit(req, res) {
     const userNotification = new Notification({
       title: "Subreddit Followed",
       message: `You have successfully followed the subreddit "${subreddit}".`,
-      recipient: userExists._id,
+      recipient: userExists.username,
     });
     await userNotification.save();
 
