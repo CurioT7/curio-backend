@@ -341,7 +341,28 @@ async function submitPost(req, res, user, imageKey) {
           .status(404)
           .json({ success: false, message: "Subreddit not found" });
       }
+      if (subreddit.privacyMode === "private") {
+        if (!subreddit.members.includes(user._id)) {
+          return res.status(403).json({
+            success: false,
+            message: "User is not a member of this subreddit",
+          });
+        }
+      }
     }
+
+    if (req.body.content && req.body.content.startsWith("http")) {
+      // Regular expression to match URLs like www.example.com
+      const urlPattern =
+        /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})(\/\S*)?$/;
+
+      if (!urlPattern.test(req.body.content)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid URL format" });
+      }
+    }
+
     const post = new Post({
       title: req.body.title,
       content: req.body.content && req.body.content,
@@ -442,6 +463,9 @@ async function shareCrossPost(user, crossPostData) {
     if (!subreddit) {
       throw new Error("Subreddit not found");
     }
+    if (subreddit.privacyMode === "private") {
+      throw new Error("Subreddit is private");
+    }
   }
   if (!post) {
     throw new Error("Post not found");
@@ -486,6 +510,22 @@ async function sharePost(req, res) {
   const user = await User.findOne({ _id: decoded.userId });
   if (!user) {
     return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (req.body.subreddit) {
+    const subreddit = await Subreddit.findOne({ name: req.body.subreddit });
+    if (!subreddit) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subreddit not found" });
+    }
+    if (subreddit.privacyMode === "private") {
+      if (!subreddit.members.includes(user._id)) {
+        return res.status(403).json({
+          success: false,
+          message: "User is not a member of this subreddit",
+        });
+      }
+    }
   }
   const crossPostData = req.body;
   try {
