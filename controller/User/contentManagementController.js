@@ -349,7 +349,7 @@ async function submitPost(req, res, user, imageKey) {
       isNSFW: req.body.isNSFW,
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
-      linkedSubreddit: req.body.subreddit && req.body.subreddit,
+      linkedSubreddit: subreddit && subreddit._id,
       media: imageKey,
       sendReplies: req.body.sendReplies,
       options: req.body.options && req.body.options,
@@ -447,7 +447,7 @@ async function shareCrossPost(user, crossPostData) {
     throw new Error("Post not found");
   }
   const crossPost = new Post({
-    title: crossPostData.title ? crossPostData.title : post.title,
+    title: crossPostData.title && crossPostData.title,
     authorName: user.username,
     content: post.content,
     isNSFW: crossPostData.isNSFW,
@@ -455,7 +455,7 @@ async function shareCrossPost(user, crossPostData) {
     isOC: crossPostData.isOC,
     originalPostId: post._id,
     sendReplies: crossPostData.sendReplies,
-    linkedSubreddit: subreddit ? subreddit._id : null,
+    linkedSubreddit: subreddit && subreddit._id,
   });
   post.shares += 1;
   await post.save();
@@ -655,8 +655,8 @@ async function getItemInfo(req, res) {
   try {
     const token = req.headers.authorization.split(" ")[1];
 
-     const objectID = req.query.objectID;
-     const objectType = req.query.objectType;
+    const objectID = req.query.objectID;
+    const objectType = req.query.objectType;
 
     const decoded = await verifyToken(token);
     if (!decoded) {
