@@ -481,7 +481,9 @@ async function shareCrossPost(user, crossPostData) {
  */
 
 async function sharePost(req, res) {
-  const user = await authorizeUser(req, res);
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  const user = await User.findOne({ _id: decoded.userId });
   if (!user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -630,7 +632,7 @@ async function unlockItem(req, res) {
           message: "User is not authorized to unlock posts in this subreddit",
         });
       } else {
-         await Post.findOneAndUpdate(
+        await Post.findOneAndUpdate(
           { _id: itemID },
           { isLocked: false },
           { new: true }
