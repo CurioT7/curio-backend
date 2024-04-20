@@ -345,13 +345,11 @@ async function searchPeople(req, res) {
       .select("username profilePicture karma")
       .limit(5);
 
-    if (req.headers.authorization) {
-      const token = req.headers.authorization.split(" ")[1];
-      const decoded = await verifyToken(token);
-      if (!decoded) {
-        return res.status(401).json({ message: "Unauthorized" });
+    if (req.user) {
+      const LoggedUser = await User.findOne({ _id: req.user.userId });
+      if (!LoggedUser) {
+        return res.status(404).json({ message: "User not found" });
       }
-      const LoggedUser = await User.findOne({ _id: decoded.userId });
       if (!LoggedUser) {
         return res.status(404).json({ message: "User not found" });
       }

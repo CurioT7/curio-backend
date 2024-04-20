@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { authenticate } = require("../middlewares/auth");
 
 const searchController = require("../controller/search/searchController");
 
@@ -55,6 +56,10 @@ router.get(
 
 router.get("/searchSuggestions/:query", searchController.searchSuggestions);
 
-router.get("/search/people/:query", searchController.searchPeople);
+router.get(
+  "/search/people/:query",
+  (req, res, next) => authenticate(req, res, next, true),
+  searchController.searchPeople
+);
 
 module.exports = router;
