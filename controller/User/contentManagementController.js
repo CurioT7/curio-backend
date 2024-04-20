@@ -350,6 +350,19 @@ async function submitPost(req, res, user, imageKey) {
         }
       }
     }
+
+    if (req.body.content && req.body.content.startsWith("http")) {
+      // Regular expression to match URLs like www.example.com
+      const urlPattern =
+        /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})(\/\S*)?$/;
+
+      if (!urlPattern.test(req.body.content)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid URL format" });
+      }
+    }
+
     const post = new Post({
       title: req.body.title,
       content: req.body.content && req.body.content,
