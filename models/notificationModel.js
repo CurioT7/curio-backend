@@ -31,6 +31,10 @@ const notificationSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  isEnable: {
+    type: Boolean,
+    default: true,
+  },
 });
 /**
  * Creates a model for the Comment schema.

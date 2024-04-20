@@ -6,5 +6,9 @@ router.get(
   "/notifications/history",
   notificationController.getAllNotificationsForUser
 );
+router.post(
+  "/notifications/settings",
+  notificationController.disableNotificationsForUser
+);
 
 module.exports = router;

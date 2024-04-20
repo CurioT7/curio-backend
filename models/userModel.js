@@ -191,7 +191,7 @@ const userSchema = new mongoose.Schema({
       ref: "Post",
     },
   ],
-  savedItems: [ 
+  savedItems: [
     {
       type: Schema.Types.ObjectId,
       ref: "Post",
@@ -199,7 +199,7 @@ const userSchema = new mongoose.Schema({
     {
       type: Schema.Types.ObjectId,
       ref: "Comment",
-    }
+    },
   ],
   reset_token: {
     type: String,
@@ -213,7 +213,26 @@ const userSchema = new mongoose.Schema({
       type: Schema.Types.ObjectId,
       ref: "Post",
     },
-  ]
+  ],
+  notificationSettings: {
+    disabledSubreddits: [
+      {
+        type: String, // Store the names of disabled subreddits
+      },
+    ],
+    disabledPosts: [
+      {
+        type: Schema.Types.ObjectId, // Store the IDs of disabled posts
+        ref: "Post", // Reference to the Post model
+      },
+    ],
+    disabledComments: [
+      {
+        type: Schema.Types.ObjectId, // Store the IDs of disabled comments
+        ref: "Comment", // Reference to the Comment model
+      },
+    ],
+  },
 });
 
 /**
