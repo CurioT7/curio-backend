@@ -218,6 +218,7 @@ const userSchema = new mongoose.Schema({
     disabledSubreddits: [
       {
         type: String, // Store the names of disabled subreddits
+        ref: "Subreddit",
       },
     ],
     disabledPosts: [

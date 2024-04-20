@@ -31,9 +31,9 @@ const notificationSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  isEnable: {
+  ishiden: {
     type: Boolean,
-    default: true,
+    default: false,
   },
 });
 /**

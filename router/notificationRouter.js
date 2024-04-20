@@ -7,8 +7,11 @@ router.get(
   notificationController.getAllNotificationsForUser
 );
 router.post(
-  "/notifications/settings",
+  "/notifications/settings/disable",
   notificationController.disableNotificationsForUser
 );
-
+router.post(
+  "/notifications/settings/enable",
+  notificationController.enableNotificationsForUser
+);
 module.exports = router;
