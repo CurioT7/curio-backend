@@ -161,22 +161,22 @@ async function incSearchCount(post)
  * @param {Object} res - The Express response object.
  * @returns {Promise<Object>} - The user object.
  */
-async function authorize(req, res){
-  try {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
-  return user;
- } catch (error) {
-  console.log(error);
-  res.status(500).json({ message: "Internal server error" });
-}}
+// async function authorize(req, res){
+//   try {
+//   const token = req.headers.authorization.split(" ")[1];
+//   const decoded = await verifyToken(token);
+//   if (!decoded) {
+//     return res.status(401).json({ message: "Unauthorized" });
+//   }
+//   const user = await User.findOne({ _id: decoded.userId });
+//   if (!user) {
+//     return res.status(404).json({ message: "User not found" });
+//   }
+//   return user;
+//  } catch (error) {
+//   console.log(error);
+//   res.status(500).json({ message: "Internal server error" });
+// }}
 
 /**
  * Search for comments or posts based on a query and type.
