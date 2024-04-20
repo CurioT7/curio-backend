@@ -198,6 +198,14 @@ async function deleteComments(req, res) {
   }
 }
 
+// Function to delete a post
+/**
+ * Deletes a post.
+ * @async
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @returns {object} - Express response object
+ */
 
 async function deletePost (req, res) {
   const token = req.headers.authorization.split(" ")[1];
@@ -233,6 +241,15 @@ async function deletePost (req, res) {
   }
 }
 
+// Function to edit post content
+/**
+ * Edits post content.
+ * @async
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @returns {object} - Express response object
+ */
+
 async function editPostContent(req, res) {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = await verifyToken(token);
@@ -264,6 +281,15 @@ async function editPostContent(req, res) {
   }
 }
 
+// Function to mark a post as NSFW
+/**
+ * Marks a post as NSFW (Not Safe For Work).
+ * @async
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @returns {object} - Express response object
+ */
+
 // NSFW = Not Safe For Work
 async function markPostNSFW(req, res) {
   const token = req.headers.authorization.split(" ")[1];
@@ -291,6 +317,15 @@ async function markPostNSFW(req, res) {
     return res.status(500).json({ success: false, message: "Internal server error." });
   }
 }
+
+// Function to unmark a post as NSFW
+/**
+ * Unmarks a post as NSFW (Not Safe For Work).
+ * @async
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @returns {object} - Express response object
+ */
 
 async function unmarkPostNSFW(req, res) {
   const token = req.headers.authorization.split(" ")[1];
