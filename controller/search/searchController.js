@@ -34,7 +34,26 @@ async function search(req, res) {
       { _id: { $in: postIds } },
       { $inc: { searchCount: 1 } }
     );
+    if (posts.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No posts found for the given query" });
+    }
 
+    const postIds = posts.map((post) => post._id);
+    await Post.updateMany(
+      { _id: { $in: postIds } },
+      { $inc: { searchCount: 1 } }
+    );
+
+    res.status(200).json({
+      users,
+      subreddits,
+      posts,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
     res.status(200).json({
       users,
       subreddits,
@@ -58,6 +77,10 @@ async function trendingSearches(req, res) {
     const posts = await Post.find()
       .sort({ searchCount: -1, createdAt: -1 })
       .limit(5);
+  try {
+    const posts = await Post.find()
+      .sort({ searchCount: -1, createdAt: -1 })
+      .limit(5);
 
     res.status(200).json({
       success: true,
@@ -65,6 +88,61 @@ async function trendingSearches(req, res) {
     });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
+  }
+    res.status(200).json({
+      success: true,
+      posts,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+/**
+ * Get search suggestions for users and subreddits.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The search suggestions.
+ * @throws {Error} - If there is an error getting the search suggestions.
+ * @returns {Promise<Object>} - The search suggestions.
+ */
+
+async function searchSuggestions(req, res) {
+  try {
+    //get query and convert to string
+    const query = decodeURIComponent(req.params.query).toString();
+
+    //get users usernames
+    const users = await User.find({
+      username: { $regex: query, $options: "i" },
+    })
+      .select("username profilePicture karma")
+      .limit(5);
+
+    const subreddits = await Subreddit.aggregate([
+      {
+        $match: { name: { $regex: query, $options: "i" } },
+      },
+      {
+        $project: {
+          name: 1,
+          icon: 1,
+          members: { $size: "$members" },
+        },
+      },
+      {
+        $limit: 5,
+      },
+    ]);
+    res.status(200).json({
+      success: true,
+      users,
+      subreddits,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
 async function incSearchCount(post)

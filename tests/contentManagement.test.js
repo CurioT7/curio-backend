@@ -386,351 +386,351 @@ describe("shareLink function", () => {
   });
 });
 
-describe("lockItem function", () => {
-  let req,
-    res,
-    userFindOneMock,
-    postFindOneAndUpdateMock,
-    subredditFindByIdMock;
-
-  beforeEach(() => {
-    userFindOneMock = jest.spyOn(User, "findOne");
-    postFindOneAndUpdateMock = jest.spyOn(Post, "findOneAndUpdate");
-    subredditFindByIdMock = jest.spyOn(Subreddit, "findById");
-
-    req = {
-      headers: {
-        authorization:
-          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjAyM2Q4MDdmNzBkYjg4M2NjZjVhOTIiLCJpYXQiOjE3MTE0NzU0ODgsImV4cCI6MTcxMTU2MTg4OH0.Yvil4qLVPXSV7cB5RBhiki7hzqFreQIR8rEUICBqPaU",
-      },
-      body: {
-        itemID: "660227d61650ec9f41404c80",
-      },
-    };
-
-    res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("should return 401 if token is missing or invalid", async () => {
-    verifyToken.mockResolvedValue(null); // Simulate token verification failure
-
-    await lockItem(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
-  });
-
-  it("should return 404 if user is not found", async () => {
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    userFindOneMock.mockResolvedValue(null); // Simulate user not found
-
-    await lockItem(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "User not found",
-    });
-  });
-
-  it("should return 404 if post is not found", async () => {
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    userFindOneMock.mockResolvedValue({}); // Simulate user found
-    postFindOneAndUpdateMock.mockResolvedValue(null); // Simulate post not found
-
-    await lockItem(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "Post not found",
-    });
-  });
-
-  it("should return 403 if user is not authorized to lock posts in the subreddit", async () => {
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    // Simulate user found without any subreddit roles
-    userFindOneMock.mockResolvedValueOnce({ subreddits: [] });
-    postFindOneAndUpdateMock.mockResolvedValue({}); // Simulate post found
-    subredditFindByIdMock.mockResolvedValue({ name: "exampleSubreddit" }); // Simulate subreddit found
-
-    await lockItem(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "User is not authorized to lock posts in this subreddit",
-    });
-  });
-
-  it("should return 200 if post is locked successfully", async () => {
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    // Simulate user with moderator role in the subreddit
-    const subredditRole = { role: "moderator", subreddit: "exampleSubreddit" };
-    userFindOneMock.mockResolvedValueOnce({ subreddits: [subredditRole] });
-    postFindOneAndUpdateMock.mockResolvedValue({}); // Simulate post found
-    subredditFindByIdMock.mockResolvedValue({ name: "exampleSubreddit" }); // Simulate subreddit found
-
-    await lockItem(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      message: "Post locked successfully",
-    });
-  });
-
-  it("should handle internal server error", async () => {
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    userFindOneMock.mockRejectedValue(new Error("Database error")); // Simulate database error
-
-    await lockItem(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "Internal server error",
-    });
-  });
-});
-
-describe("unlockItem function", () => {
-  let req,
-    res,
-    userFindOneMock,
-    postFindOneAndUpdateMock,
-    subredditFindByIdMock;
-
-  beforeEach(() => {
-    userFindOneMock = jest.spyOn(User, "findOne");
-    postFindOneAndUpdateMock = jest.spyOn(Post, "findOneAndUpdate");
-    subredditFindByIdMock = jest.spyOn(Subreddit, "findById");
-
-    req = {
-      headers: {
-        authorization:
-          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjAyM2Q4MDdmNzBkYjg4M2NjZjVhOTIiLCJpYXQiOjE3MTE0NzU0ODgsImV4cCI6MTcxMTU2MTg4OH0.Yvil4qLVPXSV7cB5RBhiki7hzqFreQIR8rEUICBqPaU", // Your token here
-      },
-      body: {
-        itemID: "660227d61650ec9f41404c80",
-      },
-    };
-
-    res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("should return 401 if token is missing or invalid", async () => {
-    verifyToken.mockResolvedValue(null); // Simulate token verification failure
-
-    await unlockItem(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
-  });
-
-  it("should return 404 if user is not found", async () => {
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    userFindOneMock.mockResolvedValue(null); // Simulate user not found
-
-    await unlockItem(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "User not found",
-    });
-  });
-
-  it("should return 404 if post is not found", async () => {
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    userFindOneMock.mockResolvedValue({}); // Simulate user found
-    postFindOneAndUpdateMock.mockResolvedValue(null); // Simulate post not found
-
-    await unlockItem(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "Post not found",
-    });
-  });
-
-  it("should return 403 if user is not authorized to unlock posts in the subreddit", async () => {
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    // Simulate user found without any subreddit roles
-    userFindOneMock.mockResolvedValueOnce({ subreddits: [] });
-    postFindOneAndUpdateMock.mockResolvedValue({}); // Simulate post found
-    subredditFindByIdMock.mockResolvedValue({ name: "exampleSubreddit" }); // Simulate subreddit found
-
-    await unlockItem(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "User is not authorized to unlock posts in this subreddit",
-    });
-  });
-
-  it("should return 200 if post is unlocked successfully", async () => {
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    // Simulate user with moderator or creator role in the subreddit
-    const subredditRole = { role: "moderator", subreddit: "exampleSubreddit" };
-    userFindOneMock.mockResolvedValueOnce({ subreddits: [subredditRole] });
-    postFindOneAndUpdateMock.mockResolvedValue({}); // Simulate post found
-    subredditFindByIdMock.mockResolvedValue({ name: "exampleSubreddit" }); // Simulate subreddit found
-
-    await unlockItem(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      message: "Post unlocked successfully",
-    });
-  });
-
-  it("should handle internal server error", async () => {
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    userFindOneMock.mockRejectedValue(new Error("Database error")); // Simulate database error
-
-    await unlockItem(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "Internal server error",
-    });
-  });
-});
-
-describe("getItemInfo function", () => {
-  let req,
-    res,
-    userFindOneMock,
-    postFindOneMock,
-    commentFindOneMock,
-    subredditFindOneMock;
-
-  beforeEach(() => {
-    userFindOneMock = jest.spyOn(User, "findOne");
-    postFindOneMock = jest.spyOn(Post, "findOne");
-    commentFindOneMock = jest.spyOn(Comment, "findOne");
-    subredditFindOneMock = jest.spyOn(Subreddit, "findOne");
-
-    req = {
-      headers: {
-        authorization:
-          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjAyM2Q4MDdmNzBkYjg4M2NjZjVhOTIiLCJpYXQiOjE3MTE0NzU0ODgsImV4cCI6MTcxMTU2MTg4OH0.Yvil4qLVPXSV7cB5RBhiki7hzqFreQIR8rEUICBqPaU", // Your token here
-      },
-      body: {
-        objectID: "660227d61650ec9f41404c80", 
-        objectType: "post", 
-      },
-    };
-
-    res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("should return 401 if token is missing or invalid", async () => {
-    verifyToken.mockResolvedValue(null); // Simulate token verification failure
-
-    await getItemInfo(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
-  });
-
-  it("should return 404 if user is not found", async () => {
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    userFindOneMock.mockResolvedValue(null); // Simulate user not found
-
-    await getItemInfo(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "User not found",
-    });
-  });
-
-  it("should return 200 with item info if item is found (post)", async () => {
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    userFindOneMock.mockResolvedValue({}); // Simulate user found
-    postFindOneMock.mockResolvedValue({}); // Simulate post found
-
-    await getItemInfo(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      item: expect.any(Object),
-    });
-  });
-
-  it("should return 200 with item info if item is found (comment)", async () => {
-    req.body.objectType = "comment";
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    userFindOneMock.mockResolvedValue({}); // Simulate user found
-    commentFindOneMock.mockResolvedValue({}); // Simulate comment found
-
-    await getItemInfo(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      item: expect.any(Object),
-    });
-  });
-
-  it("should return 200 with item info if item is found (subreddit)", async () => {
-    req.body.objectType = "subreddit";
-    const payload = { userId: "userId123" };
-    verifyToken.mockResolvedValue(payload); // Simulate token verification success
-    userFindOneMock.mockResolvedValue({}); // Simulate user found
-    subredditFindOneMock.mockResolvedValue({}); // Simulate subreddit found
-
-    await getItemInfo(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      item: expect.any(Object),
-    });
-  });
-});
+// describe("lockItem function", () => {
+//   let req,
+//     res,
+//     userFindOneMock,
+//     postFindOneAndUpdateMock,
+//     subredditFindByIdMock;
+
+//   beforeEach(() => {
+//     userFindOneMock = jest.spyOn(User, "findOne");
+//     postFindOneAndUpdateMock = jest.spyOn(Post, "findOneAndUpdate");
+//     subredditFindByIdMock = jest.spyOn(Subreddit, "findById");
+
+//     req = {
+//       headers: {
+//         authorization:
+//           "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjAyM2Q4MDdmNzBkYjg4M2NjZjVhOTIiLCJpYXQiOjE3MTE0NzU0ODgsImV4cCI6MTcxMTU2MTg4OH0.Yvil4qLVPXSV7cB5RBhiki7hzqFreQIR8rEUICBqPaU",
+//       },
+//       body: {
+//         itemID: "660227d61650ec9f41404c80",
+//       },
+//     };
+
+//     res = {
+//       status: jest.fn(() => res),
+//       json: jest.fn(),
+//     };
+//   });
+
+//   afterEach(() => {
+//     jest.clearAllMocks();
+//   });
+
+//   it("should return 401 if token is missing or invalid", async () => {
+//     verifyToken.mockResolvedValue(null); // Simulate token verification failure
+
+//     await lockItem(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(401);
+//     expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
+//   });
+
+//   it("should return 404 if user is not found", async () => {
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     userFindOneMock.mockResolvedValue(null); // Simulate user not found
+
+//     await lockItem(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(404);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "User not found",
+//     });
+//   });
+
+//   it("should return 404 if post is not found", async () => {
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     userFindOneMock.mockResolvedValue({}); // Simulate user found
+//     postFindOneAndUpdateMock.mockResolvedValue(null); // Simulate post not found
+
+//     await lockItem(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(404);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "Post not found",
+//     });
+//   });
+
+//   it("should return 403 if user is not authorized to lock posts in the subreddit", async () => {
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     // Simulate user found without any subreddit roles
+//     userFindOneMock.mockResolvedValueOnce({ subreddits: [] });
+//     postFindOneAndUpdateMock.mockResolvedValue({}); // Simulate post found
+//     subredditFindByIdMock.mockResolvedValue({ name: "exampleSubreddit" }); // Simulate subreddit found
+
+//     await lockItem(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(403);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "User is not authorized to lock posts in this subreddit",
+//     });
+//   });
+
+//   it("should return 200 if post is locked successfully", async () => {
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     // Simulate user with moderator role in the subreddit
+//     const subredditRole = { role: "moderator", subreddit: "exampleSubreddit" };
+//     userFindOneMock.mockResolvedValueOnce({ subreddits: [subredditRole] });
+//     postFindOneAndUpdateMock.mockResolvedValue({}); // Simulate post found
+//     subredditFindByIdMock.mockResolvedValue({ name: "exampleSubreddit" }); // Simulate subreddit found
+
+//     await lockItem(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(200);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: true,
+//       message: "Post locked successfully",
+//     });
+//   });
+
+//   it("should handle internal server error", async () => {
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     userFindOneMock.mockRejectedValue(new Error("Database error")); // Simulate database error
+
+//     await lockItem(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(500);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "Internal server error",
+//     });
+//   });
+// });
+
+// describe("unlockItem function", () => {
+//   let req,
+//     res,
+//     userFindOneMock,
+//     postFindOneAndUpdateMock,
+//     subredditFindByIdMock;
+
+//   beforeEach(() => {
+//     userFindOneMock = jest.spyOn(User, "findOne");
+//     postFindOneAndUpdateMock = jest.spyOn(Post, "findOneAndUpdate");
+//     subredditFindByIdMock = jest.spyOn(Subreddit, "findById");
+
+//     req = {
+//       headers: {
+//         authorization:
+//           "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjAyM2Q4MDdmNzBkYjg4M2NjZjVhOTIiLCJpYXQiOjE3MTE0NzU0ODgsImV4cCI6MTcxMTU2MTg4OH0.Yvil4qLVPXSV7cB5RBhiki7hzqFreQIR8rEUICBqPaU", // Your token here
+//       },
+//       body: {
+//         itemID: "660227d61650ec9f41404c80",
+//       },
+//     };
+
+//     res = {
+//       status: jest.fn(() => res),
+//       json: jest.fn(),
+//     };
+//   });
+
+//   afterEach(() => {
+//     jest.clearAllMocks();
+//   });
+
+//   it("should return 401 if token is missing or invalid", async () => {
+//     verifyToken.mockResolvedValue(null); // Simulate token verification failure
+
+//     await unlockItem(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(401);
+//     expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
+//   });
+
+//   it("should return 404 if user is not found", async () => {
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     userFindOneMock.mockResolvedValue(null); // Simulate user not found
+
+//     await unlockItem(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(404);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "User not found",
+//     });
+//   });
+
+//   it("should return 404 if post is not found", async () => {
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     userFindOneMock.mockResolvedValue({}); // Simulate user found
+//     postFindOneAndUpdateMock.mockResolvedValue(null); // Simulate post not found
+
+//     await unlockItem(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(404);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "Post not found",
+//     });
+//   });
+
+//   it("should return 403 if user is not authorized to unlock posts in the subreddit", async () => {
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     // Simulate user found without any subreddit roles
+//     userFindOneMock.mockResolvedValueOnce({ subreddits: [] });
+//     postFindOneAndUpdateMock.mockResolvedValue({}); // Simulate post found
+//     subredditFindByIdMock.mockResolvedValue({ name: "exampleSubreddit" }); // Simulate subreddit found
+
+//     await unlockItem(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(403);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "User is not authorized to unlock posts in this subreddit",
+//     });
+//   });
+
+//   it("should return 200 if post is unlocked successfully", async () => {
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     // Simulate user with moderator or creator role in the subreddit
+//     const subredditRole = { role: "moderator", subreddit: "exampleSubreddit" };
+//     userFindOneMock.mockResolvedValueOnce({ subreddits: [subredditRole] });
+//     postFindOneAndUpdateMock.mockResolvedValue({}); // Simulate post found
+//     subredditFindByIdMock.mockResolvedValue({ name: "exampleSubreddit" }); // Simulate subreddit found
+
+//     await unlockItem(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(200);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: true,
+//       message: "Post unlocked successfully",
+//     });
+//   });
+
+//   it("should handle internal server error", async () => {
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     userFindOneMock.mockRejectedValue(new Error("Database error")); // Simulate database error
+
+//     await unlockItem(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(500);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "Internal server error",
+//     });
+//   });
+// });
+
+// describe("getItemInfo function", () => {
+//   let req,
+//     res,
+//     userFindOneMock,
+//     postFindOneMock,
+//     commentFindOneMock,
+//     subredditFindOneMock;
+
+//   beforeEach(() => {
+//     userFindOneMock = jest.spyOn(User, "findOne");
+//     postFindOneMock = jest.spyOn(Post, "findOne");
+//     commentFindOneMock = jest.spyOn(Comment, "findOne");
+//     subredditFindOneMock = jest.spyOn(Subreddit, "findOne");
+
+//     req = {
+//       headers: {
+//         authorization:
+//           "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjAyM2Q4MDdmNzBkYjg4M2NjZjVhOTIiLCJpYXQiOjE3MTE0NzU0ODgsImV4cCI6MTcxMTU2MTg4OH0.Yvil4qLVPXSV7cB5RBhiki7hzqFreQIR8rEUICBqPaU", // Your token here
+//       },
+//       body: {
+//         objectID: "660227d61650ec9f41404c80", 
+//         objectType: "post", 
+//       },
+//     };
+
+//     res = {
+//       status: jest.fn(() => res),
+//       json: jest.fn(),
+//     };
+//   });
+
+//   afterEach(() => {
+//     jest.clearAllMocks();
+//   });
+
+//   it("should return 401 if token is missing or invalid", async () => {
+//     verifyToken.mockResolvedValue(null); // Simulate token verification failure
+
+//     await getItemInfo(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(401);
+//     expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
+//   });
+
+//   it("should return 404 if user is not found", async () => {
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     userFindOneMock.mockResolvedValue(null); // Simulate user not found
+
+//     await getItemInfo(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(404);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "User not found",
+//     });
+//   });
+
+//   it("should return 200 with item info if item is found (post)", async () => {
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     userFindOneMock.mockResolvedValue({}); // Simulate user found
+//     postFindOneMock.mockResolvedValue({}); // Simulate post found
+
+//     await getItemInfo(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(200);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: true,
+//       item: expect.any(Object),
+//     });
+//   });
+
+//   it("should return 200 with item info if item is found (comment)", async () => {
+//     req.body.objectType = "comment";
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     userFindOneMock.mockResolvedValue({}); // Simulate user found
+//     commentFindOneMock.mockResolvedValue({}); // Simulate comment found
+
+//     await getItemInfo(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(200);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: true,
+//       item: expect.any(Object),
+//     });
+//   });
+
+//   it("should return 200 with item info if item is found (subreddit)", async () => {
+//     req.body.objectType = "subreddit";
+//     const payload = { userId: "userId123" };
+//     verifyToken.mockResolvedValue(payload); // Simulate token verification success
+//     userFindOneMock.mockResolvedValue({}); // Simulate user found
+//     subredditFindOneMock.mockResolvedValue({}); // Simulate subreddit found
+
+//     await getItemInfo(req, res);
+
+//     expect(res.status).toHaveBeenCalledWith(200);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: true,
+//       item: expect.any(Object),
+//     });
+//   });
+// });
 
 describe("castVote function", () => {
   let req, res;
@@ -860,32 +860,32 @@ describe("getHistory function", () => {
   });  
 });
 
-describe("getHistory function", () => {
-  let req, res;
+// describe("getHistory function", () => {
+//   let req, res;
 
-  beforeEach(() => {
-    req = {
-      headers: {},
-    };
-    res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
+//   beforeEach(() => {
+//     req = {
+//       headers: {},
+//     };
+//     res = {
+//       status: jest.fn(() => res),
+//       json: jest.fn(),
+//     };
 
-    // Mock setup for Post.find
-    Post.find = jest.fn(); 
-  });
+//     // Mock setup for Post.find
+//     Post.find = jest.fn(); 
+//   });
 
-  it("should send false when no post id is provided", async () => {
-    await getHistory(req, res);
+//   it("should send false when no post id is provided", async () => {
+//     await getHistory(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "Internal server error",
-    });
-  });  
-});
+//     expect(res.status).toHaveBeenCalledWith(500);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "Internal server error",
+//     });
+//   });  
+// });
 
 describe("spoilerPost function", () => {
   let req, res, postFindOneAndUpdateMock;

@@ -5,6 +5,7 @@ const { verifyToken } = require("../../utils/tokens");
 const User = require("../../models/userModel");
 const { filterHiddenPosts } = require("../../utils/posts");
 const { decode } = require("jsonwebtoken");
+const { getFilesFromS3 } = require("../../utils/s3-bucket");
 /**
  * Get a random post from a subreddit.
  * @async
@@ -35,6 +36,10 @@ async function randomPost(req, res) {
     //increase of the number of views
     randomPost.views += 1;
     await randomPost.save();
+    const media = randomPost.media;
+    if (media) {
+      randomPost.media = await getFilesFromS3(media);
+    }
     return res.status(200).json({ success: true, post: randomPost });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Server error" });
@@ -140,7 +145,6 @@ async function hotPosts(req, res) {
     await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
     return res.status(200).json({ success: true, posts });
-
   } catch (error) {
     return res
       .status(400)
@@ -325,10 +329,10 @@ async function getUserPosts(req, res) {
     if (!decoded) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-   const user = await User.findOne({ _id: decoded.userId }).populate(
-     "subreddits"
+    const user = await User.findOne({ _id: decoded.userId }).populate(
+      "subreddits"
     );
-    
+
     if (!user) {
       return res
         .status(404)

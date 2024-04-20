@@ -92,9 +92,11 @@ const userPreferencesSchema = new mongoose.Schema({
       platform: String,
     },
   ],
-  images: {
-    pfp: { type: String },
-    banner: { type: String },
+  banner: {
+    type: String,
+  },
+  profilePicture: {
+    type: String,
   },
   NSFW: {
     type: Boolean,
@@ -206,13 +208,14 @@ const userPreferencesSchema = new mongoose.Schema({
   },
 });
 
-
-  /**
+/**
  * Mongoose model for user preferences.
  * @type {mongoose.Model}
  */
 
-
-const UserPreferences = mongoose.model("UserPreferences", userPreferencesSchema);
+const UserPreferences = mongoose.model(
+  "UserPreferences",
+  userPreferencesSchema
+);
 
 module.exports = UserPreferences;

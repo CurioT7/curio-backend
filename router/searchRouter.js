@@ -23,7 +23,7 @@ router.get("/trendingSearches", searchController.trendingSearches);
  * @param {string} path - The URL path for the route ("/search").
  * @param {function} middleware - The controller function to handle the POST request.
  * @returns {object} Express router instance.
- * 
+ *
  */
 router.get("/search/:query", searchController.search);
 
@@ -31,5 +31,17 @@ router.get("/search/:query", searchController.search);
 // route to handle GET requests for searching comments
 router.get("/searchComments/:query/:type/:subreddit?", searchController.searchCommentsOrPosts);
 
-module.exports = router;
+/**
+ * Route to handle GET requests for search suggestions.
+ * @name GET/searchSuggestions
+ * @function
+ * @memberof module:routes/searchRouter
+ * @param {string} path - The URL path for the route ("/searchSuggestions").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ *
+ */
 
+router.get("/searchSuggestions/:query", searchController.searchSuggestions);
+
+module.exports = router;
