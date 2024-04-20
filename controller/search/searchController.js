@@ -2,6 +2,9 @@ require("dotenv").config();
 const User = require("../../models/userModel");
 const Subreddit = require("../../models/subredditModel");
 const Post = require("../../models/postModel");
+const Comment = require("../../models/commentModel");
+const { verifyToken } = require("../../utils/tokens");
+
 
 /**
  * Search for users, subreddits, and posts.
@@ -11,28 +14,36 @@ const Post = require("../../models/postModel");
  * @returns {Promise<Object>} - The search results.
  */
 async function search(req, res) {
-    try {
-        const { query } = req.params;
-        const users = await User.find({ username: { $regex: query, $options: "i" } });
-        const subreddits = await Subreddit.find({ name: { $regex: query, $options: "i" } });
-        const posts = await Post.find({ title: { $regex: query, $options: "i" } });
+  try {
+    const { query } = req.params;
+    const users = await User.find({
+      username: { $regex: query, $options: "i" },
+    });
+    const subreddits = await Subreddit.find({
+      name: { $regex: query, $options: "i" },
+    });
+    const posts = await Post.find({ title: { $regex: query, $options: "i" } });
 
-        if (posts.length === 0) {
-            return res.status(404).json({ message: "No posts found for the given query" });
-        }
-        
-        const postIds = posts.map(post => post._id);
-        await Post.updateMany({ _id: { $in: postIds } }, { $inc: { searchCount: 1 } });
-
-        res.status(200).json({
-            users,
-            subreddits,
-            posts,
-        });
-
-    } catch (error) {
-        res.status(500).json({ message: "Internal server error" });
+    if (posts.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No posts found for the given query" });
     }
+
+    const postIds = posts.map((post) => post._id);
+    await Post.updateMany(
+      { _id: { $in: postIds } },
+      { $inc: { searchCount: 1 } }
+    );
+
+    res.status(200).json({
+      users,
+      subreddits,
+      posts,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
 }
 
 /**
@@ -44,20 +55,68 @@ async function search(req, res) {
  */
 
 async function trendingSearches(req, res) {
-    try {
-        const posts = await Post.find().sort({ searchCount:-1, createdAt: -1 }).limit(5);
+  try {
+    const posts = await Post.find()
+      .sort({ searchCount: -1, createdAt: -1 })
+      .limit(5);
 
-        res.status(200).json({
-            success: true,
-            posts,
+    res.status(200).json({
+      success: true,
+      posts,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+async function searchComments(req, res) {
+ try { 
+     const { query, subreddit } = req.params;
+     let comments = [];
+     // search in homepage if no subreddit
+     if (!subreddit) {
+      comments = await Comment.find({
+      content: { $regex: query, $options: "i" },
+      
+
+      });
+      // check if linked subreddit is in private mode or public
+      if (req.headers.authorization){
+        const token = req.headers.authorization.split(" ")[1];
+        const payload = verifyToken(token);
+        const user = await User.findById(payload.id);
+        if (!user) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
+        Subreddit.populate(comments, { path: "linkedSubreddit" });
+      }
+      comments = comments.filter((comment) => {
+        return comment.linkedSubreddit.privacyMode === "public";
+      });
+      // search in subreddit if subreddit is provided
+     } else  {
+        comments = await Comment.find({
+            content: { $regex: query, $options: "i" },
+            linkedSubreddit: subreddit,
         });
-    } catch (error) {
-        res.status(500).json({ message: "Internal server error" });
-    }
+      // check if something is sent in header for authorization if not, only return public comments
+      if (!req.headers.authorization) {
+        comments = comments.filter((comment) => {
+          return comment.linkedSubreddit.privacyMode === "public";
+        });
+      }
+     }
+    res.status(200).json({
+      success: true,
+      comments,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
 }
 
 module.exports = {
-    search,
-    trendingSearches,
+  search,
+  trendingSearches,
+  searchComments,
 };
-

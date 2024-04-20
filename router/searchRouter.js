@@ -16,7 +16,7 @@ const searchController = require("../controller/search/searchController");
 router.get("/trendingSearches", searchController.trendingSearches);
 
 /**
- * Route to handle POST requests for searching.
+ * Route to handle GET requests for searching.
  * @name GET/search
  * @function
  * @memberof module:routes/searchRouter
@@ -25,7 +25,11 @@ router.get("/trendingSearches", searchController.trendingSearches);
  * @returns {object} Express router instance.
  * 
  */
-router.get("/search", searchController.search);
+router.get("/search/:query", searchController.search);
+
+
+// route to handle GET requests for searching comments
+router.get("/searchComments/:query/:subreddit", searchController.searchComments);
 
 module.exports = router;
 
