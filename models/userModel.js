@@ -240,6 +240,7 @@ userSchema.pre("save", async function (next) {
       if (this.isNew) {
         const userPreferences = new UserPreferences({
           username: this.username,
+          
         });
         await userPreferences.save();
       }
