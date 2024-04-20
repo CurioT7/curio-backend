@@ -5,7 +5,7 @@ const Community = require("../../models/subredditModel");
 require("dotenv").config();
 const { addUserToSubbreddit } = require("./friendController");
 const { verifyToken } = require("../../utils/tokens");
-
+const Notification = require("../../models/notificationModel");
 /**
  * Check whether subreddit is available or not
  * @param {string} subreddit
@@ -90,6 +90,14 @@ async function createSubreddit(data, user) {
         },
       }
     );
+    // Notify the user about subreddit creation
+    const notification = new Notification({
+      title: "Subreddit Created",
+      message: `You have successfully created the subreddit "${subredditName}".`,
+      recipient: username,
+    });
+    await notification.save();
+
     // Return success response
     return {
       success: true,

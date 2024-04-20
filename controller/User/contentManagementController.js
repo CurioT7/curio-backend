@@ -8,6 +8,7 @@ const multer = require("multer");
 const { s3, sendFileToS3, generateRandomId } = require("../../utils/s3-bucket");
 const PutObjectCommand = require("@aws-sdk/client-s3");
 const { options } = require("../../router/profileRouter");
+const Notification = require("../../models/notificationModel");
 
 /**
  * Hide a post
@@ -751,12 +752,11 @@ async function castVote(req, res) {
           // If found in downvotes, remove the existing vote from downvotes
           item.downvotes -= 1;
           user.downvotes.splice(existingDownvoteIndex, 1);
-        }
-        else {
+        } else {
           // If direction is 0 and user hasn't voted yet, return success without making any changes
-            return res
-              .status(200)
-              .json({ success: true, message: "No vote to remove" });
+          return res
+            .status(200)
+            .json({ success: true, message: "No vote to remove" });
         }
       }
 
@@ -771,14 +771,20 @@ async function castVote(req, res) {
       (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
     );
     if (existingVoteIndex !== -1) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "User has already voted on this item",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "User has already voted on this item",
+      });
     }
-
+    // Notify the author
+    const notification = new Notification({
+      title: "New Vote",
+      message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
+        direction === 1 ? "upvoted" : "downvoted"
+      } by ${user.username}.`,
+      recipient: item.author._id,
+    });
+    await notification.save();
 
     // If direction is not 0 and user hasn't voted yet, add the vote to user's upvotes/downvotes and update item's upvotes/downvotes accordingly
     if (direction === 1) {

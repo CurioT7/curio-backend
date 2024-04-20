@@ -4,6 +4,7 @@ const User = require("../../models/userModel");
 const Community = require("../../models/subredditModel");
 const brypt = require("bcrypt");
 const { verifyToken } = require("../../utils/tokens");
+const Notification = require("../../models/notificationModel");
 
 require("dotenv").config();
 
@@ -115,23 +116,49 @@ async function unFollowSubreddits(username, communityName) {
  * @param {String} (friend)
  * @function
  */
-async function addFriend(username, friend) {
-  await User.findOneAndUpdate(
-    { username: username },
-    {
-      $addToSet: {
-        followings: friend,
-      },
-    }
-  );
-  await User.findOneAndUpdate(
-    { username: friend },
-    {
-      $addToSet: {
-        followers: username,
-      },
-    }
-  );
+async function addFriend(username, friendUsername) {
+  try {
+    // Update the user's followings list
+    await User.findOneAndUpdate(
+      { username: username },
+      {
+        $addToSet: {
+          followings: friendUsername,
+        },
+      }
+    );
+
+    // Update the friend's followers list
+    await User.findOneAndUpdate(
+      { username: friendUsername },
+      {
+        $addToSet: {
+          followers: username,
+        },
+      }
+    );
+
+    // Create a notification for the friend
+    const notification = new Notification({
+      title: "New Follower",
+      message: `${username} started following you.`,
+      recipient: friendUsername,
+    });
+
+    // Save the notification to the database
+    await notification.save();
+
+    return {
+      status: true,
+      message: "Friend added successfully",
+    };
+  } catch (error) {
+    console.error("Error adding friend:", error);
+    return {
+      status: false,
+      error: "Failed to add friend",
+    };
+  }
 }
 
 /**
@@ -413,6 +440,27 @@ async function followSubreddit(req, res) {
     }
 
     await followSubreddits(userExists.username, subreddit);
+
+    // Notify the moderators of the subreddit
+    const moderators = subredditExists.moderators.map(
+      (moderator) => moderator.username
+    );
+    for (const moderator of moderators) {
+      const notification = new Notification({
+        title: "New Follower",
+        message: `${userExists.username} started following the subreddit "${subreddit}".`,
+        recipient: moderator,
+      });
+      await notification.save();
+    }
+
+    // Create a notification for the user
+    const userNotification = new Notification({
+      title: "Subreddit Followed",
+      message: `You have successfully followed the subreddit "${subreddit}".`,
+      recipient: userExists._id,
+    });
+    await userNotification.save();
 
     return res.status(200).json({
       success: true,
