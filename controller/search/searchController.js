@@ -67,7 +67,19 @@ async function trendingSearches(req, res) {
     res.status(500).json({ message: "Internal server error" });
   }
 }
-
+async function incSearchCount(post)
+{
+  try {
+  await Post.updateMany(
+    { _id: post._id },
+    { $inc: { searchCount: 1 } }
+     
+  );
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
 async function authorize(req, res){
   try {
   const token = req.headers.authorization.split(" ")[1];
@@ -102,7 +114,7 @@ async function searchCommentsOrPosts(req, res) {
     // Search in homepage if no subreddit
     if (!subreddit) {
       if (type === "post") {
-        content = await Comment.find({
+        content = await Post.find({
           content: { $regex: query, $options: "i" },
         });
       } else {
@@ -138,6 +150,7 @@ async function searchCommentsOrPosts(req, res) {
         );
 
         content = content.filter((content) => content); // Remove undefined values
+        type === "post" && await incSearchCount(content);
         return res.status(200).json({
           success: true,
           content,
@@ -159,6 +172,7 @@ async function searchCommentsOrPosts(req, res) {
         })
       );
       content = content.filter((content) => content); // Remove undefined values
+      type === "post" && await incSearchCount(content);
       return res.status(200).json({
         success: true,
         content,
@@ -193,6 +207,7 @@ async function searchCommentsOrPosts(req, res) {
         ) ||
         subredditObj.privacyMode === "public"
       ) {
+        type === "post" && await incSearchCount(content);
         return res.status(200).json({
           success: true,
           content,
@@ -208,6 +223,7 @@ async function searchCommentsOrPosts(req, res) {
     }
 
     if (subredditObj.privacyMode === "public") {
+      type === "post" && await incSearchCount(content);
       return res.status(200).json({
         success: true,
         content,
