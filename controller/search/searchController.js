@@ -5,7 +5,6 @@ const Post = require("../../models/postModel");
 const Comment = require("../../models/commentModel");
 const { verifyToken } = require("../../utils/tokens");
 
-
 /**
  * Search for users, subreddits, and posts.
  * @async
@@ -70,47 +69,146 @@ async function trendingSearches(req, res) {
 }
 
 async function searchComments(req, res) {
- try { 
-     const { query, subreddit } = req.params;
-     let comments = [];
-     // search in homepage if no subreddit
-     if (!subreddit) {
-      comments = await Comment.find({
-      content: { $regex: query, $options: "i" },
-      
+  try {
+    const query = decodeURIComponent(req.params.query);
+    const subreddit = decodeURIComponent(req.params.subreddit);
+    const type = req.query.type;
 
-      });
-      // check if linked subreddit is in private mode or public
-      if (req.headers.authorization){
+    if (type !== "post" && type !== "comment") {
+      return res.status(400).json({ message: "Invalid type parameter" });
+    }
+    if (typeof query !== "string") {
+      return res.status(400).json({ message: "Invalid query parameter" });
+    }
+    let content = [];
+
+    // Search in homepage if no subreddit
+    if (!subreddit) {
+      if (type === "post") {
+        content = await Comment.find({
+          content: { $regex: query, $options: "i" },
+        });
+      } else {
+        content = await Comment.find({
+          content: { $regex: query, $options: "i" },
+        });
+      }
+
+      // Check if user is logged in
+      if (req.headers.authorization) {
         const token = req.headers.authorization.split(" ")[1];
-        const payload = verifyToken(token);
-        const user = await User.findById(payload.id);
-        if (!user) {
+        const decoded = await verifyToken(token);
+        if (!decoded) {
           return res.status(401).json({ message: "Unauthorized" });
         }
-        Subreddit.populate(comments, { path: "linkedSubreddit" });
+        const user = await User.findOne({ _id: decoded.userId });
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        // Filter content based on linked subreddit's privacy mode and user's membership
+        content = await Promise.all(
+          content.map(async (comment) => {
+            const linkedSubreddit = await Subreddit.findById(
+              comment.linkedSubreddit
+            );
+            if (linkedSubreddit) {
+              if (
+                linkedSubreddit.privacyMode === "public" ||
+                subredditObj.members.some(
+                  (member) => member.username === user.username
+                )
+              ) {
+                return comment;
+              }
+            }
+            if (!linkedSubreddit) {
+              return comment;
+            }
+          })
+        );
+
+        content = content.filter((comment) => comment); // Remove undefined values
+        return res.status(200).json({
+          success: true,
+          content,
+        });
       }
-      comments = comments.filter((comment) => {
-        return comment.linkedSubreddit.privacyMode === "public";
+      content = await Promise.all(
+        content.map(async (comment) => {
+          const linkedSubreddit = await Subreddit.findById(
+            comment.linkedSubreddit
+          );
+          if (linkedSubreddit) {
+            if (linkedSubreddit.privacyMode === "public") {
+              return comment;
+            }
+          }
+          if (!linkedSubreddit) {
+            return comment;
+          }
+        })
+      );
+      content = content.filter((comment) => comment); // Remove undefined values
+      return res.status(200).json({
+        success: true,
+        content,
       });
-      // search in subreddit if subreddit is provided
-     } else  {
-        comments = await Comment.find({
-            content: { $regex: query, $options: "i" },
-            linkedSubreddit: subreddit,
-        });
-      // check if something is sent in header for authorization if not, only return public comments
-      if (!req.headers.authorization) {
-        comments = comments.filter((comment) => {
-          return comment.linkedSubreddit.privacyMode === "public";
+    }
+    //User is searching in a subreddit
+    const subredditObj = await Subreddit.findOne({
+      name: subreddit,
+    });
+
+    if (!subredditObj) {
+      return res.status(404).json({ message: "Subreddit not found" });
+    }
+
+    content = await Comment.find({
+      content: { $regex: query, $options: "i" },
+      linkedSubreddit: subredditObj._id,
+    });
+
+    // Check if user is logged in
+    if (req.headers.authorization) {
+      const token = req.headers.authorization.split(" ")[1];
+      const decoded = await verifyToken(token);
+      if (!decoded) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const user = await User.findOne({ _id: decoded.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      //return all content in a public subreddit
+      if (
+        subredditObj.members.some(
+          (member) => member.username === user.username
+        ) ||
+        subredditObj.privacyMode === "public"
+      ) {
+        return res.status(200).json({
+          success: true,
+          content,
         });
       }
-     }
-    res.status(200).json({
-      success: true,
-      comments,
-    });
+    }
+    //return all content in a public subreddit
+    if (subredditObj && subredditObj.privacyMode === "private") {
+      return res.status(200).json({
+        success: false,
+        messsage: "Subreddit is private",
+      });
+    }
+
+    if (subredditObj.privacyMode === "public") {
+      return res.status(200).json({
+        success: true,
+        content,
+      });
+    }
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
