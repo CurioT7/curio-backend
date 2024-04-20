@@ -848,10 +848,6 @@ async function addToHistory(req, res) {
       }
       user.recentPosts.push(post._id); // Add the new post at the end
       await user.save();
-    } else {
-      return res
-        .status(400)
-        .json({ success: true, message: "Post already exists in history" });
     }
 
     return res
