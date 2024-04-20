@@ -548,18 +548,15 @@ async function lockItem(req, res) {
         .json({ success: false, message: "User not found" });
     }
     const itemID = req.body.itemID;
-    const item = await Post.findOneAndUpdate(
-      { _id: itemID },
-      { isLocked: true },
-      { new: true }
-    );
-    if (!item) {
+    const post = await Post.findById(itemID);
+
+    if (!post) {
       return res
         .status(404)
         .json({ success: false, message: "Post not found" });
     } else {
       // Check if the user is a moderator or creator of the linked subreddit
-      const subredditOfPost = await Subreddit.findById(item.linkedSubreddit);
+      const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
 
       const subredditRole = user.subreddits.find(
         (sub) => sub.subreddit === subredditOfPost.name
@@ -573,6 +570,11 @@ async function lockItem(req, res) {
           message: "User is not authorized to lock posts in this subreddit",
         });
       } else {
+        await Post.findOneAndUpdate(
+          { _id: itemID },
+          { isLocked: true },
+          { new: true }
+        );
         return res
           .status(200)
           .json({ success: true, message: "Post locked successfully" });
@@ -607,18 +609,14 @@ async function unlockItem(req, res) {
         .json({ success: false, message: "User not found" });
     }
     const itemID = req.body.itemID;
-    const item = await Post.findOneAndUpdate(
-      { _id: itemID },
-      { isLocked: false },
-      { new: true }
-    );
-    if (!item) {
+    const post = await Post.findById(itemID);
+    if (!post) {
       return res
         .status(404)
         .json({ success: false, message: "Post not found" });
     } else {
       // Check if the user is a moderator or creator of the linked subreddit
-      const subredditOfPost = await Subreddit.findById(item.linkedSubreddit);
+      const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
 
       const subredditRole = user.subreddits.find(
         (sub) => sub.subreddit === subredditOfPost.name
@@ -632,6 +630,11 @@ async function unlockItem(req, res) {
           message: "User is not authorized to unlock posts in this subreddit",
         });
       } else {
+         await Post.findOneAndUpdate(
+          { _id: itemID },
+          { isLocked: false },
+          { new: true }
+        );
         return res
           .status(200)
           .json({ success: true, message: "Post unlocked successfully" });
