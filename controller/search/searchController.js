@@ -324,9 +324,39 @@ async function searchCommentsOrPosts(req, res) {
   }
 }
 
+/**
+ * Search for communities based on a query.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The search results.
+ * @throws {Error} - If there is an error searching for communities.
+ */
+async function searchCommunities(req, res) {
+  try {
+    const query = decodeURIComponent(req.params.query);
+    const subreddits = await Subreddit.find({
+      name: { $regex: query, $options: "i" },
+    });
+    if (subreddits.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No subreddits found for the given query" });
+    }
+    res.status(200).json({
+      success: true,
+      subreddits,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 module.exports = {
   search,
   trendingSearches,
   searchCommentsOrPosts,
   searchSuggestions,
+  searchCommunities,
 };

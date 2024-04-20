@@ -53,4 +53,16 @@ router.get("/searchComments/:query/:type/:subreddit?", searchController.searchCo
 
 router.get("/searchSuggestions/:query", searchController.searchSuggestions);
 
+/**
+ * Route to handle GET requests for searching communities.
+ * @name GET/searchCommunities
+ * @function
+ * @memberof module:routes/searchRouter
+ * @param {string} path - The URL path for the route ("/searchCommunities").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ */
+
+router.get("/searchCommunities/:query", searchController.searchCommunities);
+
 module.exports = router;
