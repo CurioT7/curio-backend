@@ -64,18 +64,6 @@ async function trendingSearches(req, res) {
     const posts = await Post.find()
       .sort({ searchCount: -1, createdAt: -1 })
       .limit(5);
-    try {
-      const posts = await Post.find()
-        .sort({ searchCount: -1, createdAt: -1 })
-        .limit(5);
-
-      res.status(200).json({
-        success: true,
-        posts,
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Internal server error" });
-    }
     res.status(200).json({
       success: true,
       posts,
