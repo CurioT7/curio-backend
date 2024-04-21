@@ -29,12 +29,6 @@ async function search(req, res) {
         .json({ message: "No posts found for the given query" });
     }
 
-    if (posts.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No posts found for the given query" });
-    }
-
     const postIds = posts.map((post) => post._id);
     await Post.updateMany(
       { _id: { $in: postIds } },
@@ -63,19 +57,17 @@ async function trendingSearches(req, res) {
   try {
     const posts = await Post.find()
       .sort({ searchCount: -1, createdAt: -1 })
-      .limit(5);
-  try {
-    const posts = await Post.find()
-      .sort({ searchCount: -1, createdAt: -1 })
-      .limit(5);
+      .limit(5)
+      .populate('linkedSubreddit', 'name');
 
-    res.status(200).json({
-      success: true,
-      posts,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
-  }
+      
+      // Populate only the 'name' field of subreddit
+
+      //todo return associated subreddits 
+
+
+
+
     res.status(200).json({
       success: true,
       posts,
