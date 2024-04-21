@@ -132,14 +132,9 @@ async function searchSuggestions(req, res) {
  * @throws {Error} - If there is an error incrementing the search count.
  * @returns {Promise<void>} - The search count of the post.
  */
-async function incSearchCount(post)
-{
+async function incSearchCount(post) {
   try {
-  await Post.updateMany(
-    { _id: post._id },
-    { $inc: { searchCount: 1 } }
-     
-  );
+    await Post.updateMany({ _id: post._id }, { $inc: { searchCount: 1 } });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
@@ -153,22 +148,23 @@ async function incSearchCount(post)
  * @param {Object} res - The Express response object.
  * @returns {Promise<Object>} - The user object.
  */
-async function authorize(req, res){
-  try {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
-  return user;
- } catch (error) {
-  console.log(error);
-  res.status(500).json({ message: "Internal server error" });
-}}
+// async function authorize(req, res) {
+//   try {
+//     const token = req.headers.authorization.split(" ")[1];
+//     const decoded = await verifyToken(token);
+//     if (!decoded) {
+//       return res.status(401).json({ message: "Unauthorized" });
+//     }
+//     const user = await User.findOne({ _id: decoded.userId });
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+//     return user;
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// }
 
 /**
  * Search for comments or posts based on a query and type.
@@ -206,7 +202,16 @@ async function searchCommentsOrPosts(req, res) {
 
       // Check if user is logged in
       if (req.headers.authorization) {
-        const user = await authorize(req, res);
+        // const user = await authorize(req, res);
+        const token = req.headers.authorization.split(" ")[1];
+        const decoded = await verifyToken(token);
+        if (!decoded) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
+        const user = await User.findOne({ _id: decoded.userId });
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
 
         // Filter content based on linked subreddit's privacy mode and user's membership
         content = await Promise.all(
@@ -231,7 +236,7 @@ async function searchCommentsOrPosts(req, res) {
         );
 
         content = content.filter((content) => content); // Remove undefined values
-        type === "post" && await incSearchCount(content);
+        type === "post" && (await incSearchCount(content));
         return res.status(200).json({
           success: true,
           content,
@@ -253,7 +258,7 @@ async function searchCommentsOrPosts(req, res) {
         })
       );
       content = content.filter((content) => content); // Remove undefined values
-      type === "post" && await incSearchCount(content);
+      type === "post" && (await incSearchCount(content));
       return res.status(200).json({
         success: true,
         content,
@@ -267,20 +272,28 @@ async function searchCommentsOrPosts(req, res) {
     if (!subredditObj) {
       return res.status(404).json({ message: "Subreddit not found" });
     }
-    if ( type === "comment"){
-    content = await Comment.find({
-      content: { $regex: query, $options: "i" },
-      linkedSubreddit: subredditObj._id,
-    });
-   } else {
-    content = await Post.find({
-      title: { $regex: query, $options: "i" },
-      linkedSubreddit: subredditObj._id,
-    });
-   }
+    if (type === "comment") {
+      content = await Comment.find({
+        content: { $regex: query, $options: "i" },
+        linkedSubreddit: subredditObj._id,
+      });
+    } else {
+      content = await Post.find({
+        title: { $regex: query, $options: "i" },
+        linkedSubreddit: subredditObj._id,
+      });
+    }
     // Check if user is logged in
     if (req.headers.authorization) {
-      const user = await authorize(req, res);
+      const token = req.headers.authorization.split(" ")[1];
+      const decoded = await verifyToken(token);
+      if (!decoded) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const user = await User.findOne({ _id: decoded.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
       //return all content in a public subreddit
       if (
         subredditObj.members.some(
@@ -288,7 +301,7 @@ async function searchCommentsOrPosts(req, res) {
         ) ||
         subredditObj.privacyMode === "public"
       ) {
-        type === "post" && await incSearchCount(content);
+        type === "post" && (await incSearchCount(content));
         return res.status(200).json({
           success: true,
           content,
@@ -304,7 +317,7 @@ async function searchCommentsOrPosts(req, res) {
     }
 
     if (subredditObj.privacyMode === "public") {
-      type === "post" && await incSearchCount(content);
+      type === "post" && (await incSearchCount(content));
       return res.status(200).json({
         success: true,
         content,
