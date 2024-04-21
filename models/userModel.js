@@ -214,6 +214,10 @@ const userSchema = new mongoose.Schema({
       ref: "Post",
     },
   ],
+  karma: {
+    type: Number,
+    default: 0,
+  },,
   notificationSettings: {
     disabledSubreddits: [
       {
@@ -262,6 +266,7 @@ userSchema.pre("save", async function (next) {
       if (this.isNew) {
         const userPreferences = new UserPreferences({
           username: this.username,
+          
         });
         await userPreferences.save();
       }

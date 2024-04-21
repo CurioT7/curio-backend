@@ -9,6 +9,7 @@ const Subreddit = require("../../models/subredditModel");
 const block = require("../../models/blockModel");
 const { generateToken, verifyToken } = require("../../utils/tokens");
 const { comparePassword } = require("../../utils/passwords");
+const { getFilesFromS3, sendFileToS3 } = require("../../utils/s3-bucket");
 require("dotenv").config();
 
 /**
@@ -80,6 +81,15 @@ async function getUserPreferences(req, res) {
       return res.status(404).json({ message: "User preferences not found" });
     }
 
+    if (preferences.profilePicture) {
+      const profilePicture = await getFilesFromS3(preferences.profilePicture);
+      preferences.profilePicture = profilePicture;
+    }
+    if (preferences.banner) {
+      const banner = await getFilesFromS3(preferences.banner);
+      preferences.banner = banner;
+    }
+
     res.json(preferences);
   } catch (error) {
     console.error(error);
@@ -105,7 +115,40 @@ async function updateUserPreferences(req, res) {
     return res.status(404).json({ message: "User not found" });
   }
 
-  const updateFields = {};
+  let imageKey;
+  // If the user wants to update the profile picture or banner
+  if (req.file) {
+    imageKey = await sendFileToS3(req.file);
+    if (!imageKey) {
+      return res.status(500).json({ message: "Error uploading image" });
+    }
+    if (req.body.profilePicture == "Update") {
+      req.body.profilePicture = imageKey;
+    }
+    if (req.body.banner == "Update") {
+      req.body.banner = imageKey;
+    }
+  }
+  // If the user wants to delete the profile picture or banner
+  if (req.body.profilePicture == "Delete") {
+    req.body.profilePicture = null;
+  }
+  if (req.body.banner == "Delete") {
+    req.body.banner = null;
+  }
+
+  const commonUpdateFields = {};
+  const preferencesUpdateFields = {};
+
+  const commonFields = [
+    "gender",
+    "language",
+    "banner",
+    "profilePicture",
+    "socialLinks",
+    "displayName",
+  ];
+
   const preferencesFields = [
     "gender",
     "language",
@@ -113,7 +156,8 @@ async function updateUserPreferences(req, res) {
     "displayName",
     "about",
     "socialLinks",
-    "images",
+    "banner",
+    "profilePicture",
     "NSFW",
     "allowFollow",
     "contentVisibility",
@@ -142,21 +186,32 @@ async function updateUserPreferences(req, res) {
     "unsubscribeFromAllEmails",
   ];
 
-  const commonFields = preferencesFields.filter(field => ["gender", "language", "images", "socialLinks", "displayName"].includes(field));
-  commonFields.forEach((field) => {
-    if (req.body[field] !== undefined) {
-      updateFields[field] = req.body[field];
+  Object.keys(req.body).forEach((field) => {
+    if (commonFields.includes(field)) {
+      commonUpdateFields[field] = req.body[field];
+      preferencesUpdateFields[field] = req.body[field];
+    } else if (preferencesFields.includes(field)) {
+      preferencesUpdateFields[field] = req.body[field];
     }
   });
 
   try {
-    await User.updateOne({ _id: user._id }, updateFields);
-    
+    await User.updateOne({ _id: user._id }, commonUpdateFields);
+
     const preferences = await UserPreferences.findOneAndUpdate(
       { username: user.username },
-      updateFields,
+      preferencesUpdateFields,
       { new: true, upsert: true }
     );
+
+    if (preferences.profilePicture) {
+      const profilePicture = await getFilesFromS3(preferences.profilePicture);
+      preferences.profilePicture = profilePicture;
+    }
+    if (preferences.banner) {
+      const banner = await getFilesFromS3(preferences.banner);
+      preferences.banner = banner;
+    }
 
     res.json({ preferences, message: "User preferences updated successfully" });
   } catch (error) {

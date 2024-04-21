@@ -8,13 +8,11 @@
 
 const express = require("express");
 const router = express.Router();
-const passport = require("passport");
 
 const userController = require("../controller/Auth/userController");
 const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
 const contentManagementController = require("../controller/User/contentManagementController");
-
 
 // Set up multer middleware for file uploads
 const multer = require("multer");
@@ -306,10 +304,7 @@ router.get("/share/:postId", contentManagementController.getPostLink);
  * @param {Object} res - The response object.
  * @returns {Object} The JSON response indicating success or failure.
  */
-router.post(
-  "/lock",
-  contentManagementController.lockItem
-);
+router.post("/lock", contentManagementController.lockItem);
 
 /**
  * Route for unlocking a post item.
@@ -359,6 +354,5 @@ router.post("/history", contentManagementController.addToHistory);
  * @returns {Object} JSON response containing the recent posts.
  */
 router.get("/getHistory", contentManagementController.getHistory);
-
 
 module.exports = router;

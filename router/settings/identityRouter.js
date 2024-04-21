@@ -1,6 +1,15 @@
 const express = require("express");
 const identityController = require("../../controller/identity/identityController");
 const router = express.Router();
+const multer = require("multer");
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 MB
+  },
+});
 
 /**
  * Route to get current user information
@@ -13,7 +22,6 @@ const router = express.Router();
  */
 router.get("/v1/me", identityController.getMe);
 
-
 /**
  * Route to get user preferences
  * @name GET /api/settings/v1/me/prefs/
@@ -25,7 +33,6 @@ router.get("/v1/me", identityController.getMe);
  */
 router.get("/v1/me/prefs", identityController.getUserPreferences);
 
-
 /**
  * Route to update user preferences
  * @name PATCH /api/settings/v1/me/prefs
@@ -35,8 +42,11 @@ router.get("/v1/me/prefs", identityController.getUserPreferences);
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.patch("/v1/me/prefs", identityController.updateUserPreferences);
-
+router.patch(
+  "/v1/me/prefs",
+  upload.single("media"),
+  identityController.updateUserPreferences
+);
 
 /**
  * Route to mute a community
@@ -47,10 +57,10 @@ router.patch("/v1/me/prefs", identityController.updateUserPreferences);
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.post("/mute", identityController.muteCommunity)
+router.post("/mute", identityController.muteCommunity);
 
 /**
- * 
+ *
  * Route to unmute a community
  * @name POST /api/settings/unmute
  * @function
@@ -59,8 +69,7 @@ router.post("/mute", identityController.muteCommunity)
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.post("/unmute", identityController.unmuteCommunity)
-
+router.post("/unmute", identityController.unmuteCommunity);
 
 /**
  * Route to delete a user account
@@ -71,9 +80,6 @@ router.post("/unmute", identityController.unmuteCommunity)
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.delete("/delete_account", identityController.deleteAccount)
-
-
-
+router.delete("/delete_account", identityController.deleteAccount);
 
 module.exports = router;
