@@ -1,4 +1,7 @@
-const { searchSuggestions } = require("../controller/search/searchController");
+const {
+  searchSuggestions,
+  searchPeople,
+} = require("../controller/search/searchController");
 const User = require("../models/userModel");
 const Subreddit = require("../models/subredditModel");
 const Post = require("../models/postModel");
@@ -58,6 +61,34 @@ describe("searchSuggestions", () => {
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
       success: false,
+      message: errorMessage,
+    });
+  });
+});
+
+jest.mock("../models/userModel");
+describe("searchPeople", () => {
+
+  it("should handle errors", async () => {
+    const req = {
+      params: {
+        query: encodeURIComponent("exampleQuery"),
+      },
+      user: {
+        _id: "user1",
+      },
+    };
+    const res = {
+      status: jest.fn(() => res),
+      json: jest.fn(),
+    };
+    const errorMessage = "Internal server error";
+    User.find = jest.fn(() => {
+      throw new Error(errorMessage);
+    });
+    await searchPeople(req, res);
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
       message: errorMessage,
     });
   });

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { authenticate } = require("../middlewares/auth");
 
 const searchController = require("../controller/search/searchController");
 
@@ -27,7 +28,6 @@ router.get("/trendingSearches", searchController.trendingSearches);
  */
 router.get("/search/:query", searchController.search);
 
-
 // route to handle GET requests for searching comments and posts.
 /**
  * Route to handle GET requests for searching comments and posts.
@@ -38,7 +38,10 @@ router.get("/search/:query", searchController.search);
  * @param {function} middleware - The controller function to handle the GET request.
  * @returns {object} Express router instance.
  */
-router.get("/searchComments/:query/:type/:subreddit?", searchController.searchCommentsOrPosts);
+router.get(
+  "/searchComments/:query/:type/:subreddit?",
+  searchController.searchCommentsOrPosts
+);
 
 /**
  * Route to handle GET requests for search suggestions.
@@ -52,5 +55,11 @@ router.get("/searchComments/:query/:type/:subreddit?", searchController.searchCo
  */
 
 router.get("/searchSuggestions/:query", searchController.searchSuggestions);
+
+router.get(
+  "/search/people/:query",
+  (req, res, next) => authenticate(req, res, next, true),
+  searchController.searchPeople
+);
 
 module.exports = router;

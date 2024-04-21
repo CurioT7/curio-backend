@@ -8,7 +8,6 @@
 
 const express = require("express");
 const router = express.Router();
-const passport = require("passport");
 
 const userController = require("../controller/Auth/userController");
 const appUserController = require("../controller/Auth/appUserController");

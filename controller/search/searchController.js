@@ -3,6 +3,7 @@ const User = require("../../models/userModel");
 const Subreddit = require("../../models/subredditModel");
 const Post = require("../../models/postModel");
 const Comment = require("../../models/commentModel");
+const Block = require("../../models/blockModel");
 const { verifyToken } = require("../../utils/tokens");
 
 /**
@@ -325,9 +326,60 @@ async function searchCommentsOrPosts(req, res) {
   }
 }
 
+/**
+ * Search for people based on a query.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The search results.
+ * @throws {Error} - If there is an error searching for people.
+ */
+
+async function searchPeople(req, res) {
+  try {
+    const query = decodeURIComponent(req.params.query);
+    //get usernames, profile pictures, and karma
+    let users = await User.find({
+      username: { $regex: query, $options: "i" },
+    })
+      .select("username profilePicture karma")
+      .limit(5);
+
+    if (req.user) {
+      const LoggedUser = await User.findOne({ _id: req.user.userId });
+      if (!LoggedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!LoggedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      //filter out the user from the search results and blocked users
+      users = users.filter((user) => user.username !== LoggedUser.username);
+      const blockedUsers = await Block.find({
+        blockerId: LoggedUser._id,
+      }).select("blockedId");
+      users = users.filter(
+        (user) =>
+          !blockedUsers.some(
+            (blockedUser) => blockedUser.blockedId === user._id
+          )
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 module.exports = {
   search,
   trendingSearches,
   searchCommentsOrPosts,
   searchSuggestions,
+  searchPeople,
 };
