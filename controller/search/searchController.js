@@ -388,14 +388,28 @@ async function searchPeople(req, res) {
 async function searchCommunities(req, res) {
   try {
     const query = decodeURIComponent(req.params.query);
-    const subreddits = await Subreddit.find({
-      name: { $regex: query, $options: "i" },
-    });
+    const subreddits = await Subreddit.aggregate([
+      {
+        $match: {
+          name: { $regex: query, $options: "i" },
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          icon: 1,
+          members: { $size: "$members" },
+        },
+      },
+      {
+        $limit: 5,
+      },
+    ]);
+
     if (subreddits.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No subreddits found for the given query" });
+      return res.status(404).json({ message: "No subreddits found for the given query" });
     }
+
     res.status(200).json({
       success: true,
       subreddits,
@@ -405,6 +419,8 @@ async function searchCommunities(req, res) {
     res.status(500).json({ message: "Internal server error" });
   }
 }
+
+
 
 module.exports = {
   search,
