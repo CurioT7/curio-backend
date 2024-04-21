@@ -35,6 +35,10 @@ const notificationSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  isSent: {
+    type: Boolean,
+    default: false,
+  },
 });
 /**
  * Creates a model for the Comment schema.

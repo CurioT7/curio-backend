@@ -81,11 +81,11 @@ app.use("/api", friendsRoute);
 app.use("/api", reportRouter);
 app.use("/api", listingRouter);
 app.use("/api", categoryRouter);
-app.use("/user", profileRouter);
+app.use("/api/user", profileRouter);
 
 app.use("/api", searchRouter);
 app.use("/api", postRouter);
-app.use("/api", notificationRouter);
+app.use("/api/notifications", notificationRouter);
 
 
 const PORT = process.env.PORT;

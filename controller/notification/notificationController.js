@@ -35,6 +35,7 @@ async function getAllNotificationsForUser (req, res) {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 /**
  * Disables notifications for a user based on the specified subreddit, post, or comment.
  * @async
@@ -270,8 +271,146 @@ async function enableNotificationsForUser(req, res) {
   }
 }
 
+/**
+ * Hide notifications for a user.
+ * @async
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Promise<void>} A promise that resolves once the notifications are hidden.
+ */
+const hideNotifications = async (req, res) => {
+  
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const user = await User.findOne({ _id: decoded.userId });
+
+    if (!user) {
+      return res.status(404).json({
+        status: "failed",
+        message: "User not found",
+      });
+    }
+
+    const updateResult = await Notification.aggregate([
+      {
+        $match: { recipient: user.username },
+      },
+      {
+        $group: {
+          _id: null,
+          notifications: { $push: "$_id" },
+        },
+      },
+    ]);
+
+    if (updateResult.length > 0 && updateResult[0].notifications.length > 0) {
+      // Update user's hiddenNotifications array
+      user.hiddenNotifications.push(...updateResult[0].notifications);
+
+      await user.save();
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Notifications hidden successfully" });
+    } else {
+      return res
+        .status(200)
+        .json({ success: true, message: "No notifications to hide" });
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * Get unread notifications and their count for a user.
+ * @async
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Promise<void>} A promise that resolves with unread notifications and their count.
+ */
+const getUnreadNotifications = async (req, res) => {
+   const token = req.headers.authorization.split(" ")[1];
+   const decoded = await verifyToken(token);
+   if (!decoded) {
+     return res.status(401).json({ message: "Unauthorized" });
+   }
+   try {
+     const user = await User.findOne({ _id: decoded.userId });
+
+     if (!user) {
+       return res.status(404).json({
+         status: "failed",
+         message: "User not found",
+       });
+     }
+     // Find unread notifications for the user
+     const unreadNotifications = await Notification.find({
+       recipient: user.username,
+       isRead: false,
+     });
+
+     // Get the count of unread notifications
+     const unreadCount = unreadNotifications.length;
+
+     return res.status(200).json({ success:true, unreadCount, unreadNotifications });
+   } catch (error) {
+     console.error("Error:", error);
+     return res.status(500).json({ message: "Internal server error" });
+   }
+};
+
+/**
+ * Get read notifications and their count for a user.
+ * @async
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Promise<void>} A promise that resolves with unread notifications and their count.
+ */
+const getReadNotifications = async (req, res) => {
+   const token = req.headers.authorization.split(" ")[1];
+   const decoded = await verifyToken(token);
+   if (!decoded) {
+     return res.status(401).json({ message: "Unauthorized" });
+   }
+   try {
+     const user = await User.findOne({ _id: decoded.userId });
+
+     if (!user) {
+       return res.status(404).json({
+         status: "failed",
+         message: "User not found",
+       });
+     }
+     // Find read notifications for the user
+     const readNotifications = await Notification.find({
+       recipient: user.username,
+       isRead: true,
+     });
+
+     // Get the count of read notifications
+     const unreadCount = readNotifications.length;
+
+     return res
+       .status(200)
+       .json({ success: true, unreadCount, readNotifications });
+   } catch (error) {
+     console.error("Error:", error);
+     return res.status(500).json({ message: "Internal server error" });
+   }
+};
+
+
 module.exports = {
   getAllNotificationsForUser,
   disableNotificationsForUser,
   enableNotificationsForUser,
+  hideNotifications,
+  getUnreadNotifications,
+  getReadNotifications,
 };

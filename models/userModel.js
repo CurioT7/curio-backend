@@ -234,6 +234,12 @@ const userSchema = new mongoose.Schema({
       },
     ],
   },
+  hiddenNotifications: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Notification",
+    },
+  ],
 });
 
 /**
