@@ -217,7 +217,7 @@ const userSchema = new mongoose.Schema({
   karma: {
     type: Number,
     default: 0,
-  },,
+  },
   notificationSettings: {
     disabledSubreddits: [
       {
