@@ -21,6 +21,7 @@ const listingRouter = require("./router/listingRouter");
 const searchRouter = require("./router/searchRouter");
 const categoryRouter = require("./router/categoryRouter");
 const postRouter = require("./router/postRouter");
+const notificationRouter = require("./router/notificationRouter");
 
 const cors = require("cors");
 
@@ -80,6 +81,8 @@ app.use("/api/user", profileRouter);
 
 app.use("/api", searchRouter);
 app.use("/api", postRouter);
+app.use("/api/notifications", notificationRouter);
+
 
 const PORT = process.env.PORT;
 const server = app.listen(PORT, () => {

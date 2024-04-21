@@ -217,7 +217,33 @@ const userSchema = new mongoose.Schema({
   karma: {
     type: Number,
     default: 0,
+  },,
+  notificationSettings: {
+    disabledSubreddits: [
+      {
+        type: String, // Store the names of disabled subreddits
+        ref: "Subreddit",
+      },
+    ],
+    disabledPosts: [
+      {
+        type: Schema.Types.ObjectId, // Store the IDs of disabled posts
+        ref: "Post", // Reference to the Post model
+      },
+    ],
+    disabledComments: [
+      {
+        type: Schema.Types.ObjectId, // Store the IDs of disabled comments
+        ref: "Comment", // Reference to the Comment model
+      },
+    ],
   },
+  hiddenNotifications: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Notification",
+    },
+  ],
 });
 
 /**

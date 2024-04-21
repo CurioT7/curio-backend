@@ -7,6 +7,7 @@ const {
   generateTimedToken,
 } = require("../../utils/tokens");
 require("dotenv").config();
+const Notification = require("../../models/notificationModel");
 
 // Function to retrieve all comments for a post.
 /**
@@ -83,23 +84,29 @@ async function createComments(req, res) {
         }
       }
 
-      const comment = new Comment({
-        content,
-        authorName: user.username,
-        createdAt: new Date(),
-        upvotes: 0,
-        downvotes: 0,
-        linkedPost: postId,
-        linkedSubreddit: post.linkedSubreddit,
-        awards: 0
-      });
-  
-      await comment.save();
-      post.comments.push(comment._id);
-      await post.save();
-    
-      return res.status(201).json({ success: true, comment });
+    const comment = new Comment({
+      content,
+      authorName: user.username,
+      createdAt: new Date(),
+      upvotes: 0,
+      downvotes: 0,
+      linkedPost: postId,
+      linkedSubreddit: post.linkedSubreddit,
+      awards: 0,
+    });
 
+    await comment.save();
+    post.comments.push(comment._id);
+    await post.save();
+    // Create a notification for the post author
+    const notification = new Notification({
+      title: "New Comment",
+      message: `${user.username} commented on your post "${post.title}".`,
+      recipient: post.author, // Assuming `author` is the username of the post author
+    }); 
+  
+    await notification.save();
+    return res.status(201).json({ success: true, comment });
   } catch (err) {
     console.log(err);
     return res

@@ -8,6 +8,7 @@ const multer = require("multer");
 const { s3, sendFileToS3, generateRandomId } = require("../../utils/s3-bucket");
 const PutObjectCommand = require("@aws-sdk/client-s3");
 const { options } = require("../../router/profileRouter");
+const Notification = require("../../models/notificationModel");
 
 /**
  * Hide a post
@@ -826,6 +827,16 @@ async function castVote(req, res) {
         message: "User has already voted on this item",
       });
     }
+    // Notify the author
+    const notification = new Notification({
+      title: "New Vote",
+      message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
+        direction === 1 ? "upvoted" : "downvoted"
+      } by ${user.username}.`,
+      recipient: item.authorName,
+    });
+
+    await notification.save();
 
     // If direction is not 0 and user hasn't voted yet, add the vote to user's upvotes/downvotes and update item's upvotes/downvotes accordingly
     if (direction === 1) {
