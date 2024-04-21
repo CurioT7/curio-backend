@@ -56,10 +56,32 @@ router.get(
 
 router.get("/searchSuggestions/:query", searchController.searchSuggestions);
 
+/**
+ * Route to handle GET requests for searching people.
+ * @name GET/searchPeople
+ * @function
+ * @memberof module:routes/searchRouter
+ * @param {string} path - The URL path for the route ("/searchPeople").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ */
+
 router.get(
   "/search/people/:query",
   (req, res, next) => authenticate(req, res, next, true),
   searchController.searchPeople
 );
+
+/**
+ * Route to handle GET requests for searching communities.
+ * @name GET/searchCommunities
+ * @function
+ * @memberof module:routes/searchRouter
+ * @param {string} path - The URL path for the route ("/searchCommunities").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ */
+
+router.get("/searchCommunities/:query", searchController.searchCommunities);
 
 module.exports = router;
