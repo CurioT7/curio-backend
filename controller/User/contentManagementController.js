@@ -782,7 +782,7 @@ async function castVote(req, res) {
       message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
         direction === 1 ? "upvoted" : "downvoted"
       } by ${user.username}.`,
-      recipient: item.author._id,
+      recipient: item.authorName,
     });
 
     await notification.save();

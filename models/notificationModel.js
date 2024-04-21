@@ -1,13 +1,21 @@
+/**
+ * Defines the schema for the Notification model in the database.
+ * @module notificationModel
+ * @requires mongoose
+ */
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
+
 /**
- * Schema definition for a notification.
- * @typedef {Object} NotificationSchema
+ * Notification Schema definition.
+ * @typedef {Object} Notification
  * @property {string} title - The title of the notification.
- * @property {string} message - The message of the notification.
- * @property {Date} timestamp - The date and time when the notification was created.
- * @property {mongoose.Types.ObjectId} recipient - The ID of the recipient of the notification.
- * @property {boolean} isRead - A flag indicating whether the notification has been read.
+ * @property {string} message - The content of the notification message.
+ * @property {Date} timestamp - The timestamp when the notification was created.
+ * @property {string} recipient - The username of the recipient user.
+ * @property {boolean} isRead - Indicates whether the notification has been read (default: false).
+ * @property {boolean} isHidden - Indicates whether the notification is hidden (default: false).
+ * @property {boolean} isSent - Indicates whether the notification has been sent (default: false).
  */
 const notificationSchema = new Schema({
   title: {
@@ -31,15 +39,12 @@ const notificationSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  ishiden: {
-    type: Boolean,
-    default: false,
-  },
   isSent: {
     type: Boolean,
     default: false,
   },
 });
+
 /**
  * Creates a model for the Comment schema.
  * @type {mongoose.Model}
@@ -47,5 +52,3 @@ const notificationSchema = new Schema({
 const Notification = mongoose.model("Notification", notificationSchema);
 
 module.exports = Notification;
-
-

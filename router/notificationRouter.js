@@ -48,6 +48,30 @@ router.post(
 router.post("/hide", notificationController.hideNotifications);
 
 /**
+ * Unhide notifications for a user.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response containing the status of the operation.
+ */
+router.post("/unhide", notificationController.unhideNotifications);
+
+/**
+ * Retrieve unsent notifications for a user.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response containing unsent notifications for the user.
+ */
+router.get("/unsent", notificationController.getUnsentNotificationsForUser);
+
+/**
+ * Mark a notification as read.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response containing the status of the operation.
+ */
+router.post("/read-notification", notificationController.readNotifications);
+
+/**
  * Retrieves unread notifications for the authenticated user.
  * @param {express.Request} req - The request object.
  * @param {express.Response} res - The response object.
