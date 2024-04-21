@@ -12,8 +12,6 @@ const express = require("express");
 const userRouter = require("./router/userRouter");
 const userSocialsRouter = require("./router/userSocialsRouter");
 const session = require("express-session");
-const passport = require("passport");
-require("./passport/passport")(passport);
 const indentityRouter = require("./router/settings/identityRouter");
 const subredditRouter = require("./router/subredditRouter");
 const friendsRoute = require("./router/friendsRouter");
@@ -59,8 +57,6 @@ app.use(
   })
 );
 
-app.use(passport.initialize());
-app.use(passport.session());
 
 app.get("/", (req, res) => {
   res.send("Hello World");
