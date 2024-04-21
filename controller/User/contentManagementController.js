@@ -5,7 +5,7 @@ const Comment = require("../../models/commentModel");
 const Subreddit = require("../../models/subredditModel");
 const { verifyToken, authorizeUser } = require("../../utils/tokens");
 const multer = require("multer");
-const { s3, sendFileToS3, generateRandomId } = require("../../utils/s3-bucket");
+const { s3, sendFileToS3, getFilesFromS3 } = require("../../utils/s3-bucket");
 const PutObjectCommand = require("@aws-sdk/client-s3");
 const { options } = require("../../router/profileRouter");
 const Notification = require("../../models/notificationModel");
@@ -954,6 +954,50 @@ async function getHistory(req, res) {
   }
 }
 
+/*
+ * Get overview of a subreddit when creating a post
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response containing the subreddit overview.
+ */
+
+async function subredditOverview(req, res) {
+  try {
+    const query = decodeURIComponent(req.params.subreddit);
+    let subreddit = await Subreddit.findOne({ name: query });
+    if (!subreddit) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subreddit not found" });
+    }
+
+    if (subreddit.icon) {
+      subreddit.icon = await getFilesFromS3(subreddit.icon);
+    }
+
+    if (subreddit.banner) {
+      subreddit.banner = await getFilesFromS3(subreddit.banner);
+    }
+
+    return res.status(200).json({
+      success: true,
+      subreddit: subreddit.name,
+      icon: subreddit.icon,
+      banner: subreddit.banner,
+      description: subreddit.description,
+      rules: subreddit.rules,
+      members: subreddit.members.length,
+      createdAt: subreddit.createdAt,
+      privacyMode: subreddit.privacyMode,
+    });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
 module.exports = {
   hidePost,
   unhidePost,
@@ -972,4 +1016,5 @@ module.exports = {
   getHistory,
   spoilerPost,
   unspoilerPost,
+  subredditOverview,
 };

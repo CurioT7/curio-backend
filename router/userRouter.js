@@ -13,6 +13,7 @@ const userController = require("../controller/Auth/userController");
 const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
 const contentManagementController = require("../controller/User/contentManagementController");
+const { authenticate } = require("../middlewares/auth");
 
 // Set up multer middleware for file uploads
 const multer = require("multer");
@@ -354,5 +355,21 @@ router.post("/history", contentManagementController.addToHistory);
  * @returns {Object} JSON response containing the recent posts.
  */
 router.get("/getHistory", contentManagementController.getHistory);
+
+/**
+ * Retrieve the user's browsing history.
+ * @name GET /getHistory
+ * @function
+ * @memberof router
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response containing the recent posts.
+ */
+
+router.get(
+  "/subredditOverview/:subreddit",
+  authenticate,
+  contentManagementController.subredditOverview
+);
 
 module.exports = router;
