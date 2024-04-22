@@ -981,9 +981,9 @@ async function getHistory(req, res) {
 
 async function subredditOverview(req, res) {
   try {
-    const query = decodeURIComponent(req.params.subreddit);
+    const query = decodeURIComponent(req.params.subreddit).toString();
     const user = await User.findById(req.user.userId);
-    if (!req.params.subreddit) {
+    if (query === user.username) {
       if (user.profilePicture) {
         user.profilePicture = await getFilesFromS3(user.profilePicture);
       }
