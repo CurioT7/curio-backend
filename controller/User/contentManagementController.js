@@ -335,6 +335,21 @@ async function hidden(req, res) {
 
 async function submitPost(req, res, user, imageKey) {
   try {
+    const type = req.body.type;
+    if (!type) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Type is required" });
+    }
+
+    //validate that type is enum
+    if (!["post", "poll", "media", "link"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "Type must be one of 'post', 'poll', 'media', 'link'",
+      });
+    }
+
     let subreddit;
     if (req.body.subreddit) {
       subreddit = await Subreddit.findOne({ name: req.body.subreddit });
@@ -364,9 +379,19 @@ async function submitPost(req, res, user, imageKey) {
           .json({ success: false, message: "Invalid URL format" });
       }
     }
+    let optionsArray;
+
+    if (req.body.type === "poll") {
+      optionsArray = req.body.options;
+      optionsArray = optionsArray
+        .split(",")
+        .map((option) => ({ name: option.trim(), votes: 0 }));
+      console.log(optionsArray);
+    }
 
     const post = new Post({
       title: req.body.title,
+      type: req.body.type,
       content: req.body.content && req.body.content,
       authorName: user.username,
       isNSFW: req.body.isNSFW,
@@ -375,7 +400,7 @@ async function submitPost(req, res, user, imageKey) {
       linkedSubreddit: subreddit && subreddit._id,
       media: imageKey,
       sendReplies: req.body.sendReplies,
-      options: req.body.options && req.body.options,
+      options: req.body.options && optionsArray,
       voteLength: req.body.voteLength && req.body.voteLength,
     });
     await post.save();
