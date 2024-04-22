@@ -699,21 +699,8 @@ async function unlockItem(req, res) {
  */
 async function getItemInfo(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-
     const objectID = req.query.objectID;
     const objectType = req.query.objectType;
-
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
     let item;
 
     if (objectType === "post") {
