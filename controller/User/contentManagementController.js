@@ -391,7 +391,6 @@ async function submitPost(req, res, user, imageKey) {
       optionsArray = optionsArray
         .split(",")
         .map((option) => ({ name: option.trim(), votes: 0 }));
-      console.log(optionsArray);
     }
 
     const post = new Post({
@@ -410,7 +409,6 @@ async function submitPost(req, res, user, imageKey) {
     });
     post.type = req.body.type;
     await post.save();
-    console.log(post._id);
     // Add post to user's posts
     user.posts.push(post._id);
     await user.save();
@@ -1106,7 +1104,6 @@ async function pollVote(req, res) {
         // Save changes to both post and user
         await Promise.all([post.save(), user.save()]);
 
-        console.log(post.options[optionIndex].votes);
 
         // Respond with success message
         return res
