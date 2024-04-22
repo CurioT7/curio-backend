@@ -1,4 +1,5 @@
 const User = require("../../models/userModel");
+const UserPreferences = require("../../models/userPreferencesModel");
 const Post = require("../../models/postModel");
 require("dotenv").config();
 const Comment = require("../../models/commentModel");
@@ -335,6 +336,21 @@ async function hidden(req, res) {
 
 async function submitPost(req, res, user, imageKey) {
   try {
+    const type = req.body.type;
+    if (!type) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Type is required" });
+    }
+
+    //validate that type is enum
+    if (!["post", "poll", "media", "link"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "Type must be one of 'post', 'poll', 'media', 'link'",
+      });
+    }
+
     let subreddit;
     if (req.body.subreddit) {
       subreddit = await Subreddit.findOne({ name: req.body.subreddit });
@@ -353,7 +369,11 @@ async function submitPost(req, res, user, imageKey) {
       }
     }
 
-    if (req.body.content && req.body.content.startsWith("http")) {
+    if (
+      req.body.content &&
+      req.body.content.startsWith("http") &&
+      type === "link"
+    ) {
       // Regular expression to match URLs like www.example.com
       const urlPattern =
         /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})(\/\S*)?$/;
@@ -364,9 +384,19 @@ async function submitPost(req, res, user, imageKey) {
           .json({ success: false, message: "Invalid URL format" });
       }
     }
+    let optionsArray;
+
+    if (req.body.type === "poll") {
+      optionsArray = req.body.options;
+      optionsArray = optionsArray
+        .split(",")
+        .map((option) => ({ name: option.trim(), votes: 0 }));
+      console.log(optionsArray);
+    }
 
     const post = new Post({
       title: req.body.title,
+      type: req.body.type,
       content: req.body.content && req.body.content,
       authorName: user.username,
       isNSFW: req.body.isNSFW,
@@ -375,7 +405,7 @@ async function submitPost(req, res, user, imageKey) {
       linkedSubreddit: subreddit && subreddit._id,
       media: imageKey,
       sendReplies: req.body.sendReplies,
-      options: req.body.options && req.body.options,
+      options: req.body.options && optionsArray,
       voteLength: req.body.voteLength && req.body.voteLength,
     });
     await post.save();
@@ -951,7 +981,27 @@ async function getHistory(req, res) {
 
 async function subredditOverview(req, res) {
   try {
-    const query = decodeURIComponent(req.params.subreddit);
+    const query = decodeURIComponent(req.params.subreddit).toString();
+    const user = await User.findById(req.user.userId);
+    if (query === user.username) {
+      if (user.profilePicture) {
+        user.profilePicture = await getFilesFromS3(user.profilePicture);
+      }
+      if (user.banner) {
+        user.banner = await getFilesFromS3(user.banner);
+      }
+
+      return res.status(200).json({
+        success: true,
+        displayName: user.displayName,
+        profilePicture: user.profilePicture,
+        banner: user.banner,
+        about: user.bio,
+        cakeDay: user.createdAt,
+        karma: user.karma,
+      });
+    }
+
     let subreddit = await Subreddit.findOne({ name: query });
     if (!subreddit) {
       return res

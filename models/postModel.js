@@ -41,6 +41,9 @@ const postSchema = new Schema({
     type: String,
     required: true,
   },
+  type: {
+    enum: ["post", "poll", "media", "link"],
+  },
   content: {
     type: String,
   },
@@ -126,7 +129,16 @@ const postSchema = new Schema({
     default: false,
   },
   options: {
-    type: Object,
+    type: [
+      {
+        name: String,
+        votes: {
+          type: Number,
+          default: 0,
+        },
+      },
+    ],
+    default: [],
   },
   voteLength: {
     type: Number,
