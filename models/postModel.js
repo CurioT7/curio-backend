@@ -42,6 +42,7 @@ const postSchema = new Schema({
     required: true,
   },
   type: {
+    type: String,
     enum: ["post", "poll", "media", "link"],
   },
   content: {
@@ -128,18 +129,23 @@ const postSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  options: {
-    type: [
-      {
-        name: String,
-        votes: {
-          type: Number,
-          default: 0,
-        },
+  options: [
+    {
+      name: String,
+      votes: {
+        type: Number,
+        default: 0,
       },
-    ],
-    default: [],
-  },
+      voters: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          default: [],
+        },
+      ],
+    },
+  ],
+
   voteLength: {
     type: Number,
   },

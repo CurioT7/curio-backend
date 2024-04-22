@@ -372,4 +372,16 @@ router.get(
   contentManagementController.subredditOverview
 );
 
+/**
+ * Route to get the user's saved posts and comments.
+ * @name GET /saved
+ * @function
+ * @memberof router
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response containing the saved posts and comments.
+ */
+
+router.post("/pollVote", authenticate, contentManagementController.pollVote);
+
 module.exports = router;
