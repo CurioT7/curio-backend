@@ -9,6 +9,7 @@ const { s3, sendFileToS3, getFilesFromS3 } = require("../../utils/s3-bucket");
 const PutObjectCommand = require("@aws-sdk/client-s3");
 const { options } = require("../../router/profileRouter");
 const Notification = require("../../models/notificationModel");
+const { all } = require("axios");
 
 /**
  * Hide a post
@@ -969,6 +970,13 @@ async function subredditOverview(req, res) {
     return res.status(200).json({
       success: true,
       subreddit: subreddit.name,
+      allowImages: subreddit.allowImages,
+      allowVideos: subreddit.allowVideos,
+      allowText: subreddit.allowText,
+      allowLink: subreddit.allowLink,
+      allowPolls: subreddit.allowPolls,
+      allowEmoji: subreddit.allowEmoji,
+      allowGif: subreddit.allowGif,
       icon: subreddit.icon,
       banner: subreddit.banner,
       description: subreddit.description,

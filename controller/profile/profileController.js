@@ -270,9 +270,15 @@ async function getJoinedCommunities(req, res) {
 
     const subredditNames = user.subreddits.map((sub) => sub.subreddit);
 
-    const communities = await Subreddit.find({
+    let communities = await Subreddit.find({
       name: { $in: subredditNames },
     }).exec();
+
+    // Add member count to each community
+    communities = communities.map((community) => {
+      const memberCount = community.members.length;
+      return { ...community._doc, memberCount };
+    });
 
     return res.status(200).json({ success: true, communities });
   } catch (error) {
