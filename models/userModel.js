@@ -244,6 +244,18 @@ const userSchema = new mongoose.Schema({
       ref: "Notification",
     },
   ],
+  pollVotes: [
+    {
+      pollId: {
+        type: Schema.Types.ObjectId,
+        ref: "Post",
+      },
+      // Store the option
+      option: {
+        type: String,
+      },
+    },
+  ],
 });
 
 /**
@@ -266,7 +278,6 @@ userSchema.pre("save", async function (next) {
       if (this.isNew) {
         const userPreferences = new UserPreferences({
           username: this.username,
-          
         });
         await userPreferences.save();
       }
