@@ -367,7 +367,7 @@ router.get("/getHistory", contentManagementController.getHistory);
  */
 
 router.get(
-  "/subredditOverview/:subreddit",
+  "/subredditOverview/:subreddit?",
   authenticate,
   contentManagementController.subredditOverview
 );

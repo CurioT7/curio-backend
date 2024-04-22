@@ -1,4 +1,5 @@
 const User = require("../../models/userModel");
+const UserPreferences = require("../../models/userPreferencesModel");
 const Post = require("../../models/postModel");
 require("dotenv").config();
 const Comment = require("../../models/commentModel");
@@ -368,7 +369,11 @@ async function submitPost(req, res, user, imageKey) {
       }
     }
 
-    if (req.body.content && req.body.content.startsWith("http")) {
+    if (
+      req.body.content &&
+      req.body.content.startsWith("http") &&
+      type === "link"
+    ) {
       // Regular expression to match URLs like www.example.com
       const urlPattern =
         /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})(\/\S*)?$/;
@@ -977,6 +982,26 @@ async function getHistory(req, res) {
 async function subredditOverview(req, res) {
   try {
     const query = decodeURIComponent(req.params.subreddit);
+    const user = await User.findById(req.user.userId);
+    if (!req.params.subreddit) {
+      if (user.profilePicture) {
+        user.profilePicture = await getFilesFromS3(user.profilePicture);
+      }
+      if (user.banner) {
+        user.banner = await getFilesFromS3(user.banner);
+      }
+
+      return res.status(200).json({
+        success: true,
+        displayName: user.displayName,
+        profilePicture: user.profilePicture,
+        banner: user.banner,
+        about: user.bio,
+        cakeDay: user.createdAt,
+        karma: user.karma,
+      });
+    }
+
     let subreddit = await Subreddit.findOne({ name: query });
     if (!subreddit) {
       return res
