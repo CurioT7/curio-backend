@@ -347,7 +347,17 @@ async function getUserPosts(req, res) {
           return Post.find({ linkedSubreddit: subreddit.subreddit })
             .sort({ upvotes: -1 })
             .then((posts) => {
-              return posts.map((post) => {
+              return posts.map(async (post) => {
+                if (post.media) {
+                  post.media = await getFilesFromS3(post.media);
+                }
+                if (post.type === "poll") {
+                  post.options.forEach((option) => {
+                    if (option.voters.includes(user._id)) {
+                      post.userVote = option.name;
+                    }
+                  });
+                }
                 return {
                   subreddit: subreddit.name,
                   post: post,
@@ -358,7 +368,18 @@ async function getUserPosts(req, res) {
           return Post.find({ linkedSubreddit: subreddit.subreddit })
             .sort({ createdAt: -1 })
             .then((posts) => {
-              return posts.map((post) => {
+              return posts.map(async (post) => {
+                if (post.media) {
+                  post.media = await getFilesFromS3(post.media);
+                }
+                if (post.type === "poll") {
+                  post.options.forEach((option) => {
+                    if (option.voters.includes(user._id)) {
+                      post.userVote = option.name;
+                    }
+                  });
+                }
+
                 return {
                   subreddit: subreddit.name,
                   post: post,
@@ -369,7 +390,17 @@ async function getUserPosts(req, res) {
           return Post.find({ linkedSubreddit: subreddit.subreddit })
             .sort({ views: -1 })
             .then((posts) => {
-              return posts.map((post) => {
+              return posts.map(async (post) => {
+                if (post.media) {
+                  post.media = await getFilesFromS3(post.media);
+                }
+                if (post.type === "poll") {
+                  post.options.forEach((option) => {
+                    if (option.voters.includes(user._id)) {
+                      post.userVote = option.name;
+                    }
+                  });
+                }
                 return {
                   subreddit: subreddit.name,
                   post: post,

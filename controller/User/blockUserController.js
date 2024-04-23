@@ -35,7 +35,7 @@ async function blockUser(req, res) {
     const blockedUser = await User.findOne({ username: usernameToBlock });
     if (!blockedUser) {
       return res.status(404).json({ message: "User to block not found" });
-    }     
+    }
 
     const existingBlock = await block.findOne({
       blockerId: user._id,
@@ -49,12 +49,10 @@ async function blockUser(req, res) {
       const cooldownTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
       if (timeSinceUnblock < cooldownTime) {
-        return res
-          .status(403)
-          .json({
-            message:
-              "You can't block the user for 24 hours after unblocking them",
-          });
+        return res.status(403).json({
+          message:
+            "You can't block the user for 24 hours after unblocking them",
+        });
       }
 
       existingBlock.unblockTimestamp = null;
@@ -63,25 +61,28 @@ async function blockUser(req, res) {
 
     const newBlock =
       existingBlock ||
-      new block({ blockerId: user._id, blockedId: blockedUser._id, blockedUsername: blockedUser.username, });
-      newBlock.blockUsername = blockedUser.username;
-      await newBlock.save();
+      new block({
+        blockerId: user._id,
+        blockedId: blockedUser._id,
+        blockedUsername: blockedUser.username,
+      });
+    newBlock.blockUsername = blockedUser.username;
+    await newBlock.save();
 
-      await UserPreferences.updateOne(
-        { username: user.username },
-        {
-          $push: {
-            viewBlockedPeople: {
-              blockedUsername: blockedUser.username,
-
-            },
+    await UserPreferences.updateOne(
+      { username: user.username },
+      {
+        $push: {
+          viewBlockedPeople: {
+            blockedUsername: blockedUser.username,
           },
-        }
-      );
-      if (preferences){
-        await preferences.save();
+        },
       }
-      console.log(preferences);
+    );
+    if (preferences) {
+      await preferences.save();
+    }
+    console.log(preferences);
 
     res.json({ message: "User successfully blocked" });
   } catch (error) {
@@ -111,7 +112,7 @@ async function unblockUser(req, res) {
     }
     const preferences = await UserPreferences.findOne({
       username: user.username,
-    })
+    });
 
     const unblockedUser = await User.findOne({ username: usernameToUnblock });
     if (!unblockedUser) {
