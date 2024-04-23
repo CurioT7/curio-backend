@@ -806,9 +806,16 @@ async function castVote(req, res) {
     }
 
     // If direction is not 0 and user has already voted, return error
-    const existingVoteIndex = user.upvotes.findIndex(
-      (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
-    );
+    const existingVoteIndex =
+      user.upvotes.findIndex(
+        (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+      ) !== -1
+        ? user.upvotes.findIndex(
+            (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+          )
+        : user.downvotes.findIndex(
+            (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+          );
     if (existingVoteIndex !== -1) {
       return res.status(400).json({
         success: false,
