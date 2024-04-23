@@ -418,7 +418,11 @@ async function submitPost(req, res, user, imageKey) {
     }
     return res
       .status(201)
-      .json({ success: true, message: "Post created successfully" });
+      .json({
+        success: true,
+        message: "Post created successfully",
+        postId: post._id,
+      });
   } catch (error) {
     console.log(error);
     return res
@@ -1103,7 +1107,6 @@ async function pollVote(req, res) {
 
         // Save changes to both post and user
         await Promise.all([post.save(), user.save()]);
-
 
         // Respond with success message
         return res
