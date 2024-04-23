@@ -1001,6 +1001,7 @@ async function subredditOverview(req, res) {
         about: user.bio,
         createdAt: user.cakeDay,
         karma: user.karma,
+        isUser: true,
       });
     }
 
