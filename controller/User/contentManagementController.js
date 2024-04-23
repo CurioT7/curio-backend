@@ -390,8 +390,7 @@ async function submitPost(req, res, user, imageKey) {
       optionsArray = req.body.options;
       optionsArray = optionsArray
         .split(",")
-        .map((option) => ({ name: option.trim(), votes: 0 }));
-        console.log(req.body.options);
+        .map((option) => ({ name: option, votes: 0 }));
     }
 
     const post = new Post({
