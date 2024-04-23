@@ -30,11 +30,7 @@ async function blockUser(req, res) {
     }
     const preferences = await UserPreferences.findOne({
       username: user.username,
-    })
-    const blockingUser = await User.findOne({ username: usernameToBlock });
-    if (!blockingUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    });
 
     const blockedUser = await User.findOne({ username: usernameToBlock });
     if (!blockedUser) {
@@ -42,8 +38,9 @@ async function blockUser(req, res) {
     }     
 
     const existingBlock = await block.findOne({
-      blockerId: blockingUser._id,
+      blockerId: user._id,
       blockedId: blockedUser._id,
+      blockedUsername: blockedUser.username,
     });
 
     if (existingBlock) {
@@ -66,8 +63,7 @@ async function blockUser(req, res) {
 
     const newBlock =
       existingBlock ||
-      new block({ blockerId: blockingUser._id, blockedId: blockedUser._id, blockedUsername: blockedUser.username, });
-      await newBlock.save();
+      new block({ blockerId: user._id, blockedId: blockedUser._id, blockedUsername: blockedUser.username, });
       newBlock.blockUsername = blockedUser.username;
       await newBlock.save();
 
@@ -82,7 +78,10 @@ async function blockUser(req, res) {
           },
         }
       );
-      await preferences.save();
+      if (preferences){
+        await preferences.save();
+      }
+      console.log(preferences);
 
     res.json({ message: "User successfully blocked" });
   } catch (error) {
@@ -111,12 +110,8 @@ async function unblockUser(req, res) {
       return res.status(404).json({ message: "User not found" });
     }
     const preferences = await UserPreferences.findOne({
-      username: blocker.username,
-    });
-    const blocker = await User.findOne({ username: usernameToUnblock });
-    if (!blocker) {
-      return res.status(404).json({ message: "User not found" });
-    }
+      username: user.username,
+    })
 
     const unblockedUser = await User.findOne({ username: usernameToUnblock });
     if (!unblockedUser) {
@@ -124,7 +119,7 @@ async function unblockUser(req, res) {
     }
 
     const existingBlock = await block.findOne({
-      blockerId: blocker._id,
+      blockerId: user._id,
       blockedId: unblockedUser._id,
     });
 
@@ -135,7 +130,7 @@ async function unblockUser(req, res) {
     existingBlock.unblockTimestamp = Date.now();
     await existingBlock.save();
 
-    await UserPreferences.deleteOne(
+    await UserPreferences.updateOne(
       { username: user.username },
       {
         $pull: {
@@ -145,7 +140,10 @@ async function unblockUser(req, res) {
         },
       }
     );
-    await preferences.save();
+    if (preferences) {
+      await preferences.save();
+    }
+    console.log(preferences);
 
     res.json({ message: "User successfully unblocked" });
   } catch (error) {
