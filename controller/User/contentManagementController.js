@@ -416,13 +416,11 @@ async function submitPost(req, res, user, imageKey) {
       subreddit.posts.push(post._id);
       await subreddit.save();
     }
-    return res
-      .status(201)
-      .json({
-        success: true,
-        message: "Post created successfully",
-        postId: post._id,
-      });
+    return res.status(201).json({
+      success: true,
+      message: "Post created successfully",
+      postId: post._id,
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -1001,7 +999,7 @@ async function subredditOverview(req, res) {
         profilePicture: user.profilePicture,
         banner: user.banner,
         about: user.bio,
-        createdAt: user.createdAt,
+        createdAt: user.cakeDay,
         karma: user.karma,
       });
     }
