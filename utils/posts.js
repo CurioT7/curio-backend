@@ -1,6 +1,8 @@
 const Post = require("../models/postModel");
 const User = require("../models/userModel");
-const Subreddit= require("../models/subredditModel");
+const Subreddit = require("../models/subredditModel");
+const Comment = require("../models/commentModel");
+
 
 /**
  * Filters out hidden posts from the list of posts.
@@ -69,12 +71,12 @@ async function getVoteStatusAndSubredditDetails(items) {
     const isUpvoted = user.upvotes.some(
       (vote) =>
         vote.itemId.toString() === itemData._id.toString() &&
-        vote.itemType === "post" // Assuming we're dealing with posts here
+        (vote.itemType === "post" || vote.itemType === "comment")
     );
     const isDownvoted = user.downvotes.some(
       (vote) =>
         vote.itemId.toString() === itemData._id.toString() &&
-        vote.itemType === "post" // Assuming we're dealing with posts here
+        (vote.itemType === "post" || vote.itemType === "comment")
     );
 
     if (isUpvoted) {
