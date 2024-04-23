@@ -1001,7 +1001,7 @@ async function subredditOverview(req, res) {
         profilePicture: user.profilePicture,
         banner: user.banner,
         about: user.bio,
-        cakeDay: user.createdAt,
+        createdAt: user.createdAt,
         karma: user.karma,
       });
     }
