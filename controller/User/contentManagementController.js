@@ -10,6 +10,7 @@ const PutObjectCommand = require("@aws-sdk/client-s3");
 const { options } = require("../../router/profileRouter");
 const Notification = require("../../models/notificationModel");
 const { all } = require("axios");
+const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
 
 /**
  * Hide a post
@@ -579,49 +580,42 @@ async function getPostLink(req, res) {
  */
 async function lockItem(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
-    const itemID = req.body.itemID;
-    const post = await Post.findById(itemID);
+      const itemID = req.body.itemID;
+      const post = await Post.findById(itemID);
 
-    if (!post) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Post not found" });
-    } else {
-      // Check if the user is a moderator or creator of the linked subreddit
-      const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
-
-      const subredditRole = user.subreddits.find(
-        (sub) => sub.subreddit === subredditOfPost.name
-      );
-      if (
-        !subredditRole ||
-        (subredditRole.role !== "moderator" && subredditRole.role !== "creator")
-      ) {
-        return res.status(403).json({
-          success: false,
-          message: "User is not authorized to lock posts in this subreddit",
-        });
-      } else {
-        await Post.findOneAndUpdate(
-          { _id: itemID },
-          { isLocked: true },
-          { new: true }
-        );
+      if (!post) {
         return res
-          .status(200)
-          .json({ success: true, message: "Post locked successfully" });
+          .status(404)
+          .json({ success: false, message: "Post not found" });
+      } else {
+        // Check if the user is a moderator or creator of the linked subreddit
+        const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
+        if (subredditOfPost) {
+          const subredditRole = user.subreddits.find(
+            (sub) => sub.subreddit === subredditOfPost.name
+          );
+          if (
+            !subredditRole ||
+            (subredditRole.role !== "moderator" && subredditRole.role !== "creator")
+          ) {
+            return res.status(403).json({
+              success: false,
+              message: "User is not authorized to lock posts in this subreddit",
+            });
+          }
+        } else {
+          await Post.findOneAndUpdate(
+            { _id: itemID },
+            { isLocked: true },
+            { new: true }
+          );
+          return res
+            .status(200)
+            .json({ success: true, message: "Post locked successfully" });
+        }
       }
     }
   } catch (error) {
@@ -640,48 +634,42 @@ async function lockItem(req, res) {
  */
 async function unlockItem(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
     const itemID = req.body.itemID;
-    const post = await Post.findById(itemID);
-    if (!post) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Post not found" });
-    } else {
-      // Check if the user is a moderator or creator of the linked subreddit
-      const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-      const subredditRole = user.subreddits.find(
-        (sub) => sub.subreddit === subredditOfPost.name
-      );
-      if (
-        !subredditRole ||
-        (subredditRole.role !== "moderator" && subredditRole.role !== "creator")
-      ) {
-        return res.status(403).json({
-          success: false,
-          message: "User is not authorized to unlock posts in this subreddit",
-        });
-      } else {
-        await Post.findOneAndUpdate(
-          { _id: itemID },
-          { isLocked: false },
-          { new: true }
-        );
+      const post = await Post.findById(itemID);
+      if (!post) {
         return res
-          .status(200)
-          .json({ success: true, message: "Post unlocked successfully" });
+          .status(404)
+          .json({ success: false, message: "Post not found" });
+      } else {
+        // Check if the user is a moderator or creator of the linked subreddit
+        const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
+        if (subredditOfPost){
+          const subredditRole = user.subreddits.find(
+            (sub) => sub.subreddit === subredditOfPost.name
+          );
+      
+          if (
+            !subredditRole ||
+            (subredditRole.role !== "moderator" && subredditRole.role !== "creator")
+          ) {
+            return res.status(403).json({
+              success: false,
+              message: "User is not authorized to unlock posts in this subreddit",
+            });
+          }
+        } else {
+          await Post.findOneAndUpdate(
+            { _id: itemID },
+            { isLocked: false },
+            { new: true }
+          );
+          return res
+            .status(200)
+            .json({ success: true, message: "Post unlocked successfully" });
+        }
       }
     }
   } catch (error) {
@@ -703,9 +691,16 @@ async function getItemInfo(req, res) {
     const objectID = req.query.objectID;
     const objectType = req.query.objectType;
     let item;
+    let details;
 
     if (objectType === "post") {
-      item = await Post.findOne({ _id: objectID });
+      item = await Post.findOne({ _id: objectID }).populate("originalPostId");
+       if (item.media) {
+         item.media = await getFilesFromS3(item.media);
+       }
+      //TODO check why this doesn't work
+      // Get vote status and subreddit details for each post
+      details = await getVoteStatusAndSubredditDetails(item);
     } else if (objectType === "comment") {
       item = await Comment.findOne({ _id: objectID });
     } else if (objectType === "subreddit") {
@@ -714,9 +709,9 @@ async function getItemInfo(req, res) {
     if (!item) {
       return res
         .status(404)
-        .json({ success: false, message: "Item not found" });
+        .json({ success: false, message: "Item not found", media: item.media });
     } else {
-      return res.status(200).json({ success: true, item });
+      return res.status(200).json({ success: true, item, details });
     }
   } catch (error) {
     console.log(error);
@@ -737,117 +732,103 @@ async function getItemInfo(req, res) {
  */
 async function castVote(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
+    
     const itemID = req.body.itemID;
-    const itemName = req.body.itemName.toLowerCase();
+    const itemName = req.body.itemName;
     const direction = req.body.direction;
 
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
+      let item;
+      if (itemName === "post") {
+        item = await Post.findOne({ _id: itemID });
+      } else if (itemName === "comment") {
+        item = await Comment.findOne({ _id: itemID });
+      }
 
-    let item;
-    if (itemName === "post") {
-      item = await Post.findOne({ _id: itemID });
-    } else if (itemName === "comment") {
-      item = await Comment.findOne({ _id: itemID });
-    }
+      if (!item) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Item not found" });
+      }
 
-    if (!item) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Item not found" });
-    }
-
-    const itemAuthor = await User.findOne({ username: item.authorName });
-
-    if (direction === 0) {
-      // Find the existing vote in upvotes
-      const existingUpvoteIndex = user.upvotes.findIndex(
-        (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
-      );
-
-      if (existingUpvoteIndex !== -1) {
-        //If found in upvotes,remove the existing vote from upvotes
-        item.upvotes -= 1;
-        user.upvotes.splice(existingUpvoteIndex, 1);
-        itemAuthor.karma -= 1;
-      } else {
-        // If not found in upvotes, find in downvotes
-        const existingDownvoteIndex = user.downvotes.findIndex(
+      if (direction === 0) {
+        // Find the existing vote in upvotes
+        const existingUpvoteIndex = user.upvotes.findIndex(
           (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
         );
 
-        if (existingDownvoteIndex !== -1) {
-          // If found in downvotes, remove the existing vote from downvotes
-          item.downvotes -= 1;
-          user.downvotes.splice(existingDownvoteIndex, 1);
-          itemAuthor.karma += 1;
+        if (existingUpvoteIndex !== -1) {
+          //If found in upvotes,remove the existing vote from upvotes
+          item.upvotes -= 1;
+          user.upvotes.splice(existingUpvoteIndex, 1);
         } else {
-          // If direction is 0 and user hasn't voted yet, return success without making any changes
-          return res
-            .status(200)
-            .json({ success: true, message: "No vote to remove" });
-        }
-      }
-
-      await Promise.all([item.save(), user.save(), itemAuthor.save()]);
-      return res
-        .status(200)
-        .json({ success: true, message: "Vote removed successfully" });
-    }
-
-    // If direction is not 0 and user has already voted, return error
-    const existingVoteIndex =
-      user.upvotes.findIndex(
-        (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
-      ) !== -1
-        ? user.upvotes.findIndex(
-            (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
-          )
-        : user.downvotes.findIndex(
+          // If not found in upvotes, find in downvotes
+          const existingDownvoteIndex = user.downvotes.findIndex(
             (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
           );
-    if (existingVoteIndex !== -1) {
-      return res.status(400).json({
-        success: false,
-        message: "User has already voted on this item",
-      });
+
+          if (existingDownvoteIndex !== -1) {
+            // If found in downvotes, remove the existing vote from downvotes
+            item.downvotes -= 1;
+            user.downvotes.splice(existingDownvoteIndex, 1);
+          } else {
+            // If direction is 0 and user hasn't voted yet, return success without making any changes
+            return res
+              .status(200)
+              .json({ success: true, message: "No vote to remove" });
+          }
+        }
+
+        // Notify the author
+        const notification = new Notification({
+          title: "New Vote",
+          message: `Your ${itemName === "post" ? "post" : "comment"} has been ${direction === 1 ? "upvoted" : "downvoted"
+            } by ${user.username}.`,
+          recipient: item.authorName,
+        });
+
+        await notification.save();
+
+        await Promise.all([item.save(), user.save()]);
+        return res
+          .status(200)
+          .json({ success: true, message: "Vote removed successfully" });
+      }
+
+      // If direction is not 0 and user has already voted, return error
+      const existingVoteIndex =
+        user.upvotes.findIndex(
+          (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+        ) !== -1
+          ? user.upvotes.findIndex(
+            (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+          )
+          : user.downvotes.findIndex(
+            (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+          );
+      if (existingVoteIndex !== -1) {
+        return res.status(400).json({
+          success: false,
+          message: "User has already voted on this item",
+        });
+      }
+
+      // If direction is not 0 and user hasn't voted yet, add the vote to user's upvotes/downvotes and update item's upvotes/downvotes accordingly
+      if (direction === 1) {
+        item.upvotes += 1;
+        user.upvotes.push({ itemId: itemID, itemType: itemName, direction });
+      } else if (direction === -1) {
+        item.downvotes += 1;
+        user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
+      }
+
+      await Promise.all([item.save(), user.save()]);
+      return res
+        .status(200)
+        .json({ success: true, message: "Vote casted successfully" });
     }
-    // Notify the author
-    const notification = new Notification({
-      title: "New Vote",
-      message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
-        direction === 1 ? "upvoted" : "downvoted"
-      } by ${user.username}.`,
-      recipient: item.authorName,
-    });
-
-    await notification.save();
-
-    // If direction is not 0 and user hasn't voted yet, add the vote to user's upvotes/downvotes and update item's upvotes/downvotes accordingly
-    if (direction === 1) {
-      item.upvotes += 1;
-      user.upvotes.push({ itemId: itemID, itemType: itemName, direction });
-      itemAuthor.karma += 1;
-    } else if (direction === -1) {
-      item.downvotes += 1;
-      user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
-      itemAuthor.karma -= 1;
-    }
-
-    await Promise.all([item.save(), user.save(), itemAuthor.save()]);
-    return res
-      .status(200)
-      .json({ success: true, message: "Vote casted successfully" });
   } catch (error) {
     console.log(error);
     return res
@@ -864,46 +845,37 @@ async function castVote(req, res) {
  */
 async function addToHistory(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
     const postID = req.body.postID;
 
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
-
-    const post = await Post.findOne({ _id: postID });
-    if (!post) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Post not found" });
-    }
-
-    // Check if the post is already in the user's recentPosts
-    const isAlreadyInHistory = user.recentPosts.some((recentPost) =>
-      recentPost.equals(post._id)
-    );
-
-    // If the post is not already in the user's recentPosts, add it
-    if (!isAlreadyInHistory) {
-      // If recentPosts array length is 10, remove the oldest post
-      if (user.recentPosts.length >= 10) {
-        user.recentPosts.shift();
+      const post = await Post.findOne({ _id: postID });
+      if (!post) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Post not found" });
       }
-      user.recentPosts.push(post._id); // Add the new post at the end
-      await user.save();
-    }
 
-    return res
-      .status(200)
-      .json({ success: true, message: "Post added to history" });
+      // Check if the post is already in the user's recentPosts
+      const isAlreadyInHistory = user.recentPosts.some((recentPost) =>
+        recentPost.equals(post._id)
+      );
+
+      // If the post is not already in the user's recentPosts, add it
+      if (!isAlreadyInHistory) {
+        // If recentPosts array length is 10, remove the oldest post
+        if (user.recentPosts.length >= 10) {
+          user.recentPosts.shift();
+        }
+        user.recentPosts.push(post._id); // Add the new post at the end
+        await user.save();
+      }
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Post added to history" });
+    }
   } catch (error) {
     console.log(error);
     return res
@@ -920,27 +892,34 @@ async function addToHistory(req, res) {
  */
 async function getHistory(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+      // Retrieve post details for all posts in recentPosts
+      const recentPostIds = user.recentPosts;
+      const recentPostDetails = await Post.find({
+        _id: { $in: recentPostIds },
+      }).populate("originalPostId");
 
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
+      for (const post of recentPostDetails) {
+        if (post.media) {
+          post.media = await getFilesFromS3(post.media);
+        }
+      }
+      // Get vote status and subreddit details for each post
+      const detailsArray = await getVoteStatusAndSubredditDetails(
+        recentPostDetails
+      );
+
+      // Combine posts and their details
+      const postsWithDetails = recentPostDetails.map((post, index) => {
+        return { ...post.toObject(), details: detailsArray[index] };
+      });
+
       return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+        .status(200)
+        .json({ success: true, recentPosts: postsWithDetails });
     }
-
-    // Retrieve post details for all posts in recentPosts
-    const recentPostIds = user.recentPosts;
-    const recentPostDetails = await Post.find({ _id: { $in: recentPostIds } });
-
-    return res
-      .status(200)
-      .json({ success: true, recentPosts: recentPostDetails });
   } catch (error) {
     console.log(error);
     return res

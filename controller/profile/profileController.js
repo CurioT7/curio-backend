@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const brypt = require("bcrypt");
 const { verifyToken } = require("../../utils/tokens");
+const { getFilesFromS3 } = require("../../utils/s3-bucket");
 const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
 
 /**
@@ -42,11 +43,16 @@ function handleServerError(res, error) {
  * @returns {Promise<Array>} A Promise that resolves to an array of posts made by the user.
  */
 async function fetchPostsByUsername(username) {
-  const posts = await Post.find({ authorName: username });
+  const posts = await Post.find({ authorName: username }).populate(
+    "originalPostId"
+  );
   // Increment the view count for each post
   for (const post of posts) {
     post.views += 1;
     await post.save();
+     if (post.media) {
+       post.media = await getFilesFromS3(post.media);
+    }
   }
   return posts;
 }

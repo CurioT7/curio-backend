@@ -33,6 +33,11 @@ async function filterHiddenPosts(posts, user) {
  * }>} An object containing the vote status, membership status in the subreddit, and the subreddit name.
  */
 async function getVoteStatusAndSubredditDetails(items) {
+  // Convert single item to array if it's not already an array
+  if (!Array.isArray(items)) {
+    items = [items];
+  }
+
   const detailsArray = [];
 
   for (const item of items) {
@@ -94,5 +99,6 @@ async function getVoteStatusAndSubredditDetails(items) {
 
   return detailsArray;
 }
+
 
 module.exports = { filterHiddenPosts, getVoteStatusAndSubredditDetails };
