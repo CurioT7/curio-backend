@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const brypt = require("bcrypt");
 const { verifyToken } = require("../../utils/tokens");
+const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
 
 /**
  * Finds a user by their username.
@@ -71,9 +72,19 @@ async function getPostsByUser(req, res, next) {
   try {
     const { username } = req.params;
     const user = await findUserByUsername(username);
+
     // Fetch posts by the user
     const posts = await fetchPostsByUsername(username);
-    res.status(200).json(posts);
+
+    // Get vote status and subreddit details for each post
+    const detailsArray = await getVoteStatusAndSubredditDetails(posts);
+
+    // Combine posts and their details
+    const postsWithDetails = posts.map((post, index) => {
+      return { ...post.toObject(), details: detailsArray[index] };
+    });
+
+    res.status(200).json(postsWithDetails);
   } catch (error) {
     handleServerError(res, error);
   }
@@ -92,7 +103,16 @@ async function getCommentsByUser(req, res, next) {
     const user = await findUserByUsername(username);
     // Fetch comments by the user
     const comments = await fetchCommentsByUsername(username);
-    res.status(200).json(comments);
+
+    // Get vote status and subreddit details for each comment
+    const detailsArray = await getVoteStatusAndSubredditDetails(comments);
+
+    // Combine comments and their details
+    const commentsWithDetails = comments.map((comment, index) => {
+      return { ...comment.toObject(), details: detailsArray[index] };
+    });
+
+    res.status(200).json(commentsWithDetails);
   } catch (error) {
     handleServerError(res, error);
   }
@@ -108,44 +128,28 @@ async function getCommentsByUser(req, res, next) {
  */
 async function getVotedContent(req, res, next, voteType) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-    if (!user) {
-      return res.status(404).json({
-        status: "failed",
-        message: "User not found",
+      let votedIds;
+      if (voteType === "upvotes" || voteType === "downvotes") {
+        votedIds = user[voteType].map((vote) => vote.itemId);
+        console.log(votedIds);
+      } else {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid vote type" });
+      }
+
+      const votedPosts = await Post.find({ _id: { $in: votedIds } });
+      const votedComments = await Comment.find({ _id: { $in: votedIds } });
+
+
+      res.status(200).json({
+        votedPosts,
+        votedComments,
       });
     }
-
-    let filterFunction;
-    if (voteType === "upvotes") {
-      filterFunction = (vote) =>
-        vote.itemType === "post" || vote.itemType === "comment";
-    } else if (voteType === "downvotes") {
-      filterFunction = (vote) =>
-        vote.itemType === "post" || vote.itemType === "comment";
-    } else {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid vote type" });
-    }
-
-    const votedIds = user[voteType]
-      .filter(filterFunction)
-      .map((vote) => vote.itemId);
-
-    const votedPosts = await Post.find({ _id: { $in: votedIds } });
-    const votedComments = await Comment.find({ _id: { $in: votedIds } });
-
-    res.status(200).json({
-      votedPosts,
-      votedComments,
-    });
   } catch (error) {
     handleServerError(res, error);
   }
