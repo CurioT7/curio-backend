@@ -37,11 +37,26 @@ async function randomPost(req, res) {
     randomPost.views += 1;
     await randomPost.save();
     const media = randomPost.media;
+    let userVote = null;
     if (media) {
       randomPost.media = await getFilesFromS3(media);
     }
-    return res.status(200).json({ success: true, post: randomPost });
+    if (randomPost.type === "poll" && req.user) {
+      const user = await User.findById(req.user.userId);
+      randomPost.options.forEach((opt) => {
+        if (opt.voters.includes(user._id)) {
+          userVote = opt.name;
+        }
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      post: randomPost,
+      userVote: userVote && userVote,
+    });
   } catch (err) {
+    console.error("Error getting random post:", err);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 }

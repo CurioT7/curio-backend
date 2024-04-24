@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const ListingController = require("../controller/listing/listingController");
+const { authenticate } = require("../middlewares/auth");
 
 /**
  * Route to handle GET requests for getting a random post.
@@ -12,7 +13,13 @@ const ListingController = require("../controller/listing/listingController");
  * @returns {object} Express router instance.
  */
 
-router.get("/r/:subreddit/random", ListingController.randomPost);
+router.get(
+  "/r/:subreddit/random",
+  (req, res, next) => {
+    authenticate(req, res, next, true);
+  },
+  ListingController.randomPost
+);
 
 /**
  * Route to handle GET requests for getting new posts.
@@ -25,18 +32,17 @@ router.get("/r/:subreddit/random", ListingController.randomPost);
  */
 router.get("/r/:subreddit/new", ListingController.newPosts);
 
-/** 
-  * Route to handle GET requests for getting hot posts.
-  * @name GET/hot
-  * @function
-  * @memberof module:routes/listingRouter
-  * @param {string} path - The URL path for the route ("/hot").
-  * @param {function} middleware - The controller function to handle the GET request.
-  * @returns {object} Express router instance.
-*/
+/**
+ * Route to handle GET requests for getting hot posts.
+ * @name GET/hot
+ * @function
+ * @memberof module:routes/listingRouter
+ * @param {string} path - The URL path for the route ("/hot").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ */
 
 router.get("/r/:subreddit/hot", ListingController.hotPosts);
-
 
 /**
  * Route to handle GET requests for getting most commented posts.
@@ -50,7 +56,7 @@ router.get("/r/:subreddit/hot", ListingController.hotPosts);
 
 router.get("/r/:subreddit/most_comments", ListingController.mostComments);
 
- /**
+/**
  * Route to handle GET requests for getting the top posts in a subreddit.
  * @name GET/top_posts
  * @function
@@ -76,7 +82,7 @@ router.get(
   "/r/:subreddit/top/:timeThreshold",
   ListingController.getTopPostsbytime
 );
-/** 
+/**
  * Express route for retrieving the best posts.
  * @name GET /best
  * @function
@@ -105,7 +111,7 @@ router.post("/r/:subreddit/suggestedSort", ListingController.setSuggestedSort);
  * @param {string} path - The URL path for the route ("/user/:type").
  * @param {function} middleware - The controller function to handle the GET request.
  * @returns {object} Express router instance.
-*/
+ */
 router.get("/user/:type", ListingController.getUserPosts);
 
 router.get("/r/:subreddit/:postID/:type", ListingController.sortComments);
