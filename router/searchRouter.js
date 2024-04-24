@@ -84,4 +84,17 @@ router.get(
 
 router.get("/searchCommunities/:query", searchController.searchCommunities);
 
+
+/**
+ * Route to handle GET requests for searching hashtags.
+ * @name GET/searchHashtags
+ * @function
+ * @memberof module:routes/searchRouter
+ * @param {string} path - The URL path for the route ("/searchHashtags").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ */
+
+router.get("/searchHashtags/hashtag/:hashtags", searchController.searchHashtags);
+
 module.exports = router;
