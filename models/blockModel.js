@@ -32,6 +32,9 @@ const blockSchema = new mongoose.Schema({
     unblockTimestamp: {
       type: Date,
       default: null // Set to null initially if a user hasn't been unblocked yet
+    },
+    blockedUsername: {
+      type: String
     }
 });
 

@@ -1,4 +1,5 @@
 const User = require("../../models/userModel");
+const UserPreferences = require("../../models/userPreferencesModel");
 const Post = require("../../models/postModel");
 require("dotenv").config();
 const Comment = require("../../models/commentModel");
@@ -336,6 +337,21 @@ async function hidden(req, res) {
 
 async function submitPost(req, res, user, imageKey) {
   try {
+    const type = req.body.type;
+    if (!type) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Type is required" });
+    }
+
+    //validate that type is enum
+    if (!["post", "poll", "media", "link"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "Type must be one of 'post', 'poll', 'media', 'link'",
+      });
+    }
+
     let subreddit;
     if (req.body.subreddit) {
       subreddit = await Subreddit.findOne({ name: req.body.subreddit });
@@ -354,7 +370,11 @@ async function submitPost(req, res, user, imageKey) {
       }
     }
 
-    if (req.body.content && req.body.content.startsWith("http")) {
+    if (
+      req.body.content &&
+      req.body.content.startsWith("http") &&
+      type === "link"
+    ) {
       // Regular expression to match URLs like www.example.com
       const urlPattern =
         /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})(\/\S*)?$/;
@@ -365,9 +385,18 @@ async function submitPost(req, res, user, imageKey) {
           .json({ success: false, message: "Invalid URL format" });
       }
     }
+    let optionsArray;
+
+    if (req.body.type === "poll") {
+      optionsArray = req.body.options;
+      optionsArray = optionsArray
+        .split(",")
+        .map((option) => ({ name: option, votes: 0 }));
+    }
 
     const post = new Post({
       title: req.body.title,
+      type: req.body.type,
       content: req.body.content && req.body.content,
       authorName: user.username,
       isNSFW: req.body.isNSFW,
@@ -376,9 +405,10 @@ async function submitPost(req, res, user, imageKey) {
       linkedSubreddit: subreddit && subreddit._id,
       media: imageKey,
       sendReplies: req.body.sendReplies,
-      options: req.body.options && req.body.options,
+      options: req.body.options && optionsArray,
       voteLength: req.body.voteLength && req.body.voteLength,
     });
+    post.type = req.body.type;
     await post.save();
     // Add post to user's posts
     user.posts.push(post._id);
@@ -387,9 +417,11 @@ async function submitPost(req, res, user, imageKey) {
       subreddit.posts.push(post._id);
       await subreddit.save();
     }
-    return res
-      .status(201)
-      .json({ success: true, message: "Post created successfully" });
+    return res.status(201).json({
+      success: true,
+      message: "Post created successfully",
+      postId: post._id,
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -937,7 +969,28 @@ async function getHistory(req, res) {
 
 async function subredditOverview(req, res) {
   try {
-    const query = decodeURIComponent(req.params.subreddit);
+    const query = decodeURIComponent(req.params.subreddit).toString();
+    const user = await User.findById(req.user.userId);
+    if (query === user.username) {
+      if (user.profilePicture) {
+        user.profilePicture = await getFilesFromS3(user.profilePicture);
+      }
+      if (user.banner) {
+        user.banner = await getFilesFromS3(user.banner);
+      }
+
+      return res.status(200).json({
+        success: true,
+        displayName: user.displayName,
+        profilePicture: user.profilePicture,
+        banner: user.banner,
+        about: user.bio,
+        createdAt: user.cakeDay,
+        karma: user.karma,
+        isUser: true,
+      });
+    }
+
     let subreddit = await Subreddit.findOne({ name: query });
     if (!subreddit) {
       return res
@@ -979,6 +1032,85 @@ async function subredditOverview(req, res) {
   }
 }
 
+async function pollVote(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const postId = req.body.postId;
+    const post = await Post.findById(postId);
+    const option = req.body.option;
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    if (!post) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+    }
+    if (post.type !== "poll") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Post is not a poll" });
+    }
+    //check if number of days exceeded
+    const currentDate = new Date();
+    const postDate = new Date(post.createdAt);
+    const diffTime = Math.abs(currentDate - postDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays > post.voteLength) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Poll has expired" });
+    }
+    if (!post.options.find((opt) => opt.name === option)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Option not found" });
+    }
+    const optionIndex = post.options.findIndex((opt) => opt.name === option);
+
+    // Check if optionIndex is valid
+    if (optionIndex !== -1) {
+      // Check if user has already voted for this option
+      if (user.pollVotes.find((vote) => vote.pollId == postId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "User has already voted" });
+      } else {
+        // Increase the vote count for the selected option
+        post.options[optionIndex].votes += 1;
+
+        // Add user's ID to the list of voters for this option
+        post.options[optionIndex].voters.push(user._id);
+
+        // Add post to user's pollVotes
+        user.pollVotes.push({
+          pollId: postId,
+          option: option,
+        });
+
+        // Save changes to both post and user
+        await Promise.all([post.save(), user.save()]);
+
+        // Respond with success message
+        return res
+          .status(200)
+          .json({ success: true, message: "Vote recorded successfully" });
+      }
+    } else {
+      return res
+        .status(400)
+        .json({ success: false, message: "Option not found" });
+    }
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
 module.exports = {
   hidePost,
   unhidePost,
@@ -998,4 +1130,5 @@ module.exports = {
   spoilerPost,
   unspoilerPost,
   subredditOverview,
+  pollVote,
 };

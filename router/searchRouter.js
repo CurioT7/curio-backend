@@ -39,7 +39,7 @@ router.get("/search/:query", searchController.search);
  * @returns {object} Express router instance.
  */
 router.get(
-  "/searchCommentsOrPosts/:query/:type/:subreddit?",
+  "/searchCommentsOrPosts/:query/:type/:sortType/:timeFrame?/:subreddit?",
   searchController.searchCommentsOrPosts
 );
 

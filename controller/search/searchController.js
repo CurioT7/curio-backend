@@ -176,6 +176,8 @@ async function searchCommentsOrPosts(req, res) {
   try {
     const query = decodeURIComponent(req.params.query);
     const type = req.params.type;
+    const sortType = req.params.sortType;
+    const timeFrame = req.params.timeFrame;
     const subreddit = decodeURIComponent(req.params.subreddit);
 
     if (type !== "post" && type !== "comment") {
@@ -187,15 +189,106 @@ async function searchCommentsOrPosts(req, res) {
     let content = [];
 
     // Search in homepage if no subreddit
-    if (!subreddit) {
+    if (!req.params.subreddit) {
       if (type === "post") {
-        content = await Post.find({
-          content: { $regex: query, $options: "i" },
-        });
+        switch (sortType) {
+          case "relevance":
+            content = await Post.find({
+              $or: [
+                { title: { $regex: query, $options: "i" } },
+                { content: { $regex: query, $options: "i" } },
+              ],
+            });
+            break;
+          case "new":
+            content = await Post.find({
+              $or: [
+                { title: { $regex: query, $options: "i" } },
+                { content: { $regex: query, $options: "i" } },
+              ],
+            }).sort({ createdAt: -1 });
+            break;
+          case "top":
+            content = await Post.find({
+              $or: [
+                { title: { $regex: query, $options: "i" } },
+                { content: { $regex: query, $options: "i" } },
+              ],
+            }).sort({ upvotes: -1 });
+            break;
+          case "hot":
+            content = await Post.find({
+              $or: [
+                { title: { $regex: query, $options: "i" } },
+                { content: { $regex: query, $options: "i" } },
+              ],
+            }).sort({ upvotes: -1, createdAt: -1 });
+            break;
+          case "comments":
+            content = await Post.find({
+              $or: [
+                { title: { $regex: query, $options: "i" } },
+                { content: { $regex: query, $options: "i" } },
+              ],
+            }).sort({
+              comments: -1,
+            });
+            break;
+
+          default:
+            return res.status(400).json({ message: "Invalid sort parameter" });
+        }
+        switch (timeFrame) {
+          case "all":
+            break;
+          case "day":
+            content = content.filter(
+              (post) => post.createdAt > Date.now() - 86400000
+            );
+            break;
+          case "week":
+            content = content.filter(
+              (post) => post.createdAt > Date.now() - 604800000
+            );
+            break;
+          case "month":
+            content = content.filter(
+              (post) => post.createdAt > Date.now() - 2628000000
+            );
+            break;
+          case "year":
+            content = content.filter(
+              (post) => post.createdAt > Date.now() - 31540000000
+            );
+            break;
+          case "hour":
+            content = content.filter(
+              (post) => post.createdAt > Date.now() - 3600000
+            );
+            break;
+          default:
+            return res.status(400).json({ message: "Invalid time frame" });
+        }
       } else {
-        content = await Comment.find({
-          content: { $regex: query, $options: "i" },
-        });
+        switch (sortType) {
+          case "relevance":
+            content = await Comment.find({
+              content: { $regex: query, $options: "i" },
+            });
+            break;
+          case "new":
+            content = await Comment.find({
+              content: { $regex: query, $options: "i" },
+            }).sort({ createdAt: -1 });
+            break;
+          case "top":
+            content = await Comment.find({
+              content: { $regex: query, $options: "i" },
+            }).sort({ upvotes: -1 });
+            break;
+          default:
+            return res.status(400).json({ message: "Invalid sort parameter" });
+        }
       }
 
       // Check if user is logged in
@@ -271,15 +364,105 @@ async function searchCommentsOrPosts(req, res) {
       return res.status(404).json({ message: "Subreddit not found" });
     }
     if (type === "comment") {
-      content = await Comment.find({
-        content: { $regex: query, $options: "i" },
-        linkedSubreddit: subredditObj._id,
-      });
+      switch (sortType) {
+        case "relevance":
+          content = await Comment.find({
+            content: { $regex: query, $options: "i" },
+            linkedSubreddit: subredditObj._id,
+          });
+          break;
+        case "new":
+          content = await Comment.find({
+            content: { $regex: query, $options: "i" },
+            linkedSubreddit: subredditObj._id,
+          }).sort({ createdAt: -1 });
+          break;
+        case "top":
+          content = await Comment.find({
+            content: { $regex: query, $options: "i" },
+            linkedSubreddit: subredditObj._id,
+          }).sort({ upvotes: -1 });
+          break;
+      }
     } else {
-      content = await Post.find({
-        title: { $regex: query, $options: "i" },
-        linkedSubreddit: subredditObj._id,
-      });
+      switch (sortType) {
+        case "relevance":
+          content = await Post.find({
+            $or: [
+              { title: { $regex: query, $options: "i" } },
+              { content: { $regex: query, $options: "i" } },
+            ],
+          });
+          break;
+        case "new":
+          content = await Post.find({
+            $or: [
+              { title: { $regex: query, $options: "i" } },
+              { content: { $regex: query, $options: "i" } },
+            ],
+          }).sort({ createdAt: -1 });
+          break;
+        case "top":
+          content = await Post.find({
+            $or: [
+              { title: { $regex: query, $options: "i" } },
+              { content: { $regex: query, $options: "i" } },
+            ],
+          }).sort({ upvotes: -1 });
+          break;
+        case "hot":
+          content = await Post.find({
+            $or: [
+              { title: { $regex: query, $options: "i" } },
+              { content: { $regex: query, $options: "i" } },
+            ],
+          }).sort({ upvotes: -1, createdAt: -1 });
+          break;
+        case "comments":
+          content = await Post.find({
+            $or: [
+              { title: { $regex: query, $options: "i" } },
+              { content: { $regex: query, $options: "i" } },
+            ],
+          }).sort({
+            comments: -1,
+          });
+          break;
+
+        default:
+          return res.status(400).json({ message: "Invalid sort parameter" });
+      }
+      switch (timeFrame) {
+        case "all":
+          break;
+        case "day":
+          content = content.filter(
+            (post) => post.createdAt > Date.now() - 86400000
+          );
+          break;
+        case "week":
+          content = content.filter(
+            (post) => post.createdAt > Date.now() - 604800000
+          );
+          break;
+        case "month":
+          content = content.filter(
+            (post) => post.createdAt > Date.now() - 2628000000
+          );
+          break;
+        case "year":
+          content = content.filter(
+            (post) => post.createdAt > Date.now() - 31540000000
+          );
+          break;
+        case "hour":
+          content = content.filter(
+            (post) => post.createdAt > Date.now() - 3600000
+          );
+          break;
+        default:
+          return res.status(400).json({ message: "Invalid time frame" });
+      }
     }
     // Check if user is logged in
     if (req.headers.authorization) {
@@ -407,7 +590,9 @@ async function searchCommunities(req, res) {
     ]);
 
     if (subreddits.length === 0) {
-      return res.status(404).json({ message: "No subreddits found for the given query" });
+      return res
+        .status(404)
+        .json({ message: "No subreddits found for the given query" });
     }
 
     res.status(200).json({
@@ -419,8 +604,6 @@ async function searchCommunities(req, res) {
     res.status(500).json({ message: "Internal server error" });
   }
 }
-
-
 
 module.exports = {
   search,
