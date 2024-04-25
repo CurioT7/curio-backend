@@ -77,7 +77,6 @@ async function fetchCommentsByUsername(username) {
 async function getPostsByUser(req, res, next) {
   try {
     const { username } = req.params;
-    const user = await findUserByUsername(username);
 
     // Fetch posts by the user
     const posts = await fetchPostsByUsername(username);
@@ -195,9 +194,19 @@ async function getAboutInformation(req, res, next) {
     const socialLinks = user.socialLinks;
     const bio = user.bio;
     const displayName = user.displayName;
-    const banner = user.banner;
-    const profilePicture = user.profilePicture;
     const isOver18 = user.isOver18;
+    let banner;
+    let profilePicture;
+
+    // Fetch the profile picture from S3 if available
+     if (user.profilePicture) {
+       profilePicture = await getFilesFromS3(user.profilePicture);
+       user.profilePicture = profilePicture;
+     }
+     if (user.banner) {
+       banner = await getFilesFromS3(user.banner);
+       user.banner = banner;
+     }
 
     // Get subreddits where the user is a moderator or creator
     const moderatedSubredditsUsernames = user.moderators.map(
