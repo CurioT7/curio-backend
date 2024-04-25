@@ -475,6 +475,63 @@ async function followSubreddit(req, res) {
   }
 }
 
+/**
+ * Retrieves followers or followings of a user along with their profile pictures.
+ * @param {object} req - The request object containing user information.
+ * @param {object} res - The response object for sending HTTP responses.
+ * @returns {object} An object containing information about followers or followings along with their profile pictures.
+ * @throws {Error} If there's an error in retrieving followers or followings.
+ */
+async function getFollowersOrFollowings(req, res) {
+  try {
+    if (req.user) {
+      const userId = req.user.userId;
+      const friends = req.params.friends;
+      let friendsArray;
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      if (friends === "followers") {
+        friendsArray = user.followers;
+      } else if (friends === "followings") {
+        friendsArray = user.followings;
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "Wrong query parameter",
+        });
+      }
+
+      // Perform a customized query to retrieve followers/followings along with profile pictures
+      const usersWithProfilePictures = await User.aggregate([
+        {
+          $match: { username: { $in: friendsArray } },
+        },
+        {
+          $project: { username: 1, profilePicture: 1 },
+        },
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        friendsArray: usersWithProfilePictures,
+      });
+    }
+  } catch (error) {
+    console.error("Error getting followers or followings:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
 module.exports = {
   friendRequest,
   unFriendRequest,
@@ -486,4 +543,5 @@ module.exports = {
   unFollowSubreddits,
   addFriend,
   deleteFriend,
+  getFollowersOrFollowings,
 };

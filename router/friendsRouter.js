@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const friendsController = require("../controller/friends/friendController");
+const { authenticate } = require("../middlewares/auth");
 
 /**
  * Route to follow a subreddit.
@@ -51,5 +52,19 @@ router.patch("/me/friends", friendsController.unFriendRequest);
  * @param {callback} middleware - Express middleware.
  */
 router.get("/me/friends/:friendUsername", friendsController.getUserInfo);
+
+/**
+ * Route handler for retrieving followers or followings of a user along with their profile pictures.
+ * @param {object} req - The request object containing user information.
+ * @param {object} res - The response object for sending HTTP responses.
+ * @param {function} next - The next middleware function in the Express middleware chain.
+ * @returns {Promise<void>} A Promise that resolves when the operation is completed.
+ */
+router.get(
+  "/:friends",
+  authenticate,
+  friendsController.getFollowersOrFollowings
+);
+
 
 module.exports = router;
