@@ -88,14 +88,29 @@ async function getAllNotificationsForUser(req, res) {
       });
     }
 
-    // Use aggregation to find notifications by recipient ID 
+    //find notifications by recipient name
     const notifications = await Notification.aggregate([
       {
         $match: {
-          recipient: user.username, 
+          recipient: user.username,
         },
       },
     ]);
+
+    // If the user hasn't joined any communities, suggest a random Subreddit
+    if (user.subreddits.length === 0) {
+      const randomSubreddit = await Subreddit.aggregate([
+        { $sample: { size: 1 } },
+      ]);
+      const notification = new Notification({
+        title: "Join " + randomSubreddit[0].name,
+        message:
+          "You haven't joined any communities yet. Consider joining " +
+          randomSubreddit[0].name,
+        recipient: user.username,
+      });
+      await notification.save();
+    }
 
     return res
       .status(200)
