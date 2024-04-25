@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const notificationController = require("../controller/notification/notificationController");
+const { authenticate } = require("../middlewares/auth");
 
 /**
  * Get all notifications history for a user.
@@ -10,7 +11,7 @@ const notificationController = require("../controller/notification/notificationC
  * @returns {Promise<void>} A promise that resolves once all notifications history is fetched.
  */
 router.get(
-  "/history",
+  "/history", authenticate ,
   notificationController.getAllNotificationsForUser
 );
 
@@ -22,7 +23,7 @@ router.get(
  * @returns {Promise<void>} A promise that resolves once notifications are disabled for the user.
  */
 router.post(
-  "/settings/disable",
+  "/settings/disable", authenticate ,
   notificationController.disableNotificationsForUser
 );
 
@@ -34,7 +35,7 @@ router.post(
  * @returns {Promise<void>} A promise that resolves once notifications are enabled for the user.
  */
 router.post(
-  "/settings/enable",
+  "/settings/enable", authenticate ,
   notificationController.enableNotificationsForUser
 );
 
@@ -45,7 +46,7 @@ router.post(
  * @param {Object} res - The response object.
  * @returns {Promise<void>} A promise that resolves once notifications are hidden for the user.
  */
-router.post("/hide", notificationController.hideNotifications);
+router.post("/hide", authenticate , notificationController.hideNotifications);
 
 /**
  * Unhide notifications for a user.
@@ -53,7 +54,7 @@ router.post("/hide", notificationController.hideNotifications);
  * @param {Object} res - The response object.
  * @returns {Object} The response containing the status of the operation.
  */
-router.post("/unhide", notificationController.unhideNotifications);
+router.post("/unhide", authenticate , notificationController.unhideNotifications);
 
 /**
  * Retrieve unsent notifications for a user.
@@ -61,7 +62,7 @@ router.post("/unhide", notificationController.unhideNotifications);
  * @param {Object} res - The response object.
  * @returns {Object} The response containing unsent notifications for the user.
  */
-router.get("/unsent", notificationController.getUnsentNotificationsForUser);
+router.get("/unsent", authenticate , notificationController.getUnsentNotificationsForUser);
 
 /**
  * Mark a notification as read.
@@ -69,7 +70,7 @@ router.get("/unsent", notificationController.getUnsentNotificationsForUser);
  * @param {Object} res - The response object.
  * @returns {Object} The response containing the status of the operation.
  */
-router.post("/read-notification", notificationController.readNotifications);
+router.post("/read-notification", authenticate , notificationController.readNotifications);
 
 /**
  * Retrieves unread notifications for the authenticated user.
@@ -77,7 +78,7 @@ router.post("/read-notification", notificationController.readNotifications);
  * @param {express.Response} res - The response object.
  * @returns {void}
  */
-router.get("/unread", notificationController.getUnreadNotifications);
+router.get("/unread", authenticate , notificationController.getUnreadNotifications);
 
 /**
  * Retrieves read notifications for the authenticated user.
@@ -85,6 +86,6 @@ router.get("/unread", notificationController.getUnreadNotifications);
  * @param {express.Response} res - The response object.
  * @returns {void}
  */
-router.get("/read", notificationController.getReadNotifications);
+router.get("/read", authenticate , notificationController.getReadNotifications);
 
 module.exports = router;
