@@ -106,7 +106,7 @@ router.post("/r/:subreddit/suggestedSort", ListingController.setSuggestedSort);
  * @param {function} middleware - The controller function to handle the GET request.
  * @returns {object} Express router instance.
 */
-router.get("/user/:type", ListingController.getUserPosts);
+router.get("/:type", ListingController.getUserPosts);
 
 router.get("/r/:subreddit/:postID/:type", ListingController.sortComments);
 
