@@ -960,6 +960,37 @@ async function getHistory(req, res) {
   }
 }
 
+/**
+ * Clear the history of recent posts for the authenticated user.
+ * @async
+ * @function clearHistory
+ * @param {object} req - The request object.
+ * @param {object} res - The response object.
+ * @returns {Promise<void>}
+ * @throws {Error} 500 - Internal server error
+ */
+async function clearHistory(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+
+      // Clear the recentPosts array
+      user.recentPosts = [];
+
+      await user.save();
+
+      return res
+        .status(200)
+        .json({ success: true, message: "History cleared successfully" });
+    }
+  } catch (error) {
+    console.error("Error clearing history:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error", error: error });
+  }
+}
+
 /*
  * Get overview of a subreddit when creating a post
  * @param {Object} req - The request object.
@@ -1127,6 +1158,7 @@ module.exports = {
   castVote,
   addToHistory,
   getHistory,
+  clearHistory,
   spoilerPost,
   unspoilerPost,
   subredditOverview,

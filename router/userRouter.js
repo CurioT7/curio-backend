@@ -357,6 +357,17 @@ router.post("/history", authenticate, contentManagementController.addToHistory);
 router.get("/getHistory", authenticate, contentManagementController.getHistory);
 
 /**
+ * Delete endpoint to clear user's history.
+ * @route DELETE /clear-history
+ * @group Content Management - Content management operations
+ * @security JWT
+ * @returns {object} 200 - Success message
+ * @returns {Error}  401 - Unauthorized
+ * @returns {Error}  500 - Internal server error
+ */
+router.delete("/clear-history", authenticate ,contentManagementController.clearHistory);
+
+/**
  * Retrieve the user's browsing history.
  * @name GET /getHistory
  * @function
