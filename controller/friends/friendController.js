@@ -193,28 +193,41 @@ async function deleteFriend(username, friend) {
  * @returns {object} mentions
  * @function
  */
-async function addUserToSubbreddit(user, communityName) {
-  const userModerator = {
-    communityName: communityName,
-    role: "creator",
-  };
-  const userMember = {
-    communityName: communityName,
-  };
-  const moderator = user.moderators;
-  moderator.push(userModerator);
-  const members = user.member;
-  members.push(userMember);
-  console.log("success");
+async function addUserToSubbreddit(user, subredditName) {
   try {
-    await user.findOneAndUpdate(
-      { username: user.username },
-      { moderators: moderator, member: members }
+    const subreddit = await Community.findOne({ name: subredditName });
+    if (!subreddit) {
+      return {
+        success: false,
+        message: "Subreddit not found",
+      };
+    }
+    // Check if the user is already a member of the subreddit
+    const isMember = subreddit.members.some(
+      (member) => member.username === user.username
     );
-  } catch {
+    if (isMember) {
+      return {
+        success: false,
+        message: "You are already a member of this subreddit",
+      };
+    }
+
+    subreddit.members.push({ username: user.username });
+    await subreddit.save();
+
+    user.subreddits.push({ subreddit: subredditName });
+    await user.save();
+
     return {
-      status: false,
-      error: "operation user",
+      success: true,
+      message: "You have successfully joined the subreddit",
+    };
+  } catch (error) {
+    console.error("Error adding user to subreddit:", error);
+    return {
+      success: false,
+      message: "Failed to join subreddit",
     };
   }
 }
@@ -251,6 +264,15 @@ async function friendRequest(req, res) {
       });
     }
 
+    // Check if the user is already following the friend
+    const isFollowing = user.followings.includes(friendname);
+    if (isFollowing) {
+      return res.status(400).json({
+        status: false,
+        message: "You are already following this user",
+      });
+    }
+
     await addFriend(user.username, friendname);
 
     return res.status(200).json({
@@ -265,6 +287,7 @@ async function friendRequest(req, res) {
     });
   }
 }
+
 
 /**
  * unfriend request to remove friendship or moderator_deInvite
@@ -289,12 +312,12 @@ async function unFriendRequest(req, res) {
       });
     }
 
-    const friend = await User.findOne({ username: friendname });
-
-    if (!friend) {
-      return res.status(404).json({
-        status: "failed",
-        message: "User to be deleted not found",
+    // Check if the user is following the friend
+    const isFollowing = user.followings.includes(friendname);
+    if (!isFollowing) {
+      return res.status(400).json({
+        status: false,
+        message: "You are not following this user",
       });
     }
 
@@ -312,6 +335,7 @@ async function unFriendRequest(req, res) {
     });
   }
 }
+
 
 /**
  * get user information
@@ -393,6 +417,17 @@ async function unFollowSubreddit(req, res) {
       });
     }
 
+    // Check if the user is a member of the subreddit
+    const isMember = subredditExists.members.some(
+      (member) => member.username === userExists.username
+    );
+    if (!isMember) {
+      return res.status(400).json({
+        success: false,
+        message: "You are not a member of this subreddit",
+      });
+    }
+
     await unFollowSubreddits(userExists.username, subreddit);
 
     return res.status(200).json({
@@ -407,6 +442,7 @@ async function unFollowSubreddit(req, res) {
     });
   }
 }
+
 
 /**
  * follow a subreddit
@@ -436,6 +472,17 @@ async function followSubreddit(req, res) {
       return res.status(404).json({
         success: "false",
         message: "Subreddit not found",
+      });
+    }
+
+    // Check if the user is already a member of the subreddit
+    const isMember = subredditExists.members.some(
+      (member) => member.username === userExists.username
+    );
+    if (isMember) {
+      return res.status(400).json({
+        success: false,
+        message: "You are already a member of this subreddit",
       });
     }
 
