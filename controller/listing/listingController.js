@@ -358,6 +358,28 @@ async function getUserPosts(req, res) {
 
     const fetchPosts = async (subreddit) => {
       switch (type) {
+        case "best": 
+          return Post.find({ linkedSubreddit: subreddit.subreddit })
+            .sort({ upvotes: -1, views: -1, comments: -1 })
+            .then((posts) => {
+              return posts.map((post) => {
+                return {
+                  subreddit: subreddit.name,
+                  post: post,
+                };
+              });
+            });
+        case "random":
+          return Post.find({ linkedSubreddit: subreddit.subreddit }).then(
+            (posts) => {
+              const randomIndex = Math.floor(Math.random() * posts.length);
+              const randomPost = posts[randomIndex];
+              return {
+                subreddit: subreddit.name,
+                post: randomPost,
+              };
+            }
+          );
         case "top":
           return Post.find({ linkedSubreddit: subreddit.subreddit })
             .sort({ upvotes: -1 })
@@ -400,10 +422,8 @@ async function getUserPosts(req, res) {
 
     const flattenedPosts = subredditPosts.flat();
 
-    // Filter out hidden posts
     const filteredPosts = await filterHiddenPosts(flattenedPosts, user);
 
-    // Increment the views of all fetched and filtered posts by 1
     await Promise.all(
       filteredPosts.map(({ post }) =>
         Post.updateOne({ _id: post._id }, { $inc: { views: 1 } })
@@ -418,6 +438,8 @@ async function getUserPosts(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
+
+
 /**
  * Sort comments for a post within a subreddit based on the specified type.
  * @async
