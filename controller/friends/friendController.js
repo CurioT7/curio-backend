@@ -264,6 +264,15 @@ async function friendRequest(req, res) {
       });
     }
 
+    // Check if the user is already following the friend
+    const isFollowing = user.followings.includes(friendname);
+    if (isFollowing) {
+      return res.status(400).json({
+        status: false,
+        message: "You are already following this user",
+      });
+    }
+
     await addFriend(user.username, friendname);
 
     return res.status(200).json({
@@ -278,6 +287,7 @@ async function friendRequest(req, res) {
     });
   }
 }
+
 
 /**
  * unfriend request to remove friendship or moderator_deInvite
@@ -302,12 +312,12 @@ async function unFriendRequest(req, res) {
       });
     }
 
-    const friend = await User.findOne({ username: friendname });
-
-    if (!friend) {
-      return res.status(404).json({
-        status: "failed",
-        message: "User to be deleted not found",
+    // Check if the user is following the friend
+    const isFollowing = user.followings.includes(friendname);
+    if (!isFollowing) {
+      return res.status(400).json({
+        status: false,
+        message: "You are not following this user",
       });
     }
 
@@ -325,6 +335,7 @@ async function unFriendRequest(req, res) {
     });
   }
 }
+
 
 /**
  * get user information
