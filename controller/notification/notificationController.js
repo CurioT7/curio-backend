@@ -6,7 +6,9 @@ require("dotenv").config();
 const brypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Subreddit = require('../../models/subredditModel');
-
+const fs = require("fs");
+const path = require("path");
+var FCM = require("fcm-node");
 /**
  * Retrieves unsent notifications for the authenticated user and updates the isSent flag.
  * @function getUnsentNotificationsForUser
@@ -558,6 +560,38 @@ const readNotifications = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+async function sendNotification(userId, message) {
+  try {
+    // Retrieve FCM token from user document
+    const user = await User.findById(userId);
+    if (!user || !user.fcmToken) {
+      console.log("User not found or FCM token not available");
+      return;
+    }
+    const fcmToken = user.fcmToken;
+    const serverKey = process.env.FCM_SERVER_KEY; 
+    const fcm = new FCM(serverKey);
+
+    const pushMessage = {
+      to: fcmToken,
+      notification: {
+        title: "Notification Title",
+        body: message,
+      },
+    };
+
+    fcm.send(pushMessage, function (err, response) {
+      if (err) {
+        console.log("Error sending notification:", err);
+      } else {
+        console.log("Notification sent successfully:", response);
+      }
+    });
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
 
 
 module.exports = {
@@ -570,4 +604,5 @@ module.exports = {
   getReadNotifications,
   getUnsentNotificationsForUser,
   readNotifications,
+  sendNotification,
 };

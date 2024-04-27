@@ -6,6 +6,10 @@ require("dotenv").config();
 const { addUserToSubbreddit } = require("./friendController");
 const { verifyToken } = require("../../utils/tokens");
 const Notification = require("../../models/notificationModel");
+const {
+  sendNotification,
+} = require("../notification/notificationController");
+
 /**
  * Check whether subreddit is available or not
  * @param {string} subreddit
@@ -91,13 +95,23 @@ async function createSubreddit(data, user) {
       }
     );
     // Notify the user about subreddit creation
-    const notification = new Notification({
-      title: "Subreddit Created",
-      message: `You have successfully created the subreddit "${subredditName}".`,
-      recipient: username,
-    });
-    await notification.save();
 
+    // Check if the user has an FCM token
+    if (user.fcm_token) {
+      // Send notification using FCM token
+      await sendNotification(
+        user.fcm_token,
+        "Subreddit Created",
+        `You have successfully created the subreddit "${subredditName}".`
+      );
+    } else {
+      const notification = new Notification({
+        title: "Subreddit Created",
+        message: `You have successfully created the subreddit "${subredditName}".`,
+        recipient: username,
+      });
+      await notification.save();
+    }
     // Return success response
     return {
       success: true,

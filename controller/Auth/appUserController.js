@@ -17,8 +17,8 @@ async function appLogin(req, res) {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  const { usernameOrEmail, password } = req.body;
-  //check if user exists
+  const { usernameOrEmail, password, fcmToken } = req.body; 
+  // Check if user exists
   const user = await User.findOne({
     $or: [{ username: usernameOrEmail }, { email: usernameOrEmail }],
   });
@@ -28,7 +28,7 @@ async function appLogin(req, res) {
       message: "Invalid credentials, check username or password",
     });
   }
-  //compare password
+  // Compare password
   const isMatch = await comparePassword(password, user.password);
   if (!isMatch) {
     return res.status(401).json({
@@ -36,13 +36,18 @@ async function appLogin(req, res) {
       message: "Invalid credentials, check username or password",
     });
   }
-  //generate token
+  // Generate access token
   const accessToken = await generateToken(user._id);
+  // Save FCM token to user document
+  user.fcmToken = fcmToken;
+  await user.save();
   return res.status(200).json({
     success: true,
     message: "Login successful",
     accessToken,
+    fcmToken,
   });
 }
+
 
 module.exports = { appLogin };

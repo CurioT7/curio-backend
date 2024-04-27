@@ -1,0 +1,138 @@
+[debug] [2024-04-27T21:29:16.086Z] ----------------------------------------------------------------------
+[debug] [2024-04-27T21:29:16.088Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\elwady\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init
+[debug] [2024-04-27T21:29:16.088Z] CLI Version:   13.7.5
+[debug] [2024-04-27T21:29:16.089Z] Platform:      win32
+[debug] [2024-04-27T21:29:16.089Z] Node Version:  v20.11.1
+[debug] [2024-04-27T21:29:16.089Z] Time:          Sun Apr 28 2024 00:29:16 GMT+0300 (Eastern European Summer Time)
+[debug] [2024-04-27T21:29:16.089Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-04-27T21:29:16.165Z] Object "" in "firebase.json" has unknown property: {"additionalProperty":"rules"}
+[debug] [2024-04-27T21:29:16.169Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2024-04-27T21:29:16.169Z] > authorizing via signed-in user (ahmed.mohamed6838@gmail.com)
+[debug] [2024-04-27T21:29:16.170Z] Object "" in "firebase.json" has unknown property: {"additionalProperty":"rules"}
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  C:\Users\elwady\Desktop\spring24\New folder\curio-backend
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] but for now we'll just set up a default project.
+[info] 
+[debug] [2024-04-27T21:29:32.997Z] Using project from CLI flag: curio-e356a
+[debug] [2024-04-27T21:29:32.999Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/curio-e356a [none]
+[debug] [2024-04-27T21:29:33.737Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/curio-e356a 200
+[debug] [2024-04-27T21:29:33.738Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/curio-e356a {"projectId":"curio-e356a","projectNumber":"411830826423","displayName":"Curio","name":"projects/curio-e356a","resources":{"hostingSite":"curio-e356a","realtimeDatabaseInstance":"curio-e356a-default-rtdb"},"state":"ACTIVE","etag":"1_357743b1-dbd8-441b-9ca8-0a027fdd01a3"}
+[info] i  Using project curio-e356a (Curio) 
+[info] 
+=== Database Setup
+[info] i  database: ensuring required API firebasedatabase.googleapis.com is enabled... 
+[debug] [2024-04-27T21:29:33.745Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/curio-e356a/services/firebasedatabase.googleapis.com [none]
+[debug] [2024-04-27T21:29:33.745Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/curio-e356a/services/firebasedatabase.googleapis.com x-goog-quota-user=projects/curio-e356a
+[debug] [2024-04-27T21:29:35.333Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/curio-e356a/services/firebasedatabase.googleapis.com 200
+[debug] [2024-04-27T21:29:35.333Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/curio-e356a/services/firebasedatabase.googleapis.com [omitted]
+[info] +  database: required API firebasedatabase.googleapis.com is enabled 
+[info] 
+[debug] [2024-04-27T21:29:35.334Z] >>> [apiv2][query] GET https://firebasedatabase.googleapis.com/v1beta/projects/curio-e356a/locations/-/instances/curio-e356a-default-rtdb [none]
+[debug] [2024-04-27T21:29:37.759Z] <<< [apiv2][status] GET https://firebasedatabase.googleapis.com/v1beta/projects/curio-e356a/locations/-/instances/curio-e356a-default-rtdb 200
+[debug] [2024-04-27T21:29:37.760Z] <<< [apiv2][body] GET https://firebasedatabase.googleapis.com/v1beta/projects/curio-e356a/locations/-/instances/curio-e356a-default-rtdb {"name":"projects/411830826423/locations/europe-west1/instances/curio-e356a-default-rtdb","project":"projects/411830826423","databaseUrl":"https://curio-e356a-default-rtdb.europe-west1.firebasedatabase.app","type":"DEFAULT_DATABASE","state":"ACTIVE"}
+[info] 
+[info] Firebase Realtime Database Security Rules allow you to define how your data should be
+[info] structured and when your data can be read from and written to.
+[info] 
+[debug] [2024-04-27T21:29:37.763Z] >>> [apiv2][query] GET https://curio-e356a-default-rtdb.europe-west1.firebasedatabase.app/.settings/rules.json [none]
+[debug] [2024-04-27T21:29:38.162Z] <<< [apiv2][status] GET https://curio-e356a-default-rtdb.europe-west1.firebasedatabase.app/.settings/rules.json 200
+[debug] [2024-04-27T21:29:38.163Z] <<< [apiv2][body] GET https://curio-e356a-default-rtdb.europe-west1.firebasedatabase.app/.settings/rules.json [stream]
+[debug] [2024-04-27T21:29:38.482Z] TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received an instance of Object
+    at validateString (node:internal/validators:162:11)
+    at Object.join (node:path:433:7)
+    at Config.path (C:\Users\elwady\AppData\Roaming\npm\node_modules\firebase-tools\lib\config.js:125:45)
+    at Config.writeProjectFile (C:\Users\elwady\AppData\Roaming\npm\node_modules\firebase-tools\lib\config.js:154:32)
+    at writeDBRules (C:\Users\elwady\AppData\Roaming\npm\node_modules\firebase-tools\lib\init\features\database.js:34:12)
+    at doSetup (C:\Users\elwady\AppData\Roaming\npm\node_modules\firebase-tools\lib\init\features\database.js:124:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async init (C:\Users\elwady\AppData\Roaming\npm\node_modules\firebase-tools\lib\init\index.js:37:9)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2024-04-27T21:29:48.984Z] ----------------------------------------------------------------------
+[debug] [2024-04-27T21:29:48.986Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\elwady\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init
+[debug] [2024-04-27T21:29:48.986Z] CLI Version:   13.7.5
+[debug] [2024-04-27T21:29:48.987Z] Platform:      win32
+[debug] [2024-04-27T21:29:48.987Z] Node Version:  v20.11.1
+[debug] [2024-04-27T21:29:48.987Z] Time:          Sun Apr 28 2024 00:29:48 GMT+0300 (Eastern European Summer Time)
+[debug] [2024-04-27T21:29:48.987Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-04-27T21:29:49.059Z] Object "" in "firebase.json" has unknown property: {"additionalProperty":"rules"}
+[debug] [2024-04-27T21:29:49.063Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2024-04-27T21:29:49.063Z] > authorizing via signed-in user (ahmed.mohamed6838@gmail.com)
+[debug] [2024-04-27T21:29:49.064Z] Object "" in "firebase.json" has unknown property: {"additionalProperty":"rules"}
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  C:\Users\elwady\Desktop\spring24\New folder\curio-backend
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] but for now we'll just set up a default project.
+[info] 
+[debug] [2024-04-27T21:29:53.975Z] Using project from CLI flag: curio-e356a
+[debug] [2024-04-27T21:29:53.978Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/curio-e356a [none]
+[debug] [2024-04-27T21:29:59.279Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/curio-e356a 200
+[debug] [2024-04-27T21:29:59.280Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/curio-e356a {"projectId":"curio-e356a","projectNumber":"411830826423","displayName":"Curio","name":"projects/curio-e356a","resources":{"hostingSite":"curio-e356a","realtimeDatabaseInstance":"curio-e356a-default-rtdb"},"state":"ACTIVE","etag":"1_357743b1-dbd8-441b-9ca8-0a027fdd01a3"}
+[info] i  Using project curio-e356a (Curio) 
+[info] 
+=== Database Setup
+[info] i  database: ensuring required API firebasedatabase.googleapis.com is enabled... 
+[debug] [2024-04-27T21:29:59.287Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/curio-e356a/services/firebasedatabase.googleapis.com [none]
+[debug] [2024-04-27T21:29:59.287Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/curio-e356a/services/firebasedatabase.googleapis.com x-goog-quota-user=projects/curio-e356a
+[debug] [2024-04-27T21:30:00.577Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/curio-e356a/services/firebasedatabase.googleapis.com 200
+[debug] [2024-04-27T21:30:00.577Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/curio-e356a/services/firebasedatabase.googleapis.com [omitted]
+[info] +  database: required API firebasedatabase.googleapis.com is enabled 
+[info] 
+[debug] [2024-04-27T21:30:00.578Z] >>> [apiv2][query] GET https://firebasedatabase.googleapis.com/v1beta/projects/curio-e356a/locations/-/instances/curio-e356a-default-rtdb [none]
+[debug] [2024-04-27T21:30:01.936Z] <<< [apiv2][status] GET https://firebasedatabase.googleapis.com/v1beta/projects/curio-e356a/locations/-/instances/curio-e356a-default-rtdb 200
+[debug] [2024-04-27T21:30:01.936Z] <<< [apiv2][body] GET https://firebasedatabase.googleapis.com/v1beta/projects/curio-e356a/locations/-/instances/curio-e356a-default-rtdb {"name":"projects/411830826423/locations/europe-west1/instances/curio-e356a-default-rtdb","project":"projects/411830826423","databaseUrl":"https://curio-e356a-default-rtdb.europe-west1.firebasedatabase.app","type":"DEFAULT_DATABASE","state":"ACTIVE"}
+[info] 
+[info] Firebase Realtime Database Security Rules allow you to define how your data should be
+[info] structured and when your data can be read from and written to.
+[info] 
+[debug] [2024-04-27T21:30:01.940Z] >>> [apiv2][query] GET https://curio-e356a-default-rtdb.europe-west1.firebasedatabase.app/.settings/rules.json [none]
+[debug] [2024-04-27T21:30:05.617Z] <<< [apiv2][status] GET https://curio-e356a-default-rtdb.europe-west1.firebasedatabase.app/.settings/rules.json 200
+[debug] [2024-04-27T21:30:05.618Z] <<< [apiv2][body] GET https://curio-e356a-default-rtdb.europe-west1.firebasedatabase.app/.settings/rules.json [stream]
+[debug] [2024-04-27T21:30:06.429Z] TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received an instance of Object
+    at validateString (node:internal/validators:162:11)
+    at Object.join (node:path:433:7)
+    at Config.path (C:\Users\elwady\AppData\Roaming\npm\node_modules\firebase-tools\lib\config.js:125:45)
+    at Config.writeProjectFile (C:\Users\elwady\AppData\Roaming\npm\node_modules\firebase-tools\lib\config.js:154:32)
+    at writeDBRules (C:\Users\elwady\AppData\Roaming\npm\node_modules\firebase-tools\lib\init\features\database.js:34:12)
+    at doSetup (C:\Users\elwady\AppData\Roaming\npm\node_modules\firebase-tools\lib\init\features\database.js:124:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async init (C:\Users\elwady\AppData\Roaming\npm\node_modules\firebase-tools\lib\init\index.js:37:9)
+[error] 
+[error] Error: An unexpected error has occurred.
