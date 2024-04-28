@@ -147,6 +147,7 @@ async function updateUserPreferences(req, res) {
     "profilePicture",
     "socialLinks",
     "displayName",
+    "about",
   ];
 
   const preferencesFields = [
