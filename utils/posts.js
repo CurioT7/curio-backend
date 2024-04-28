@@ -96,14 +96,6 @@ async function getVoteStatusAndSubredditDetails(items, user) {
       });
     }
 
-    if (itemData.type === "poll") {
-      itemData.options.forEach((option) => {
-        if (option.voters.includes(user._id)) {
-          pollVote = option.name;
-        }
-      });
-    }
-
     // Fetching the post data to get the isLocked status
     if (itemData instanceof Post) {
       isLocked = itemData.isLocked;
