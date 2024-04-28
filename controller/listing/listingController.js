@@ -339,16 +339,16 @@ async function setSuggestedSort(req, res) {
  */
 async function getUserPosts(req, res) {
   try {
-    // const token = req.headers.authorization.split(" ")[1];
-    // const decoded = await verifyToken(token);
-    // if (!decoded) {
-    //   return res.status(401).json({ message: "Unauthorized" });
-    // }
-    // const user = await User.findOne({ _id: decoded.userId }).populate(
-    //   "subreddits"
-    // );
- const username = req.body.username;
- const user = await User.findOne({ username }).populate("subreddits");
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const user = await User.findOne({ _id: decoded.userId }).populate(
+      "subreddits"
+    );
+//  const username = req.body.username;
+//  const user = await User.findOne({ username }).populate("subreddits");
     if (!user) {
       return res
         .status(404)
@@ -360,28 +360,31 @@ async function getUserPosts(req, res) {
     const fetchPosts = async (subreddit) => {
       switch (type) {
         case "best": 
-          return Post.aggregate([
-            {
-              $match: { linkedSubreddit: subreddit.subreddit },
-            },
-            {
-              $addFields: {
-                karma: {
-                  $cond: {
-                    if: { $gt: ["$upvotes", "$downvotes"] },
-                    then: {
-                      $divide: [
-                        { $subtract: ["$upvotes", "$downvotes"] },
-                        { $add: ["$upvotes", "$downvotes"] },
-                      ],
-                    },
-                    else: 0,
-                  },
-                },
-              },
-            },
-            { $sort: { karma: -1 } },
-          ]);
+        return Post.find({ linkedSubreddit: subreddit.subreddit }).then(
+          (posts) => {
+            // Sort posts based on the proportion of upvotes to downvotes
+            const sortedPosts = posts.sort((a, b) => {
+              const karmaA = a.upvotes - a.downvotes;
+              const karmaB = b.upvotes - b.downvotes;
+
+              // Calculate the proportion of upvotes to downvotes for each post
+              const proportionA =
+                karmaA > 0 ? karmaA / (karmaA + a.downvotes) : 0;
+              const proportionB =
+                karmaB > 0 ? karmaB / (karmaB + b.downvotes) : 0;
+
+              // Sort posts based on the proportion of upvotes to downvotes
+              return proportionB - proportionA;
+            });
+
+            return sortedPosts.map((post) => {
+              return {
+                subreddit: subreddit.name,
+                post: post,
+              };
+            });
+          }
+        );
 
         case "random":
           return Post.find({ linkedSubreddit: subreddit.subreddit }).then(
