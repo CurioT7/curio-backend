@@ -45,6 +45,7 @@ async function getVoteStatusAndSubredditDetails(items) {
     let voteStatus = "unvoted";
     let isUserMemberOfItemSubreddit = false;
     let subredditName = null;
+    let isLocked = false;
 
     // Find item data by its ID (assuming it can be either a Post or a Comment)
     itemData =
@@ -90,10 +91,15 @@ async function getVoteStatusAndSubredditDetails(items) {
       voteStatus = "downvoted";
     }
 
+    // Fetching the post data to get the isLocked status
+    if (itemData instanceof Post) {
+      isLocked = itemData.isLocked;
+    }
     detailsArray.push({
       voteStatus,
       isUserMemberOfItemSubreddit,
       subredditName,
+      isLocked,
     });
   }
 
