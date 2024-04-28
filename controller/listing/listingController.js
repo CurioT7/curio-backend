@@ -339,15 +339,16 @@ async function setSuggestedSort(req, res) {
  */
 async function getUserPosts(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId }).populate(
-      "subreddits"
-    );
-
+    // const token = req.headers.authorization.split(" ")[1];
+    // const decoded = await verifyToken(token);
+    // if (!decoded) {
+    //   return res.status(401).json({ message: "Unauthorized" });
+    // }
+    // const user = await User.findOne({ _id: decoded.userId }).populate(
+    //   "subreddits"
+    // );
+ const username = req.body.username;
+ const user = await User.findOne({ username }).populate("subreddits");
     if (!user) {
       return res
         .status(404)
@@ -359,16 +360,29 @@ async function getUserPosts(req, res) {
     const fetchPosts = async (subreddit) => {
       switch (type) {
         case "best": 
-          return Post.find({ linkedSubreddit: subreddit.subreddit })
-            .sort({ upvotes: -1, views: -1, comments: -1 })
-            .then((posts) => {
-              return posts.map((post) => {
-                return {
-                  subreddit: subreddit.name,
-                  post: post,
-                };
-              });
-            });
+          return Post.aggregate([
+            {
+              $match: { linkedSubreddit: subreddit.subreddit },
+            },
+            {
+              $addFields: {
+                karma: {
+                  $cond: {
+                    if: { $gt: ["$upvotes", "$downvotes"] },
+                    then: {
+                      $divide: [
+                        { $subtract: ["$upvotes", "$downvotes"] },
+                        { $add: ["$upvotes", "$downvotes"] },
+                      ],
+                    },
+                    else: 0,
+                  },
+                },
+              },
+            },
+            { $sort: { karma: -1 } },
+          ]);
+
         case "random":
           return Post.find({ linkedSubreddit: subreddit.subreddit }).then(
             (posts) => {
@@ -583,6 +597,83 @@ async function getBestComments(subredditId, postId) {
   }
 }
 
+/**
+ * Get the top posts for every subreddit that the user follows.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The top posts for each subreddit.
+ */
+async function guestHomePage(req, res) {
+  try {
+    const { type } = req.params;
+
+    const fetchPosts = async () => {
+      switch (type) {
+        case "best":
+          return Post.find()
+            .sort({ upvotes: -1, views: -1, comments: -1 })
+            .then((posts) => {
+              return posts.map((post) => {
+                return {
+                  post: post,
+                };
+              });
+            });
+        case "random":
+          return Post.find().then((posts) => {
+            const randomIndex = Math.floor(Math.random() * posts.length);
+            const randomPost = posts[randomIndex];
+            return {
+              post: randomPost,
+            };
+          });
+        case "top":
+          return Post.find()
+            .sort({ upvotes: -1 })
+            .then((posts) => {
+              return posts.map((post) => {
+                return {
+                  post: post,
+                };
+              });
+            });
+        case "new":
+          return Post.find()
+            .sort({ createdAt: -1 })
+            .then((posts) => {
+              return posts.map((post) => {
+                return {
+                  post: post,
+                };
+              });
+            });
+        case "hot":
+          return Post.find()
+            .sort({ views: -1 })
+            .then((posts) => {
+              return posts.map((post) => {
+                return {
+                  post: post,
+                };
+              });
+            });
+        default:
+          return Promise.reject("Invalid posts type");
+      }
+    };
+
+    const posts = await fetchPosts();
+
+    return res.status(200).json({ success: true, posts: posts });
+  } catch (error) {
+    console.error("Error fetching user posts:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
 module.exports = {
   randomPost,
   getTopPosts,
@@ -595,4 +686,5 @@ module.exports = {
   getUserPosts,
   sortComments,
   getTopComments,
+  guestHomePage,
 };

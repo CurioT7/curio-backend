@@ -104,7 +104,7 @@ router.get("/best", ListingController.getBestPosts);
 router.post("/r/:subreddit/suggestedSort", ListingController.setSuggestedSort);
 
 /**
- * Express route for getting the new posts for a user.
+ * Express route for getting the new/hot/random/best/top posts for a user.
  * @name GET /new
  * @function
  * @memberof module:routes
@@ -112,8 +112,23 @@ router.post("/r/:subreddit/suggestedSort", ListingController.setSuggestedSort);
  * @param {function} middleware - The controller function to handle the GET request.
  * @returns {object} Express router instance.
 */
-router.get("/user/:type", ListingController.getUserPosts);
+router.get("/homepage/:type", ListingController.getUserPosts);
+
+/**
+ * 
+ */
 
 router.get("/r/:subreddit/:postID/:type", ListingController.sortComments);
 
+
+/**
+ * Express route for getting the homepage for a guest user.
+ * @name GET /homepage
+ * @function
+ * @memberof module:routes
+ * @param {string} path - The URL path for the route ("/homepage").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ */
+router.get("/allpage/:type", ListingController.guestHomePage);
 module.exports = router;
