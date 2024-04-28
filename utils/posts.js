@@ -3,7 +3,6 @@ const User = require("../models/userModel");
 const Subreddit = require("../models/subredditModel");
 const Comment = require("../models/commentModel");
 
-
 /**
  * Filters out hidden posts from the list of posts.
  * @param {Array} posts - The list of posts to filter.
@@ -27,12 +26,12 @@ async function filterHiddenPosts(posts, user) {
  * @param {string} item._id - The ID of the item.
  * @param {string} item.authorName - The username of the author of the item.
  * @returns {Promise<{
- *   voteStatus: string, 
- *   isUserMemberOfSubreddit: boolean, 
+ *   voteStatus: string,
+ *   isUserMemberOfSubreddit: boolean,
  *   subredditName: string|null
  * }>} An object containing the vote status, membership status in the subreddit, and the subreddit name.
  */
-async function getVoteStatusAndSubredditDetails(items) {
+async function getVoteStatusAndSubredditDetails(items, user) {
   // Convert single item to array if it's not already an array
   if (!Array.isArray(items)) {
     items = [items];
@@ -55,8 +54,6 @@ async function getVoteStatusAndSubredditDetails(items) {
       throw new Error("Item data not found");
     }
 
-    // Find the user by their authorName
-    const user = await User.findOne({ username: itemData.authorName });
     if (!user) {
       throw new Error("User not found");
     }
@@ -91,6 +88,22 @@ async function getVoteStatusAndSubredditDetails(items) {
       voteStatus = "downvoted";
     }
 
+    if (itemData.type === "poll") {
+      itemData.options.forEach((option) => {
+        if (option.voters.includes(user._id)) {
+          pollVote = option.name;
+        }
+      });
+    }
+
+    if (itemData.type === "poll") {
+      itemData.options.forEach((option) => {
+        if (option.voters.includes(user._id)) {
+          pollVote = option.name;
+        }
+      });
+    }
+
     // Fetching the post data to get the isLocked status
     if (itemData instanceof Post) {
       isLocked = itemData.isLocked;
@@ -99,12 +112,12 @@ async function getVoteStatusAndSubredditDetails(items) {
       voteStatus,
       isUserMemberOfItemSubreddit,
       subredditName,
+      pollVote: pollVote && pollVote,
       isLocked,
     });
   }
 
   return detailsArray;
 }
-
 
 module.exports = { filterHiddenPosts, getVoteStatusAndSubredditDetails };

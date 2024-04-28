@@ -14,6 +14,7 @@ const { getFilesFromS3 } = require("../../utils/s3-bucket");
  * @returns {Object} - The response object containing the random post.
  */
 
+
 async function randomPost(req, res) {
   // random post linked with the subreddit
   try {
