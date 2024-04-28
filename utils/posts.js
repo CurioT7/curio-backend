@@ -45,6 +45,8 @@ async function getVoteStatusAndSubredditDetails(items, user) {
     let isUserMemberOfItemSubreddit = false;
     let subredditName = null;
     let isLocked = false;
+    let pollVote = null;
+    let pollEnded = false;
 
     // Find item data by its ID (assuming it can be either a Post or a Comment)
     itemData =
@@ -94,6 +96,13 @@ async function getVoteStatusAndSubredditDetails(items, user) {
           pollVote = option.name;
         }
       });
+      const currentDate = new Date();
+      const postDate = new Date(itemData.createdAt);
+      const diffTime = Math.abs(currentDate - postDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays > itemData.voteLength) {
+        pollEnded = true;
+      }
     }
 
     // Fetching the post data to get the isLocked status
@@ -106,6 +115,7 @@ async function getVoteStatusAndSubredditDetails(items, user) {
       subredditName,
       pollVote: pollVote && pollVote,
       isLocked,
+      pollEnded,
     });
   }
 

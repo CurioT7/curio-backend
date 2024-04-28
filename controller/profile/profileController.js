@@ -50,8 +50,8 @@ async function fetchPostsByUsername(username) {
   for (const post of posts) {
     post.views += 1;
     await post.save();
-     if (post.media) {
-       post.media = await getFilesFromS3(post.media);
+    if (post.media) {
+      post.media = await getFilesFromS3(post.media);
     }
   }
   return posts;
@@ -78,11 +78,18 @@ async function getPostsByUser(req, res, next) {
   try {
     const { username } = req.params;
 
+    const user = await findUserByUsername(username);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
     // Fetch posts by the user
     const posts = await fetchPostsByUsername(username);
 
     // Get vote status and subreddit details for each post
-    const detailsArray = await getVoteStatusAndSubredditDetails(posts);
+    const detailsArray = await getVoteStatusAndSubredditDetails(posts, user);
 
     // Combine posts and their details
     const postsWithDetails = posts.map((post, index) => {
@@ -149,7 +156,6 @@ async function getVotedContent(req, res, next, voteType) {
       const votedPosts = await Post.find({ _id: { $in: votedIds } });
       const votedComments = await Comment.find({ _id: { $in: votedIds } });
 
-
       res.status(200).json({
         votedPosts,
         votedComments,
@@ -199,14 +205,14 @@ async function getAboutInformation(req, res, next) {
     let profilePicture;
 
     // Fetch the profile picture from S3 if available
-     if (user.profilePicture) {
-       profilePicture = await getFilesFromS3(user.profilePicture);
-       user.profilePicture = profilePicture;
-     }
-     if (user.banner) {
-       banner = await getFilesFromS3(user.banner);
-       user.banner = banner;
-     }
+    if (user.profilePicture) {
+      profilePicture = await getFilesFromS3(user.profilePicture);
+      user.profilePicture = profilePicture;
+    }
+    if (user.banner) {
+      banner = await getFilesFromS3(user.banner);
+      user.banner = banner;
+    }
 
     // Get subreddits where the user is a moderator or creator
     const moderatedSubredditsUsernames = user.moderators.map(
