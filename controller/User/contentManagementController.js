@@ -815,19 +815,6 @@ async function castVote(req, res) {
           }
         }
 
-        // Notify the author
-        const notification = new Notification({
-          title: "New Vote",
-          message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
-            direction === 1 ? "upvoted" : "downvoted"
-          } by ${user.username}.`,
-          recipient: item.authorName,
-          postId: itemName === "post" ? itemID : undefined,
-          commentId: itemName === "comment" ? itemID : undefined,
-        });
-
-        await notification.save();
-
         await Promise.all([item.save(), user.save()]);
         return res
           .status(200)
@@ -860,7 +847,18 @@ async function castVote(req, res) {
         item.downvotes += 1;
         user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
       }
+      // Notify the author
+      const notification = new Notification({
+        title: "New Vote",
+        message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
+          direction === 1 ? "upvoted" : "downvoted"
+        } by ${user.username}.`,
+        recipient: item.authorName,
+        postId: itemName === "post" ? itemID : undefined,
+        commentId: itemName === "comment" ? itemID : undefined,
+      });
 
+      await notification.save();
       await Promise.all([item.save(), user.save()]);
       return res
         .status(200)
