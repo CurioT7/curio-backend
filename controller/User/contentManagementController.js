@@ -782,7 +782,14 @@ async function castVote(req, res) {
           .status(404)
           .json({ success: false, message: "Item not found" });
       }
-
+      // Check if the user has disabled notifications for this item
+      const disabledNotifications = user.notificationSettings || {};
+      const isDisabled =
+        (itemName === "post" &&
+          disabledNotifications.disabledPosts.includes(itemID)) ||
+        (itemName === "comment" &&
+          disabledNotifications.disabledComments.includes(itemID));
+      
       if (direction === 0) {
         // Find the existing vote in upvotes
         const existingUpvoteIndex = user.upvotes.findIndex(
@@ -852,6 +859,7 @@ async function castVote(req, res) {
         recipient: item.authorName,
         postId: itemName === "post" ? itemID : undefined,
         commentId: itemName === "comment" ? itemID : undefined,
+        isDisabled: isDisabled,
       });
 
       await notification.save();
