@@ -659,7 +659,6 @@ async function lockItem(req, res) {
   }
 }
 
-
 /**
  * Unlocks a post item if the user has the necessary permissions.
  * @param {Object} req - The request object.
@@ -715,7 +714,6 @@ async function unlockItem(req, res) {
   }
 }
 
-
 /**
  * Retrieves information about a specific item based on its type.
  * @param {Object} req - The request object.
@@ -734,7 +732,6 @@ async function getItemInfo(req, res) {
       if (item.media) {
         item.media = await getFilesFromS3(item.media);
       }
-   
     } else if (objectType === "comment") {
       item = await Comment.findOne({ _id: objectID });
     } else if (objectType === "subreddit") {
@@ -1018,7 +1015,7 @@ async function subredditOverview(req, res) {
         displayName: user.displayName,
         profilePicture: user.profilePicture,
         banner: user.banner,
-        about: user.bio,
+        about: user.about,
         createdAt: user.cakeDay,
         karma: user.karma,
         isUser: true,
