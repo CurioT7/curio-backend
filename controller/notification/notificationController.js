@@ -7,6 +7,26 @@ const brypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Subreddit = require('../../models/subredditModel');
 
+
+/**
+ * Filters out hidden notifications for a given user.
+ * @param {Array<Object>} notifications - The array of notifications to filter.
+ * @param {Object} user - The user object containing hidden notifications.
+ * @returns {Promise<Array<Object>>} A promise that resolves to an array of filtered notifications.
+ * @throws {Error} If an error occurs during filtering.
+ */
+async function filterHiddenNotifications(notifications, user) {
+  try {
+    const hiddenNotifications = await user.hiddenNotifications;
+    notifications = await notifications.filter(
+      (notification) => !hiddenNotifications.includes(notification._id)
+    );
+    return notifications;
+  } catch (err) {
+    throw new Error(err);
+  }
+}
+
 /**
  * Retrieves unsent notifications for the authenticated user and updates the isSent flag.
  * @function getUnsentNotificationsForUser
@@ -19,7 +39,7 @@ async function getUnsentNotificationsForUser(req, res) {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
 
-      // Use aggregation to find notifications by recipient ID 
+      // Use aggregation to find notifications by recipient ID
       const notifications = await Notification.aggregate([
         {
           $match: {
@@ -37,14 +57,20 @@ async function getUnsentNotificationsForUser(req, res) {
         },
         { $set: { isSent: true } }
       );
+      // Filter out hidden notifications
+      const filteredNotifications = await filterHiddenNotifications(
+        notifications,
+        user
+      );
       if (notifications.length == 0) {
-        return res
-          .status(200)
-          .json({ success: true, message: "There are no unsent notifications" });
+        return res.status(200).json({
+          success: true,
+          message: "There are no unsent notifications",
+        });
       } else {
         return res
           .status(200)
-          .json({ success: true, notifications: notifications });
+          .json({ success: true, notifications: filteredNotifications });
       }
     }
   } catch (error) {
@@ -74,6 +100,12 @@ async function getAllNotificationsForUser(req, res) {
         },
       ]);
 
+      // Filter out hidden notifications
+      const filteredNotifications = await filterHiddenNotifications(
+        notifications,
+        user
+      );
+
       // If the user hasn't joined any communities, suggest a random Subreddit
       if (user.subreddits.length === 0) {
         const randomSubreddit = await Subreddit.aggregate([
@@ -91,7 +123,7 @@ async function getAllNotificationsForUser(req, res) {
 
       return res
         .status(200)
-        .json({ success: true, notifications: notifications });
+        .json({ success: true, notifications: filteredNotifications });
     }
   } catch (error) {
     console.error("Error:", error);
@@ -458,11 +490,17 @@ const getUnreadNotifications = async (req, res) => {
          },
        ]);
 
+       // Filter out hidden notifications
+       const filteredNotifications = await filterHiddenNotifications(
+         unreadNotifications,
+         user
+       );
+
        // Get the count of unread notifications
        const unreadCount = unreadNotifications.length;
-         return res
-           .status(200)
-           .json({ success: true, unreadCount, unreadNotifications });
+       return res
+         .status(200)
+         .json({ success: true, unreadCount, filteredNotifications });
      }
    } catch (error) {
      console.error("Error:", error);
@@ -481,7 +519,7 @@ const getReadNotifications = async (req, res) => {
    try {
      if (req.user) {
        const user = await User.findOne({ _id: req.user.userId });
-   
+
        // Find read notifications for the user
        const readNotifications = await Notification.aggregate([
          {
@@ -492,11 +530,17 @@ const getReadNotifications = async (req, res) => {
          },
        ]);
 
+       // Filter out hidden notifications
+       const filteredNotifications = await filterHiddenNotifications(
+         readNotifications,
+         user
+       );
+
        // Get the count of read notifications
        const readCount = readNotifications.length;
-         return res
-           .status(200)
-           .json({ success: true, readCount, readNotifications });
+       return res
+         .status(200)
+         .json({ success: true, readCount, filteredNotifications });
      }
    } catch (error) {
      console.error("Error:", error);
