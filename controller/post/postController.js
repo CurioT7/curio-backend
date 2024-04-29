@@ -71,18 +71,31 @@ async function createComments(req, res) {
         .json({ success: false, message: "Post not found." });
     }
 
-      // Check if the post is locked
-      if (post.isLocked) {
-        return res.status(403).json({ success: false, message: "Post is locked. Cannot add a comment." });
-      }
+    // Check if the post is locked
+    if (post.isLocked) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Post is locked. Cannot add a comment.",
+        });
+    }
 
-      // check if user is authorized to comment
-      if (post.linkedSubreddit.privacyMode === "private") {
-        const isMember = post.linkedSubreddit.members.includes(user._id);
-        if (!isMember) {
-          return res.status(403).json({ success: false, message: "You are not authorized to comment on this post." });
-        }
+    // check if user is authorized to comment
+    if (post.linkedSubreddit.privacyMode === "private") {
+      const isMember = post.linkedSubreddit.members.includes(user._id);
+      if (!isMember) {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            message: "You are not authorized to comment on this post.",
+          });
       }
+    }
+
+    // Get the username of the post author
+    const postAuthor = await User.findById(post.author);
 
     const comment = new Comment({
       content,
@@ -98,13 +111,15 @@ async function createComments(req, res) {
     await comment.save();
     post.comments.push(comment._id);
     await post.save();
+
     // Create a notification for the post author
     const notification = new Notification({
       title: "New Comment",
-      message: `${user.username} commented on your post "${post.title}".`,
-      recipient: post.author, // Assuming `author` is the username of the post author
-    }); 
-  
+      message: `${user.username} commented on your post "${post.title}".`, 
+      recipient: post.authorName,
+      commentId: comment._id,
+    });
+
     await notification.save();
     return res.status(201).json({ success: true, comment });
   } catch (err) {

@@ -15,6 +15,7 @@ const { getVoteStatusAndSubredditDetails } = require("../../utils/posts.js");
  * @returns {Object} - The response object containing the random post.
  */
 
+
 async function randomPost(req, res) {
   // random post linked with the subreddit
   try {

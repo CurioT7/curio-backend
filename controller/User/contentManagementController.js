@@ -631,7 +631,8 @@ async function lockItem(req, res) {
           );
           if (
             !subredditRole ||
-            (subredditRole.role !== "moderator" && subredditRole.role !== "creator")
+            (subredditRole.role !== "moderator" &&
+              subredditRole.role !== "creator")
           ) {
             return res.status(403).json({
               success: false,
@@ -678,18 +679,20 @@ async function unlockItem(req, res) {
       } else {
         // Check if the user is a moderator or creator of the linked subreddit
         const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
-        if (subredditOfPost){
+        if (subredditOfPost) {
           const subredditRole = user.subreddits.find(
             (sub) => sub.subreddit === subredditOfPost.name
           );
-      
+
           if (
             !subredditRole ||
-            (subredditRole.role !== "moderator" && subredditRole.role !== "creator")
+            (subredditRole.role !== "moderator" &&
+              subredditRole.role !== "creator")
           ) {
             return res.status(403).json({
               success: false,
-              message: "User is not authorized to unlock posts in this subreddit",
+              message:
+                "User is not authorized to unlock posts in this subreddit",
             });
           }
         } else {
@@ -727,9 +730,9 @@ async function getItemInfo(req, res) {
 
     if (objectType === "post") {
       item = await Post.findOne({ _id: objectID }).populate("originalPostId");
-       if (item.media) {
-         item.media = await getFilesFromS3(item.media);
-       }
+      if (item.media) {
+        item.media = await getFilesFromS3(item.media);
+      }
       //TODO check why this doesn't work
       // Get vote status and subreddit details for each post
       details = await getVoteStatusAndSubredditDetails(item);
@@ -764,7 +767,6 @@ async function getItemInfo(req, res) {
  */
 async function castVote(req, res) {
   try {
-    
     const itemID = req.body.itemID;
     const itemName = req.body.itemName;
     const direction = req.body.direction;
@@ -813,16 +815,6 @@ async function castVote(req, res) {
           }
         }
 
-        // Notify the author
-        const notification = new Notification({
-          title: "New Vote",
-          message: `Your ${itemName === "post" ? "post" : "comment"} has been ${direction === 1 ? "upvoted" : "downvoted"
-            } by ${user.username}.`,
-          recipient: item.authorName,
-        });
-
-        await notification.save();
-
         await Promise.all([item.save(), user.save()]);
         return res
           .status(200)
@@ -835,11 +827,11 @@ async function castVote(req, res) {
           (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
         ) !== -1
           ? user.upvotes.findIndex(
-            (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
-          )
+              (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+            )
           : user.downvotes.findIndex(
-            (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
-          );
+              (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+            );
       if (existingVoteIndex !== -1) {
         return res.status(400).json({
           success: false,
@@ -855,7 +847,18 @@ async function castVote(req, res) {
         item.downvotes += 1;
         user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
       }
+      // Notify the author
+      const notification = new Notification({
+        title: "New Vote",
+        message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
+          direction === 1 ? "upvoted" : "downvoted"
+        } by ${user.username}.`,
+        recipient: item.authorName,
+        postId: itemName === "post" ? itemID : undefined,
+        commentId: itemName === "comment" ? itemID : undefined,
+      });
 
+      await notification.save();
       await Promise.all([item.save(), user.save()]);
       return res
         .status(200)
