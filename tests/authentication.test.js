@@ -6,7 +6,7 @@ const {
   forgotPassword,
   forgotUsername,
 } = require("../controller/Auth/userController");
-const { deserializeUser } = require("passport");
+
 
 // test userExists function
 describe("userExist function", () => {

@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@aws-sdk/client-s3": "^3.554.0",
+    "@aws-sdk/s3-request-presigner": "^3.556.0",
     "aws-sdk": "^2.1599.0",
     "axios": "^1.6.8",
     "bcrypt": "^5.1.1",

@@ -6,6 +6,8 @@ const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const brypt = require("bcrypt");
 const { verifyToken } = require("../../utils/tokens");
+const { getFilesFromS3 } = require("../../utils/s3-bucket");
+const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
 
 /**
  * Finds a user by their username.
@@ -41,11 +43,16 @@ function handleServerError(res, error) {
  * @returns {Promise<Array>} A Promise that resolves to an array of posts made by the user.
  */
 async function fetchPostsByUsername(username) {
-  const posts = await Post.find({ authorName: username });
+  const posts = await Post.find({ authorName: username }).populate(
+    "originalPostId"
+  );
   // Increment the view count for each post
   for (const post of posts) {
     post.views += 1;
     await post.save();
+    if (post.media) {
+      post.media = await getFilesFromS3(post.media);
+    }
   }
   return posts;
 }
@@ -70,10 +77,26 @@ async function fetchCommentsByUsername(username) {
 async function getPostsByUser(req, res, next) {
   try {
     const { username } = req.params;
+
     const user = await findUserByUsername(username);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
     // Fetch posts by the user
     const posts = await fetchPostsByUsername(username);
-    res.status(200).json(posts);
+
+    // Get vote status and subreddit details for each post
+    const detailsArray = await getVoteStatusAndSubredditDetails(posts, user);
+
+    // Combine posts and their details
+    const postsWithDetails = posts.map((post, index) => {
+      return { ...post.toObject(), details: detailsArray[index] };
+    });
+
+    res.status(200).json(postsWithDetails);
   } catch (error) {
     handleServerError(res, error);
   }
@@ -92,7 +115,16 @@ async function getCommentsByUser(req, res, next) {
     const user = await findUserByUsername(username);
     // Fetch comments by the user
     const comments = await fetchCommentsByUsername(username);
-    res.status(200).json(comments);
+
+    // Get vote status and subreddit details for each comment
+    const detailsArray = await getVoteStatusAndSubredditDetails(comments,user);
+
+    // Combine comments and their details
+    const commentsWithDetails = comments.map((comment, index) => {
+      return { ...comment.toObject(), details: detailsArray[index] };
+    });
+
+    res.status(200).json(commentsWithDetails);
   } catch (error) {
     handleServerError(res, error);
   }
@@ -108,44 +140,27 @@ async function getCommentsByUser(req, res, next) {
  */
 async function getVotedContent(req, res, next, voteType) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-    if (!user) {
-      return res.status(404).json({
-        status: "failed",
-        message: "User not found",
+      let votedIds;
+      if (voteType === "upvotes" || voteType === "downvotes") {
+        votedIds = user[voteType].map((vote) => vote.itemId);
+        console.log(votedIds);
+      } else {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid vote type" });
+      }
+
+      const votedPosts = await Post.find({ _id: { $in: votedIds } });
+      const votedComments = await Comment.find({ _id: { $in: votedIds } });
+
+      res.status(200).json({
+        votedPosts,
+        votedComments,
       });
     }
-
-    let filterFunction;
-    if (voteType === "upvotes") {
-      filterFunction = (vote) =>
-        vote.itemType === "post" || vote.itemType === "comment";
-    } else if (voteType === "downvotes") {
-      filterFunction = (vote) =>
-        vote.itemType === "post" || vote.itemType === "comment";
-    } else {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid vote type" });
-    }
-
-    const votedIds = user[voteType]
-      .filter(filterFunction)
-      .map((vote) => vote.itemId);
-
-    const votedPosts = await Post.find({ _id: { $in: votedIds } });
-    const votedComments = await Comment.find({ _id: { $in: votedIds } });
-
-    res.status(200).json({
-      votedPosts,
-      votedComments,
-    });
   } catch (error) {
     handleServerError(res, error);
   }
@@ -183,11 +198,21 @@ async function getAboutInformation(req, res, next) {
     const goldReceived = user.goldAmount;
     const cakeDay = user.cakeDay;
     const socialLinks = user.socialLinks;
-    const bio = user.bio;
+    const about = user.about;
     const displayName = user.displayName;
-    const banner = user.banner;
-    const profilePicture = user.profilePicture;
     const isOver18 = user.isOver18;
+    let banner;
+    let profilePicture;
+
+    // Fetch the profile picture from S3 if available
+    if (user.profilePicture) {
+      profilePicture = await getFilesFromS3(user.profilePicture);
+      user.profilePicture = profilePicture;
+    }
+    if (user.banner) {
+      banner = await getFilesFromS3(user.banner);
+      user.banner = banner;
+    }
 
     // Get subreddits where the user is a moderator or creator
     const moderatedSubredditsUsernames = user.moderators.map(
@@ -213,7 +238,7 @@ async function getAboutInformation(req, res, next) {
 
     res.status(200).json({
       banner,
-      bio,
+      about,
       cakeDay,
       commentKarma,
       displayName,
@@ -270,9 +295,15 @@ async function getJoinedCommunities(req, res) {
 
     const subredditNames = user.subreddits.map((sub) => sub.subreddit);
 
-    const communities = await Subreddit.find({
+    let communities = await Subreddit.find({
       name: { $in: subredditNames },
     }).exec();
+
+    // Add member count to each community
+    communities = communities.map((community) => {
+      const memberCount = community.members.length;
+      return { ...community._doc, memberCount };
+    });
 
     return res.status(200).json({ success: true, communities });
   } catch (error) {

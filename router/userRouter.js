@@ -8,13 +8,12 @@
 
 const express = require("express");
 const router = express.Router();
-const passport = require("passport");
 
 const userController = require("../controller/Auth/userController");
 const appUserController = require("../controller/Auth/appUserController");
 const userBlockController = require("../controller/User/blockUserController");
 const contentManagementController = require("../controller/User/contentManagementController");
-
+const { authenticate } = require("../middlewares/auth");
 
 // Set up multer middleware for file uploads
 const multer = require("multer");
@@ -306,10 +305,7 @@ router.get("/share/:postId", contentManagementController.getPostLink);
  * @param {Object} res - The response object.
  * @returns {Object} The JSON response indicating success or failure.
  */
-router.post(
-  "/lock",
-  contentManagementController.lockItem
-);
+router.post("/lock", authenticate, contentManagementController.lockItem);
 
 /**
  * Route for unlocking a post item.
@@ -317,7 +313,7 @@ router.post(
  * @param {Object} res - The response object.
  * @returns {Object} The JSON response indicating success or failure.
  */
-router.post("/unlock", contentManagementController.unlockItem);
+router.post("/unlock", authenticate, contentManagementController.unlockItem);
 
 /**
  * Route for retrieving information about a specific item.
@@ -336,7 +332,7 @@ router.get("/info", contentManagementController.getItemInfo);
  * @param {Object} res - Express response object.
  * @returns {Object} JSON response indicating success or failure.
  */
-router.post("/vote", contentManagementController.castVote);
+router.post("/vote", authenticate ,contentManagementController.castVote);
 
 /**
  * Add a post to the user's browsing history.
@@ -347,7 +343,7 @@ router.post("/vote", contentManagementController.castVote);
  * @param {Object} res - The response object.
  * @returns {Object} JSON response indicating success or failure.
  */
-router.post("/history", contentManagementController.addToHistory);
+router.post("/history", authenticate, contentManagementController.addToHistory);
 
 /**
  * Retrieve the user's browsing history.
@@ -358,7 +354,45 @@ router.post("/history", contentManagementController.addToHistory);
  * @param {Object} res - The response object.
  * @returns {Object} JSON response containing the recent posts.
  */
-router.get("/getHistory", contentManagementController.getHistory);
+router.get("/getHistory", authenticate, contentManagementController.getHistory);
 
+/**
+ * Delete endpoint to clear user's history.
+ * @route DELETE /clear-history
+ * @group Content Management - Content management operations
+ * @security JWT
+ * @returns {object} 200 - Success message
+ * @returns {Error}  401 - Unauthorized
+ * @returns {Error}  500 - Internal server error
+ */
+router.delete("/clear-history", authenticate ,contentManagementController.clearHistory);
+
+/**
+ * Retrieve the user's browsing history.
+ * @name GET /getHistory
+ * @function
+ * @memberof router
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response containing the recent posts.
+ */
+
+router.get(
+  "/subredditOverview/:subreddit?",
+  authenticate,
+  contentManagementController.subredditOverview
+);
+
+/**
+ * Route to get the user's saved posts and comments.
+ * @name GET /saved
+ * @function
+ * @memberof router
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response containing the saved posts and comments.
+ */
+
+router.post("/pollVote", authenticate, contentManagementController.pollVote);
 
 module.exports = router;

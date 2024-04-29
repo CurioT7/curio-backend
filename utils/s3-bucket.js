@@ -1,7 +1,12 @@
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} = require("@aws-sdk/client-s3");
 const multerS3 = require("multer-s3");
 const crypto = require("crypto");
 const sharp = require("sharp");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 // AWS S3 configuration
 const bucketName = process.env.BUCKET_NAME;
@@ -22,25 +27,45 @@ const s3 = new S3Client({
  * @param {Object} file - The file to send to the S3 bucket.
  */
 
-async function sendFileToS3(req) {
+async function sendFileToS3(file) {
   //resize image
-  const buffer = await sharp(req.file.buffer)
-    .resize({ height: 400, width: 400, fit: "contain" })
-    .toBuffer();
+  const buffer = file.buffer;
+  console.log(file.mimetype.split("/")[1]);
 
   //send media to s3
-  const file = req.file;
+
   const uploadParams = {
     Bucket: bucketName,
-    Key: randomImageName(),
+    Key: randomImageName() + "." + file.mimetype.split("/")[1],
     Body: buffer,
-    CibtebtType: file.mimetype,
+    ContentType: file.mimetype,
   };
+
+  console.log(uploadParams.Key);
+
   const command = new PutObjectCommand(uploadParams);
   try {
-    const data = await s3.send(command);
-    console.log("Successfully uploaded file to S3");
+    await s3.send(command);
     return uploadParams.Key;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+}
+
+/*
+ * Retrieves a file from an S3 bucket.
+ * @param {String} imageKey - The key of the image to retrieve from the S3 bucket.
+ */
+
+async function getFilesFromS3(imageKey) {
+  try {
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: imageKey,
+    });
+    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    return url;
   } catch (error) {
     console.log(error);
     return null;
@@ -50,4 +75,4 @@ async function sendFileToS3(req) {
 const randomImageName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
 
-module.exports = { s3, sendFileToS3 };
+module.exports = { s3, sendFileToS3, getFilesFromS3 };

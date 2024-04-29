@@ -32,6 +32,7 @@ const commentSchema = new Schema({
   authorName: {
     type: String,
     required: true,
+    ref: "User",
   },
   createdAt: {
     type: Date,
