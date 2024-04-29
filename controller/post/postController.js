@@ -73,10 +73,15 @@ async function createComments(req, res) {
         .json({ success: false, message: "Post not found." });
     }
 
-      // Check if the post is locked
-      if (post.isLocked) {
-        return res.status(403).json({ success: false, message: "Post is locked. Cannot add a comment." });
-      }
+    // Check if the post is locked
+    if (post.isLocked) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Post is locked. Cannot add a comment.",
+        });
+    }
 
       // check if user is authorized to comment
       // if (post.linkedSubreddit.privacyMode === "private") {
@@ -100,6 +105,7 @@ async function createComments(req, res) {
     await comment.save();
     post.comments.push(comment._id);
     await post.save();
+
     // Create a notification for the post author
     const notification = new Notification({
       title: "New Comment",

@@ -3,7 +3,6 @@ const User = require("../models/userModel");
 const Subreddit = require("../models/subredditModel");
 const Comment = require("../models/commentModel");
 
-
 /**
  * Filters out hidden posts from the list of posts.
  * @param {Array} posts - The list of posts to filter.
@@ -27,12 +26,12 @@ async function filterHiddenPosts(posts, user) {
  * @param {string} item._id - The ID of the item.
  * @param {string} item.authorName - The username of the author of the item.
  * @returns {Promise<{
- *   voteStatus: string, 
- *   isUserMemberOfSubreddit: boolean, 
+ *   voteStatus: string,
+ *   isUserMemberOfSubreddit: boolean,
  *   subredditName: string|null
  * }>} An object containing the vote status, membership status in the subreddit, and the subreddit name.
  */
-async function getVoteStatusAndSubredditDetails(items) {
+async function getVoteStatusAndSubredditDetails(items, user) {
   // Convert single item to array if it's not already an array
   if (!Array.isArray(items)) {
     items = [items];
@@ -45,17 +44,16 @@ async function getVoteStatusAndSubredditDetails(items) {
     let voteStatus = "unvoted";
     let isUserMemberOfItemSubreddit = false;
     let subredditName = null;
+    let pollVote = null;
+    let pollEnded = false;
 
     // Find item data by its ID (assuming it can be either a Post or a Comment)
     itemData =
       (await Post.findById(item._id)) || (await Comment.findById(item._id));
-
     if (!itemData) {
       throw new Error("Item data not found");
     }
 
-    // Find the user by their authorName
-    const user = await User.findOne({ username: itemData.authorName });
     if (!user) {
       throw new Error("User not found");
     }
@@ -90,15 +88,31 @@ async function getVoteStatusAndSubredditDetails(items) {
       voteStatus = "downvoted";
     }
 
+    if (itemData.type === "poll") {
+      itemData.options.forEach((option) => {
+        if (option.voters.includes(user._id)) {
+          pollVote = option.name;
+        }
+      });
+      const currentDate = new Date();
+      const postDate = new Date(itemData.createdAt);
+      const diffTime = Math.abs(currentDate - postDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays > itemData.voteLength) {
+        pollEnded = true;
+      }
+    }
+  
     detailsArray.push({
       voteStatus,
       isUserMemberOfItemSubreddit,
       subredditName,
+      pollVote: pollVote && pollVote,
+      pollEnded,
     });
   }
 
   return detailsArray;
 }
-
 
 module.exports = { filterHiddenPosts, getVoteStatusAndSubredditDetails };
