@@ -117,7 +117,7 @@ async function getCommentsByUser(req, res, next) {
     const comments = await fetchCommentsByUsername(username);
 
     // Get vote status and subreddit details for each comment
-    const detailsArray = await getVoteStatusAndSubredditDetails(comments);
+    const detailsArray = await getVoteStatusAndSubredditDetails(comments,user);
 
     // Combine comments and their details
     const commentsWithDetails = comments.map((comment, index) => {
