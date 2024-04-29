@@ -24,7 +24,7 @@ router.get(
  * @returns {Promise<void>} A promise that resolves once notifications are disabled for the user.
  */
 router.post(
-  "/settings/disable",
+  "/settings/disable/:type?",
   authenticate,
   notificationController.disableNotificationsForUser
 );
@@ -37,7 +37,7 @@ router.post(
  * @returns {Promise<void>} A promise that resolves once notifications are enabled for the user.
  */
 router.post(
-  "/settings/enable",
+  "/settings/enable/:type?",
   authenticate,
   notificationController.enableNotificationsForUser
 );
