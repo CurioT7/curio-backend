@@ -231,18 +231,21 @@ async function disableNotificationsForUser(req, res) {
           message: "Comment is already disabled for this user",
         });
       }
- if (type === "posts") {
-   user.notificationSettings.disabledPosts = user.posts;
-   userPreferences.posts = false;
- } else if (type === "comments") {
-   user.notificationSettings.disabledComments = user.comments;
-   userPreferences.comments = false;
- } else {
-   return res
-     .status(400)
-     .json({ success: false, message: "Invalid notification type" });
- }
- await userPreferences.save();
+      if (type) {
+
+        if (type === "posts") {
+          user.notificationSettings.disabledPosts = user.posts;
+          userPreferences.posts = false;
+        } else if (type === "comments") {
+          user.notificationSettings.disabledComments = user.comments;
+          userPreferences.comments = false;
+        } else {
+          return res
+            .status(400)
+            .json({ success: false, message: "Invalid notification type" });
+        }
+        await userPreferences.save();
+      }
       // Update the user's notification settings based on the parameters
       if (subredditName) {
         user.notificationSettings.disabledSubreddits.push(subredditName);
@@ -377,23 +380,24 @@ async function enableNotificationsForUser(req, res) {
         { commentId: commentId },
         { $set: { isDisabled: false } }
       );
-      if (type === "posts") {
-        user.notificationSettings.disabledPosts =
-          user.notificationSettings.disabledPosts.filter((p) => p !== postId);
+      if (type) {
+        if (type === "posts") {
+          user.notificationSettings.disabledPosts =
+            user.notificationSettings.disabledPosts.filter((p) => p !== postId);
           userPreferences.posts = true;
-      } else if (type === "comments") {
-        user.notificationSettings.disabledComments =
-          user.notificationSettings.disabledComments.filter(
-            (c) => c !== commentId
-          );
-       userPreferences.comments = true;
-      } else {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid notification type" });
+        } else if (type === "comments") {
+          user.notificationSettings.disabledComments =
+            user.notificationSettings.disabledComments.filter(
+              (c) => c !== commentId
+            );
+          userPreferences.comments = true;
+        } else {
+          return res
+            .status(400)
+            .json({ success: false, message: "Invalid notification type" });
+        }
+        await userPreferences.save();
       }
-       await userPreferences.save();
-
       // Check if subredditName, postId, or commentId is provided and exists in the disabled arrays
       if (
         (subredditName &&
