@@ -44,14 +44,12 @@ async function getVoteStatusAndSubredditDetails(items, user) {
     let voteStatus = "unvoted";
     let isUserMemberOfItemSubreddit = false;
     let subredditName = null;
-    let isLocked = false;
     let pollVote = null;
     let pollEnded = false;
 
     // Find item data by its ID (assuming it can be either a Post or a Comment)
     itemData =
       (await Post.findById(item._id)) || (await Comment.findById(item._id));
-
     if (!itemData) {
       throw new Error("Item data not found");
     }
@@ -104,17 +102,12 @@ async function getVoteStatusAndSubredditDetails(items, user) {
         pollEnded = true;
       }
     }
-
-    // Fetching the post data to get the isLocked status
-    if (itemData instanceof Post) {
-      isLocked = itemData.isLocked;
-    }
+  
     detailsArray.push({
       voteStatus,
       isUserMemberOfItemSubreddit,
       subredditName,
       pollVote: pollVote && pollVote,
-      isLocked,
       pollEnded,
     });
   }
