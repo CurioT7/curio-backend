@@ -82,16 +82,16 @@ router.get(
   "/r/:subreddit/top/:timeThreshold",
   ListingController.getTopPostsbytime
 );
-/**
- * Express route for retrieving the best posts.
- * @name GET /best
- * @function
- * @memberof module:routes
- * @param {string} path - The URL path for the route ("/best").
- * @param {function} middleware - The controller function to handle the GET request.
- * @returns {object} Express router instance.
- */
-router.get("/best", ListingController.getBestPosts);
+// /**
+//  * Express route for retrieving the best posts.
+//  * @name GET /best
+//  * @function
+//  * @memberof module:routes
+//  * @param {string} path - The URL path for the route ("/best").
+//  * @param {function} middleware - The controller function to handle the GET request.
+//  * @returns {object} Express router instance.
+//  */
+// router.get("/best", ListingController.getBestPosts);
 /**
  * Express route for setting the suggested sort of a subreddit.
  * @name POST /r/:subreddit
@@ -112,7 +112,7 @@ router.post("/r/:subreddit/suggestedSort", ListingController.setSuggestedSort);
  * @param {function} middleware - The controller function to handle the GET request.
  * @returns {object} Express router instance.
 */
-router.get("/homepage/:type", ListingController.getUserPosts);
+router.get("/homepage/:type", authenticate ,ListingController.getUserPosts);
 
 /**
  * 
