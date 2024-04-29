@@ -192,7 +192,7 @@ async function getAboutInformation(req, res, next) {
     const goldReceived = user.goldAmount;
     const cakeDay = user.cakeDay;
     const socialLinks = user.socialLinks;
-    const bio = user.bio;
+    const about = user.about;
     const displayName = user.displayName;
     const isOver18 = user.isOver18;
     let banner;
@@ -232,7 +232,7 @@ async function getAboutInformation(req, res, next) {
 
     res.status(200).json({
       banner,
-      bio,
+      about,
       cakeDay,
       commentKarma,
       displayName,
