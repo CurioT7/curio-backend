@@ -622,42 +622,43 @@ async function lockItem(req, res) {
         return res
           .status(404)
           .json({ success: false, message: "Post not found" });
-      } else {
-        // Check if the user is a moderator or creator of the linked subreddit
-        const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
-        if (subredditOfPost) {
-          const subredditRole = user.subreddits.find(
-            (sub) => sub.subreddit === subredditOfPost.name
-          );
-          if (
-            !subredditRole ||
-            (subredditRole.role !== "moderator" &&
-              subredditRole.role !== "creator")
-          ) {
-            return res.status(403).json({
-              success: false,
-              message: "User is not authorized to lock posts in this subreddit",
-            });
-          }
-        } else {
-          await Post.findOneAndUpdate(
-            { _id: itemID },
-            { isLocked: true },
-            { new: true }
-          );
-          return res
-            .status(200)
-            .json({ success: true, message: "Post locked successfully" });
+      }
+
+      // Check if the user is a moderator or creator of the linked subreddit
+      const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
+      if (subredditOfPost) {
+        const subredditRole = user.subreddits.find(
+          (sub) => sub.subreddit === subredditOfPost.name
+        );
+        if (
+          !subredditRole ||
+          (subredditRole.role !== "moderator" &&
+            subredditRole.role !== "creator")
+        ) {
+          return res.status(403).json({
+            success: false,
+            message: "User is not authorized to lock posts in this subreddit",
+          });
         }
       }
+
+      // If the user is authorized, lock the post
+      await Post.findByIdAndUpdate(itemID, { isLocked: true });
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Post locked successfully" });
+    } else {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
   }
 }
+
 
 /**
  * Unlocks a post item if the user has the necessary permissions.
@@ -676,44 +677,44 @@ async function unlockItem(req, res) {
         return res
           .status(404)
           .json({ success: false, message: "Post not found" });
-      } else {
-        // Check if the user is a moderator or creator of the linked subreddit
-        const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
-        if (subredditOfPost) {
-          const subredditRole = user.subreddits.find(
-            (sub) => sub.subreddit === subredditOfPost.name
-          );
+      }
 
-          if (
-            !subredditRole ||
-            (subredditRole.role !== "moderator" &&
-              subredditRole.role !== "creator")
-          ) {
-            return res.status(403).json({
-              success: false,
-              message:
-                "User is not authorized to unlock posts in this subreddit",
-            });
-          }
-        } else {
-          await Post.findOneAndUpdate(
-            { _id: itemID },
-            { isLocked: false },
-            { new: true }
-          );
-          return res
-            .status(200)
-            .json({ success: true, message: "Post unlocked successfully" });
+      // Check if the user is a moderator or creator of the linked subreddit
+      const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
+      if (subredditOfPost) {
+        const subredditRole = user.subreddits.find(
+          (sub) => sub.subreddit === subredditOfPost.name
+        );
+
+        if (
+          !subredditRole ||
+          (subredditRole.role !== "moderator" &&
+            subredditRole.role !== "creator")
+        ) {
+          return res.status(403).json({
+            success: false,
+            message: "User is not authorized to unlock posts in this subreddit",
+          });
         }
       }
+
+      // If the user is authorized, unlock the post
+      await Post.findByIdAndUpdate(itemID, { isLocked: false });
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Post unlocked successfully" });
+    } else {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
   }
 }
+
 
 /**
  * Retrieves information about a specific item based on its type.
