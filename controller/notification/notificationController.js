@@ -559,6 +559,33 @@ const readNotifications = async (req, res) => {
   }
 };
 
+/**
+ * Mark all notifications as viewed.
+ * This function updates the `isViewed` field of all notifications to true.
+ *
+ * @async
+ * @function markAllNotificationsViewed
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @returns {object} The response object.
+ * @throws {Error} Will throw an error if there's an internal server error.
+ */
+async function markAllNotificationsViewed(req, res) {
+  try {
+    if (req.user) {
+      await Notification.updateMany({}, { isViewed: true });
+
+      return res
+        .status(200)
+        .json({ success: true, message: "All notifications marked as viewed" });
+    }
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
 
 module.exports = {
   getAllNotificationsForUser,
@@ -570,4 +597,5 @@ module.exports = {
   getReadNotifications,
   getUnsentNotificationsForUser,
   readNotifications,
+  markAllNotificationsViewed,
 };
