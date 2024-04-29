@@ -734,9 +734,7 @@ async function getItemInfo(req, res) {
       if (item.media) {
         item.media = await getFilesFromS3(item.media);
       }
-      //TODO check why this doesn't work
-      // Get vote status and subreddit details for each post
-      details = await getVoteStatusAndSubredditDetails(item);
+   
     } else if (objectType === "comment") {
       item = await Comment.findOne({ _id: objectID });
     } else if (objectType === "subreddit") {
@@ -944,7 +942,8 @@ async function getHistory(req, res) {
       }
       // Get vote status and subreddit details for each post
       const detailsArray = await getVoteStatusAndSubredditDetails(
-        recentPostDetails
+        recentPostDetails,
+        user
       );
 
       // Combine posts and their details
