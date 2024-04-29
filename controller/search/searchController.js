@@ -30,12 +30,6 @@ async function search(req, res) {
         .json({ message: "No posts found for the given query" });
     }
 
-    if (posts.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No posts found for the given query" });
-    }
-
     const postIds = posts.map((post) => post._id);
     await Post.updateMany(
       { _id: { $in: postIds } },
