@@ -347,7 +347,7 @@ async function getUserPosts(req, res) {
 
       const { type } = req.params;
       const { page } = req.query;
-      const limit = 20; // Allow 20 items per page
+      const limit = 10; // Allow 20 items per page
       const skip = (page - 1) * limit;
 
       const fetchPosts = async (subreddit) => {
@@ -482,6 +482,17 @@ async function getUserPosts(req, res) {
 
       const filteredPosts = await filterHiddenPosts(flattenedPosts, user);
 
+      // Get vote status and subreddit details for each post
+      const detailsArray = await getVoteStatusAndSubredditDetails(
+        filteredPosts.map(({ post }) => post), // Extracting only the post from each filtered post object
+        user
+      );
+
+      // Combine posts and their details
+      const postsWithDetails = filteredPosts.map((post, index) => {
+        return { ...post, details: detailsArray[index] }; // Use the filtered post directly without calling toObject()
+      });
+
       await Promise.all(
         filteredPosts.map(({ post }) =>
           Post.updateOne({ _id: post._id }, { $inc: { views: 1 } })
@@ -491,7 +502,7 @@ async function getUserPosts(req, res) {
       return res.status(200).json({
         success: true,
         totalPosts: totalCount,
-        posts: filteredPosts,
+        posts: postsWithDetails,
       });
     }
   } catch (error) {
@@ -656,7 +667,7 @@ async function guestHomePage(req, res) {
   try {
     const { type } = req.params;
     const { page } = req.query;
-    const limit = 20; // Allow 20 items per page
+    const limit = 10; // Allow 20 items per page
     const skip = (page - 1) * limit;
 
     const fetchPosts = async () => {
@@ -756,9 +767,32 @@ async function guestHomePage(req, res) {
     };
 
     const posts = await fetchPosts();
-    const totalCount = await Post.countDocuments();
 
-    return res.status(200).json({ success: true, totalPosts: totalCount, posts: posts });
+    const totalCount = await Post.countDocuments();
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      // Get vote status and subreddit details for each post
+      const detailsArray = await getVoteStatusAndSubredditDetails(
+        posts.map(({ post }) => post),
+        user
+      );
+
+      // Combine posts and their details
+      const postsWithDetails = posts.map((post, index) => {
+        return { ...post, details: detailsArray[index] };
+      });
+      return res
+        .status(200)
+        .json({
+          success: true,
+          totalPosts: totalCount,
+          posts: postsWithDetails,
+        });
+    } else {
+      return res
+        .status(200)
+        .json({ success: true, totalPosts: totalCount, posts: posts });
+    }
   } catch (error) {
     console.error("Error fetching user posts:", error);
     return res

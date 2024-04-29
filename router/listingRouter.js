@@ -130,5 +130,11 @@ router.get("/r/:subreddit/:postID/:type", ListingController.sortComments);
  * @param {function} middleware - The controller function to handle the GET request.
  * @returns {object} Express router instance.
  */
-router.get("/allpage/:type", ListingController.guestHomePage);
+router.get(
+  "/allpage/:type",
+  (req, res, next) => {
+    authenticate(req, res, next, true);
+  },
+  ListingController.guestHomePage
+);
 module.exports = router;
