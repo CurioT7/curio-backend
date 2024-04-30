@@ -4,6 +4,7 @@ const User = require("../../models/userModel");
 const Community = require("../../models/subredditModel");
 const brypt = require("bcrypt");
 const { verifyToken } = require("../../utils/tokens");
+const Notification = require("../../models/notificationModel");
 
 require("dotenv").config();
 
@@ -115,23 +116,49 @@ async function unFollowSubreddits(username, communityName) {
  * @param {String} (friend)
  * @function
  */
-async function addFriend(username, friend) {
-  await User.findOneAndUpdate(
-    { username: username },
-    {
-      $addToSet: {
-        followings: friend,
-      },
-    }
-  );
-  await User.findOneAndUpdate(
-    { username: friend },
-    {
-      $addToSet: {
-        followers: username,
-      },
-    }
-  );
+async function addFriend(username, friendUsername) {
+  try {
+    // Update the user's followings list
+    await User.findOneAndUpdate(
+      { username: username },
+      {
+        $addToSet: {
+          followings: friendUsername,
+        },
+      }
+    );
+
+    // Update the friend's followers list
+    await User.findOneAndUpdate(
+      { username: friendUsername },
+      {
+        $addToSet: {
+          followers: username,
+        },
+      }
+    );
+
+    // Create a notification for the friend
+    const notification = new Notification({
+      title: "New Follower",
+      message: `${username} started following you.`,
+      recipient: friendUsername,
+    });
+
+    // Save the notification to the database
+    await notification.save();
+
+    return {
+      status: true,
+      message: "Friend added successfully",
+    };
+  } catch (error) {
+    console.error("Error adding friend:", error);
+    return {
+      status: false,
+      error: "Failed to add friend",
+    };
+  }
 }
 
 /**
@@ -224,6 +251,15 @@ async function friendRequest(req, res) {
       });
     }
 
+    // Check if the user is already following the friend
+    const isFollowing = user.followings.includes(friendname);
+    if (isFollowing) {
+      return res.status(400).json({
+        status: false,
+        message: "You are already following this user",
+      });
+    }
+
     await addFriend(user.username, friendname);
 
     return res.status(200).json({
@@ -238,6 +274,7 @@ async function friendRequest(req, res) {
     });
   }
 }
+
 
 /**
  * unfriend request to remove friendship or moderator_deInvite
@@ -262,12 +299,12 @@ async function unFriendRequest(req, res) {
       });
     }
 
-    const friend = await User.findOne({ username: friendname });
-
-    if (!friend) {
-      return res.status(404).json({
-        status: "failed",
-        message: "User to be deleted not found",
+    // Check if the user is following the friend
+    const isFollowing = user.followings.includes(friendname);
+    if (!isFollowing) {
+      return res.status(400).json({
+        status: false,
+        message: "You are not following this user",
       });
     }
 
@@ -285,6 +322,7 @@ async function unFriendRequest(req, res) {
     });
   }
 }
+
 
 /**
  * get user information
@@ -366,6 +404,17 @@ async function unFollowSubreddit(req, res) {
       });
     }
 
+    // Check if the user is a member of the subreddit
+    const isMember = subredditExists.members.some(
+      (member) => member.username === userExists.username
+    );
+    if (!isMember) {
+      return res.status(400).json({
+        success: false,
+        message: "You are not a member of this subreddit",
+      });
+    }
+
     await unFollowSubreddits(userExists.username, subreddit);
 
     return res.status(200).json({
@@ -380,6 +429,7 @@ async function unFollowSubreddit(req, res) {
     });
   }
 }
+
 
 /**
  * follow a subreddit
@@ -412,7 +462,39 @@ async function followSubreddit(req, res) {
       });
     }
 
+    // Check if the user is already a member of the subreddit
+    const isMember = subredditExists.members.some(
+      (member) => member.username === userExists.username
+    );
+    if (isMember) {
+      return res.status(400).json({
+        success: false,
+        message: "You are already a member of this subreddit",
+      });
+    }
+
     await followSubreddits(userExists.username, subreddit);
+
+    // Notify the moderators of the subreddit
+    const moderators = subredditExists.moderators.map(
+      (moderator) => moderator.username
+    );
+    for (const moderator of moderators) {
+      const notification = new Notification({
+        title: "New Follower",
+        message: `${userExists.username} started following the subreddit "${subreddit}".`,
+        recipient: moderator,
+      });
+      await notification.save();
+    }
+
+    // Create a notification for the user
+    const userNotification = new Notification({
+      title: "Subreddit Followed",
+      message: `You have successfully followed the subreddit "${subreddit}".`,
+      recipient: userExists.username,
+    });
+    await userNotification.save();
 
     return res.status(200).json({
       success: true,
@@ -420,6 +502,63 @@ async function followSubreddit(req, res) {
     });
   } catch (error) {
     console.error("Error following subreddit:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+/**
+ * Retrieves followers or followings of a user along with their profile pictures.
+ * @param {object} req - The request object containing user information.
+ * @param {object} res - The response object for sending HTTP responses.
+ * @returns {object} An object containing information about followers or followings along with their profile pictures.
+ * @throws {Error} If there's an error in retrieving followers or followings.
+ */
+async function getFollowersOrFollowings(req, res) {
+  try {
+    if (req.user) {
+      const userId = req.user.userId;
+      const friends = req.params.friends;
+      let friendsArray;
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      if (friends === "followers") {
+        friendsArray = user.followers;
+      } else if (friends === "followings") {
+        friendsArray = user.followings;
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "Wrong query parameter",
+        });
+      }
+
+      // Perform a customized query to retrieve followers/followings along with profile pictures
+      const usersWithProfilePictures = await User.aggregate([
+        {
+          $match: { username: { $in: friendsArray } },
+        },
+        {
+          $project: { username: 1, profilePicture: 1 },
+        },
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        friendsArray: usersWithProfilePictures,
+      });
+    }
+  } catch (error) {
+    console.error("Error getting followers or followings:", error);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -438,4 +577,5 @@ module.exports = {
   unFollowSubreddits,
   addFriend,
   deleteFriend,
+  getFollowersOrFollowings,
 };

@@ -85,7 +85,7 @@ const userSchema = new mongoose.Schema({
   profilePicture: {
     type: String,
   },
-  bio: {
+  about: {
     type: String,
   },
   socialLinks: [
@@ -191,7 +191,7 @@ const userSchema = new mongoose.Schema({
       ref: "Post",
     },
   ],
-  savedItems: [ 
+  savedItems: [
     {
       type: Schema.Types.ObjectId,
       ref: "Post",
@@ -199,7 +199,7 @@ const userSchema = new mongoose.Schema({
     {
       type: Schema.Types.ObjectId,
       ref: "Comment",
-    }
+    },
   ],
   reset_token: {
     type: String,
@@ -213,7 +213,49 @@ const userSchema = new mongoose.Schema({
       type: Schema.Types.ObjectId,
       ref: "Post",
     },
-  ]
+  ],
+  karma: {
+    type: Number,
+    default: 0,
+  },
+  notificationSettings: {
+    disabledSubreddits: [
+      {
+        type: String, // Store the names of disabled subreddits
+        ref: "Subreddit",
+      },
+    ],
+    disabledPosts: [
+      {
+        type: Schema.Types.ObjectId, // Store the IDs of disabled posts
+        ref: "Post", // Reference to the Post model
+      },
+    ],
+    disabledComments: [
+      {
+        type: Schema.Types.ObjectId, // Store the IDs of disabled comments
+        ref: "Comment", // Reference to the Comment model
+      },
+    ],
+  },
+  hiddenNotifications: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Notification",
+    },
+  ],
+  pollVotes: [
+    {
+      pollId: {
+        type: Schema.Types.ObjectId,
+        ref: "Post",
+      },
+      // Store the option
+      option: {
+        type: String,
+      },
+    },
+  ],
 });
 
 /**
@@ -236,6 +278,7 @@ userSchema.pre("save", async function (next) {
       if (this.isNew) {
         const userPreferences = new UserPreferences({
           username: this.username,
+          gender: this.gender && this.gender,
         });
         await userPreferences.save();
       }

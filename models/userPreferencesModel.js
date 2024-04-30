@@ -92,9 +92,11 @@ const userPreferencesSchema = new mongoose.Schema({
       platform: String,
     },
   ],
-  images: {
-    pfp: { type: String },
-    banner: { type: String },
+  banner: {
+    type: String,
+  },
+  profilePicture: {
+    type: String,
   },
   NSFW: {
     type: Boolean,
@@ -118,7 +120,9 @@ const userPreferencesSchema = new mongoose.Schema({
   },
   viewBlockedPeople: [
     {
-      username: { type: String, ref: "block" },
+      blockedUsername: { type: String, ref: "User" },
+    },
+    {
       blockTimestamp: { type: Date, default: Date.now },
     },
   ],
@@ -172,6 +176,10 @@ const userPreferencesSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  posts: {
+    type: Boolean,
+    default: true,
+  },
   upvotesPosts: {
     type: Boolean,
     default: true,
@@ -206,13 +214,14 @@ const userPreferencesSchema = new mongoose.Schema({
   },
 });
 
-
-  /**
+/**
  * Mongoose model for user preferences.
  * @type {mongoose.Model}
  */
 
-
-const UserPreferences = mongoose.model("UserPreferences", userPreferencesSchema);
+const UserPreferences = mongoose.model(
+  "UserPreferences",
+  userPreferencesSchema
+);
 
 module.exports = UserPreferences;

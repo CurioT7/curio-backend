@@ -1,13 +1,17 @@
 const User = require("../../models/userModel");
+const UserPreferences = require("../../models/userPreferencesModel");
 const Post = require("../../models/postModel");
 require("dotenv").config();
 const Comment = require("../../models/commentModel");
 const Subreddit = require("../../models/subredditModel");
 const { verifyToken, authorizeUser } = require("../../utils/tokens");
 const multer = require("multer");
-const { s3, sendFileToS3, generateRandomId } = require("../../utils/s3-bucket");
+const { s3, sendFileToS3, getFilesFromS3 } = require("../../utils/s3-bucket");
 const PutObjectCommand = require("@aws-sdk/client-s3");
 const { options } = require("../../router/profileRouter");
+const Notification = require("../../models/notificationModel");
+const { all } = require("axios");
+const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
 
 /**
  * Hide a post
@@ -20,14 +24,9 @@ const { options } = require("../../router/profileRouter");
  */
 
 async function hidePost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const postId = req.body.postId;
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const postId = req.body.postId;
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -44,7 +43,9 @@ async function hidePost(req, res) {
         .status(400)
         .json({ success: false, message: "Post already hidden" });
     }
+
     user.hiddenPosts.push(postId);
+
     await user.save();
     return res
       .status(200)
@@ -67,14 +68,9 @@ async function hidePost(req, res) {
  */
 
 async function unhidePost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const postId = req.body.postId;
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const postId = req.body.postId;
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -266,13 +262,8 @@ async function unsave(req, res) {
  */
 
 async function saved_categories(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -300,13 +291,8 @@ async function saved_categories(req, res) {
  * @async
  */
 async function hidden(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -333,6 +319,21 @@ async function hidden(req, res) {
 
 async function submitPost(req, res, user, imageKey) {
   try {
+    const type = req.body.type;
+    if (!type) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Type is required" });
+    }
+
+    //validate that type is enum
+    if (!["post", "poll", "media", "link"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "Type must be one of 'post', 'poll', 'media', 'link'",
+      });
+    }
+
     let subreddit;
     if (req.body.subreddit) {
       subreddit = await Subreddit.findOne({ name: req.body.subreddit });
@@ -341,20 +342,55 @@ async function submitPost(req, res, user, imageKey) {
           .status(404)
           .json({ success: false, message: "Subreddit not found" });
       }
+      if (subreddit.privacyMode === "private") {
+        if (!subreddit.members.includes(user._id)) {
+          return res.status(403).json({
+            success: false,
+            message: "User is not a member of this subreddit",
+          });
+        }
+      }
     }
+
+    if (
+      req.body.content &&
+      req.body.content.startsWith("http") &&
+      type === "link"
+    ) {
+      // Regular expression to match URLs like www.example.com
+      const urlPattern =
+        /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})(\/\S*)?$/;
+
+      if (!urlPattern.test(req.body.content)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid URL format" });
+      }
+    }
+    let optionsArray;
+
+    if (req.body.type === "poll") {
+      optionsArray = req.body.options;
+      optionsArray = optionsArray
+        .split(",")
+        .map((option) => ({ name: option, votes: 0 }));
+    }
+
     const post = new Post({
       title: req.body.title,
-      content: req.body.content,
+      type: req.body.type,
+      content: req.body.content && req.body.content,
       authorName: user.username,
       isNSFW: req.body.isNSFW,
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
-      linkedSubreddit: req.body.subreddit ? subreddit._id : null,
+      linkedSubreddit: subreddit && subreddit._id,
       media: imageKey,
       sendReplies: req.body.sendReplies,
-      options: req.body.options ? req.body.options : null,
-      voteLength: req.body.voteLength ? req.body.voteLength : null,
+      options: req.body.options && optionsArray,
+      voteLength: req.body.voteLength && req.body.voteLength,
     });
+    post.type = req.body.type;
     await post.save();
     // Add post to user's posts
     user.posts.push(post._id);
@@ -363,9 +399,11 @@ async function submitPost(req, res, user, imageKey) {
       subreddit.posts.push(post._id);
       await subreddit.save();
     }
-    return res
-      .status(201)
-      .json({ success: true, message: "Post created successfully" });
+    return res.status(201).json({
+      success: true,
+      message: "Post created successfully",
+      postId: post._id,
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -387,12 +425,7 @@ async function submitPost(req, res, user, imageKey) {
 
 async function submit(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -401,7 +434,7 @@ async function submit(req, res) {
     var imageKey;
 
     if (req.file) {
-      imageKey = await sendFileToS3(req);
+      imageKey = await sendFileToS3(req.file);
       if (!imageKey) {
         return res.status(500).json({
           success: false,
@@ -442,12 +475,15 @@ async function shareCrossPost(user, crossPostData) {
     if (!subreddit) {
       throw new Error("Subreddit not found");
     }
+    if (subreddit.privacyMode === "private") {
+      throw new Error("Subreddit is private");
+    }
   }
   if (!post) {
     throw new Error("Post not found");
   }
   const crossPost = new Post({
-    title: crossPostData.title ? crossPostData.title : post.title,
+    title: crossPostData.title && crossPostData.title,
     authorName: user.username,
     content: post.content,
     isNSFW: crossPostData.isNSFW,
@@ -455,7 +491,7 @@ async function shareCrossPost(user, crossPostData) {
     isOC: crossPostData.isOC,
     originalPostId: post._id,
     sendReplies: crossPostData.sendReplies,
-    linkedSubreddit: subreddit ? subreddit._id : null,
+    linkedSubreddit: subreddit && subreddit._id,
   });
   post.shares += 1;
   await post.save();
@@ -481,9 +517,25 @@ async function shareCrossPost(user, crossPostData) {
  */
 
 async function sharePost(req, res) {
-  const user = await authorizeUser(req, res);
+  const user = await User.findOne({ _id: req.user.userId });
   if (!user) {
     return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (req.body.subreddit) {
+    const subreddit = await Subreddit.findOne({ name: req.body.subreddit });
+    if (!subreddit) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subreddit not found" });
+    }
+    if (subreddit.privacyMode === "private") {
+      if (!subreddit.members.includes(user._id)) {
+        return res.status(403).json({
+          success: false,
+          message: "User is not a member of this subreddit",
+        });
+      }
+    }
   }
   const crossPostData = req.body;
   try {
@@ -527,7 +579,6 @@ async function getPostLink(req, res) {
   }
 }
 
-
 /**
  * Locks a post item if the user has the necessary permissions.
  * @param {Object} req - The request object.
@@ -536,52 +587,47 @@ async function getPostLink(req, res) {
  */
 async function lockItem(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
-    const itemID = req.body.itemID;
-    const item = await Post.findOneAndUpdate(
-      { _id: itemID },
-      { isLocked: true },
-      { new: true }
-    );
-    if (!item) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Post not found" });
-    } else {
-      // Check if the user is a moderator or creator of the linked subreddit
-      const subredditOfPost = await Subreddit.findById(item.linkedSubreddit);
+      const itemID = req.body.itemID;
+      const post = await Post.findById(itemID);
 
-      const subredditRole = user.subreddits.find(
-        (sub) => sub.subreddit === subredditOfPost.name
-      );
-      if (
-        !subredditRole ||
-        (subredditRole.role !== "moderator" && subredditRole.role !== "creator")
-      ) {
-        return res.status(403).json({
-          success: false,
-          message: "User is not authorized to lock posts in this subreddit",
-        });
-      }
-      else {
+      if (!post) {
         return res
-          .status(200)
-          .json({ success: true, message: "Post locked successfully" });
+          .status(404)
+          .json({ success: false, message: "Post not found" });
       }
+
+      // Check if the user is a moderator or creator of the linked subreddit
+      const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
+      if (subredditOfPost) {
+        const subredditRole = user.subreddits.find(
+          (sub) => sub.subreddit === subredditOfPost.name
+        );
+        if (
+          !subredditRole ||
+          (subredditRole.role !== "moderator" &&
+            subredditRole.role !== "creator")
+        ) {
+          return res.status(403).json({
+            success: false,
+            message: "User is not authorized to lock posts in this subreddit",
+          });
+        }
+      }
+
+      // If the user is authorized, lock the post
+      await Post.findByIdAndUpdate(itemID, { isLocked: true });
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Post locked successfully" });
+    } else {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
@@ -596,51 +642,47 @@ async function lockItem(req, res) {
  */
 async function unlockItem(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
     const itemID = req.body.itemID;
-    const item = await Post.findOneAndUpdate(
-      { _id: itemID },
-      { isLocked: false},
-      { new: true }
-    );
-    if (!item) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Post not found" });
-    } else {
-      // Check if the user is a moderator or creator of the linked subreddit
-      const subredditOfPost = await Subreddit.findById(item.linkedSubreddit);
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-      const subredditRole = user.subreddits.find(
-        (sub) => sub.subreddit === subredditOfPost.name
-      );
-      if (
-        !subredditRole ||
-        (subredditRole.role !== "moderator" && subredditRole.role !== "creator")
-      ) {
-        return res.status(403).json({
-          success: false,
-          message: "User is not authorized to unlock posts in this subreddit",
-        });
-      } else {
+      const post = await Post.findById(itemID);
+      if (!post) {
         return res
-          .status(200)
-          .json({ success: true, message: "Post unlocked successfully" });
+          .status(404)
+          .json({ success: false, message: "Post not found" });
       }
+
+      // Check if the user is a moderator or creator of the linked subreddit
+      const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
+      if (subredditOfPost) {
+        const subredditRole = user.subreddits.find(
+          (sub) => sub.subreddit === subredditOfPost.name
+        );
+
+        if (
+          !subredditRole ||
+          (subredditRole.role !== "moderator" &&
+            subredditRole.role !== "creator")
+        ) {
+          return res.status(403).json({
+            success: false,
+            message: "User is not authorized to unlock posts in this subreddit",
+          });
+        }
+      }
+
+      // If the user is authorized, unlock the post
+      await Post.findByIdAndUpdate(itemID, { isLocked: false });
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Post unlocked successfully" });
+    } else {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
@@ -655,38 +697,33 @@ async function unlockItem(req, res) {
  */
 async function getItemInfo(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-
-    const objectID = req.body.objectID;
-    const objectType = req.body.objectType;
-
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-    let item; 
+    const objectID = req.query.objectID;
+    const objectType = req.query.objectType;
+    let item;
+    let details;
 
     if (objectType === "post") {
-      item = await Post.findOne({ _id: objectID });
-    }
-    else if (objectType === "comment") {
+      item = await Post.findOne({ _id: objectID }).populate("originalPostId");
+      if (item.media) {
+        item.media = await getFilesFromS3(item.media);
+      }
+    } else if (objectType === "comment") {
       item = await Comment.findOne({ _id: objectID });
-    }
-    else if (objectType === "subreddit") {
+    } else if (objectType === "subreddit") {
       item = await Subreddit.findOne({ _id: objectID });
     }
     if (!item) {
-      return res.status(404).json({ success: false, message: "Item not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not found", media: item.media });
     } else {
-      return res.status(200).json({ success: true, item });
+      return res.status(200).json({ success: true, item, details });
     }
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ success: false, message: "Internal server error", error:error });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error", error: error });
   }
 }
 
@@ -701,98 +738,111 @@ async function getItemInfo(req, res) {
  */
 async function castVote(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
     const itemID = req.body.itemID;
     const itemName = req.body.itemName;
     const direction = req.body.direction;
 
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
+      let item;
+      if (itemName === "post") {
+        item = await Post.findOne({ _id: itemID });
+      } else if (itemName === "comment") {
+        item = await Comment.findOne({ _id: itemID });
+      }
 
-    let item;
-    if (itemName === "post") {
-      item = await Post.findOne({ _id: itemID });
-    } else if (itemName === "comment") {
-      item = await Comment.findOne({ _id: itemID });
-    }
+      if (!item) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Item not found" });
+      }
+      // Check if the user has disabled notifications for this item
+      const disabledNotifications = user.notificationSettings || {};
+      const isDisabled =
+        (itemName === "post" &&
+          disabledNotifications.disabledPosts.includes(itemID)) ||
+        (itemName === "comment" &&
+          disabledNotifications.disabledComments.includes(itemID));
 
-    if (!item) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Item not found" });
-    }
-
-    if (direction === 0) {
-      // Find the existing vote in upvotes
-      const existingUpvoteIndex = user.upvotes.findIndex(
-        (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
-      );
-
-      if (existingUpvoteIndex !== -1) {
-        //If found in upvotes,remove the existing vote from upvotes
-        item.upvotes -= 1;
-        user.upvotes.splice(existingUpvoteIndex, 1);
-      } else {
-        // If not found in upvotes, find in downvotes
-        const existingDownvoteIndex = user.downvotes.findIndex(
+      if (direction === 0) {
+        // Find the existing vote in upvotes
+        const existingUpvoteIndex = user.upvotes.findIndex(
           (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
         );
 
-        if (existingDownvoteIndex !== -1) {
-          // If found in downvotes, remove the existing vote from downvotes
-          item.downvotes -= 1;
-          user.downvotes.splice(existingDownvoteIndex, 1);
-        }
-        else {
-          // If direction is 0 and user hasn't voted yet, return success without making any changes
+        if (existingUpvoteIndex !== -1) {
+          //If found in upvotes,remove the existing vote from upvotes
+          item.upvotes -= 1;
+          user.upvotes.splice(existingUpvoteIndex, 1);
+        } else {
+          // If not found in upvotes, find in downvotes
+          const existingDownvoteIndex = user.downvotes.findIndex(
+            (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+          );
+
+          if (existingDownvoteIndex !== -1) {
+            // If found in downvotes, remove the existing vote from downvotes
+            item.downvotes -= 1;
+            user.downvotes.splice(existingDownvoteIndex, 1);
+          } else {
+            // If direction is 0 and user hasn't voted yet, return success without making any changes
             return res
               .status(200)
               .json({ success: true, message: "No vote to remove" });
+          }
         }
+
+        await Promise.all([item.save(), user.save()]);
+        return res
+          .status(200)
+          .json({ success: true, message: "Vote removed successfully" });
       }
 
-      await Promise.all([item.save(), user.save()]);
-      return res
-        .status(200)
-        .json({ success: true, message: "Vote removed successfully" });
-    }
-
-    // If direction is not 0 and user has already voted, return error
-    const existingVoteIndex = user.upvotes.findIndex(
-      (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
-    );
-    if (existingVoteIndex !== -1) {
-      return res
-        .status(400)
-        .json({
+      // If direction is not 0 and user has already voted, return error
+      const existingVoteIndex =
+        user.upvotes.findIndex(
+          (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+        ) !== -1
+          ? user.upvotes.findIndex(
+              (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+            )
+          : user.downvotes.findIndex(
+              (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+            );
+      if (existingVoteIndex !== -1) {
+        return res.status(400).json({
           success: false,
           message: "User has already voted on this item",
         });
+      }
+
+      // If direction is not 0 and user hasn't voted yet, add the vote to user's upvotes/downvotes and update item's upvotes/downvotes accordingly
+      if (direction === 1) {
+        item.upvotes += 1;
+        user.upvotes.push({ itemId: itemID, itemType: itemName, direction });
+      } else if (direction === -1) {
+        item.downvotes += 1;
+        user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
+      }
+      // Notify the author
+      const notification = new Notification({
+        title: "New Vote",
+        message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
+          direction === 1 ? "upvoted" : "downvoted"
+        } by ${user.username}.`,
+        recipient: item.authorName,
+        postId: itemName === "post" ? itemID : undefined,
+        commentId: itemName === "comment" ? itemID : undefined,
+        isDisabled: isDisabled,
+      });
+
+      await notification.save();
+      await Promise.all([item.save(), user.save()]);
+      return res
+        .status(200)
+        .json({ success: true, message: "Vote casted successfully" });
     }
-
-
-    // If direction is not 0 and user hasn't voted yet, add the vote to user's upvotes/downvotes and update item's upvotes/downvotes accordingly
-    if (direction === 1) {
-      item.upvotes += 1;
-      user.upvotes.push({ itemId: itemID, itemType: itemName, direction });
-    } else if (direction === -1) {
-      item.downvotes += 1;
-      user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
-    }
-
-    await Promise.all([item.save(), user.save()]);
-    return res
-      .status(200)
-      .json({ success: true, message: "Vote casted successfully" });
   } catch (error) {
     console.log(error);
     return res
@@ -809,50 +859,37 @@ async function castVote(req, res) {
  */
 async function addToHistory(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
     const postID = req.body.postID;
 
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
-
-    const post = await Post.findOne({ _id: postID });
-    if (!post) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Post not found" });
-    }
-
-    // Check if the post is already in the user's recentPosts
-    const isAlreadyInHistory = user.recentPosts.some((recentPost) =>
-      recentPost.equals(post._id)
-    );
-
-    // If the post is not already in the user's recentPosts, add it
-    if (!isAlreadyInHistory) {
-      // If recentPosts array length is 10, remove the oldest post
-      if (user.recentPosts.length >= 10) {
-        user.recentPosts.shift(); 
+      const post = await Post.findOne({ _id: postID });
+      if (!post) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Post not found" });
       }
-      user.recentPosts.push(post._id); // Add the new post at the end
-      await user.save();
-    } else {
-      return res
-        .status(400)
-        .json({ success: true, message: "Post already exists in history" });
-    }
 
-    return res
-      .status(200)
-      .json({ success: true, message: "Post added to history" });
+      // Check if the post is already in the user's recentPosts
+      const isAlreadyInHistory = user.recentPosts.some((recentPost) =>
+        recentPost.equals(post._id)
+      );
+
+      // If the post is not already in the user's recentPosts, add it
+      if (!isAlreadyInHistory) {
+        // If recentPosts array length is 10, remove the oldest post
+        if (user.recentPosts.length >= 10) {
+          user.recentPosts.shift();
+        }
+        user.recentPosts.push(post._id); // Add the new post at the end
+        await user.save();
+      }
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Post added to history" });
+    }
   } catch (error) {
     console.log(error);
     return res
@@ -869,27 +906,35 @@ async function addToHistory(req, res) {
  */
 async function getHistory(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+      // Retrieve post details for all posts in recentPosts
+      const recentPostIds = user.recentPosts;
+      const recentPostDetails = await Post.find({
+        _id: { $in: recentPostIds },
+      }).populate("originalPostId");
 
-    const user = await User.findOne({ _id: decoded.userId });
-    if (!user) {
+      for (const post of recentPostDetails) {
+        if (post.media) {
+          post.media = await getFilesFromS3(post.media);
+        }
+      }
+      // Get vote status and subreddit details for each post
+      const detailsArray = await getVoteStatusAndSubredditDetails(
+        recentPostDetails,
+        user
+      );
+
+      // Combine posts and their details
+      const postsWithDetails = recentPostDetails.map((post, index) => {
+        return { ...post.toObject(), details: detailsArray[index] };
+      });
+
       return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+        .status(200)
+        .json({ success: true, recentPosts: postsWithDetails });
     }
-
-    // Retrieve post details for all posts in recentPosts
-    const recentPostIds = user.recentPosts;
-    const recentPostDetails = await Post.find({ _id: { $in: recentPostIds } });
-
-    return res
-      .status(200)
-      .json({ success: true, recentPosts: recentPostDetails });
   } catch (error) {
     console.log(error);
     return res
@@ -898,6 +943,187 @@ async function getHistory(req, res) {
   }
 }
 
+/**
+ * Clear the history of recent posts for the authenticated user.
+ * @async
+ * @function clearHistory
+ * @param {object} req - The request object.
+ * @param {object} res - The response object.
+ * @returns {Promise<void>}
+ * @throws {Error} 500 - Internal server error
+ */
+async function clearHistory(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+
+      // Clear the recentPosts array
+      user.recentPosts = [];
+
+      await user.save();
+
+      return res
+        .status(200)
+        .json({ success: true, message: "History cleared successfully" });
+    }
+  } catch (error) {
+    console.error("Error clearing history:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error", error: error });
+  }
+}
+
+/*
+ * Get overview of a subreddit when creating a post
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} JSON response containing the subreddit overview.
+ */
+
+async function subredditOverview(req, res) {
+  try {
+    const query = decodeURIComponent(req.params.subreddit).toString();
+    const user = await User.findById(req.user.userId);
+    if (query === user.username) {
+      if (user.profilePicture) {
+        user.profilePicture = await getFilesFromS3(user.profilePicture);
+      }
+      if (user.banner) {
+        user.banner = await getFilesFromS3(user.banner);
+      }
+
+      return res.status(200).json({
+        success: true,
+        displayName: user.displayName,
+        profilePicture: user.profilePicture,
+        banner: user.banner,
+        about: user.about,
+        createdAt: user.cakeDay,
+        karma: user.karma,
+        isUser: true,
+      });
+    }
+
+    let subreddit = await Subreddit.findOne({ name: query });
+    if (!subreddit) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subreddit not found" });
+    }
+
+    if (subreddit.icon) {
+      subreddit.icon = await getFilesFromS3(subreddit.icon);
+    }
+
+    if (subreddit.banner) {
+      subreddit.banner = await getFilesFromS3(subreddit.banner);
+    }
+
+    return res.status(200).json({
+      success: true,
+      subreddit: subreddit.name,
+      allowImages: subreddit.allowImages,
+      allowVideos: subreddit.allowVideos,
+      allowText: subreddit.allowText,
+      allowLink: subreddit.allowLink,
+      allowPolls: subreddit.allowPolls,
+      allowEmoji: subreddit.allowEmoji,
+      allowGif: subreddit.allowGif,
+      icon: subreddit.icon,
+      banner: subreddit.banner,
+      description: subreddit.description,
+      rules: subreddit.rules,
+      members: subreddit.members.length,
+      createdAt: subreddit.createdAt,
+      privacyMode: subreddit.privacyMode,
+    });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
+async function pollVote(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const postId = req.body.postId;
+    const post = await Post.findById(postId);
+    const option = req.body.option;
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    if (!post) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+    }
+    if (post.type !== "poll") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Post is not a poll" });
+    }
+    //check if number of days exceeded
+    const currentDate = new Date();
+    const postDate = new Date(post.createdAt);
+    const diffTime = Math.abs(currentDate - postDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays > post.voteLength) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Poll has expired" });
+    }
+    if (!post.options.find((opt) => opt.name === option)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Option not found" });
+    }
+    const optionIndex = post.options.findIndex((opt) => opt.name === option);
+
+    // Check if optionIndex is valid
+    if (optionIndex !== -1) {
+      // Check if user has already voted for this option
+      if (user.pollVotes.find((vote) => vote.pollId == postId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "User has already voted" });
+      } else {
+        // Increase the vote count for the selected option
+        post.options[optionIndex].votes += 1;
+
+        // Add user's ID to the list of voters for this option
+        post.options[optionIndex].voters.push(user._id);
+
+        // Add post to user's pollVotes
+        user.pollVotes.push({
+          pollId: postId,
+          option: option,
+        });
+
+        // Save changes to both post and user
+        await Promise.all([post.save(), user.save()]);
+
+        // Respond with success message
+        return res
+          .status(200)
+          .json({ success: true, message: "Vote recorded successfully" });
+      }
+    } else {
+      return res
+        .status(400)
+        .json({ success: false, message: "Option not found" });
+    }
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
 
 module.exports = {
   hidePost,
@@ -915,6 +1141,9 @@ module.exports = {
   castVote,
   addToHistory,
   getHistory,
+  clearHistory,
   spoilerPost,
   unspoilerPost,
+  subredditOverview,
+  pollVote,
 };

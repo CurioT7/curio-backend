@@ -5,7 +5,7 @@ const Community = require("../../models/subredditModel");
 require("dotenv").config();
 const { addUserToSubbreddit } = require("./friendController");
 const { verifyToken } = require("../../utils/tokens");
-
+const Notification = require("../../models/notificationModel");
 /**
  * Check whether subreddit is available or not
  * @param {string} subreddit
@@ -90,6 +90,14 @@ async function createSubreddit(data, user) {
         },
       }
     );
+    // Notify the user about subreddit creation
+    const notification = new Notification({
+      title: "Subreddit Created",
+      message: `You have successfully created the subreddit "${subredditName}".`,
+      recipient: username,
+    });
+    await notification.save();
+
     // Return success response
     return {
       success: true,
@@ -193,7 +201,7 @@ async function getSubredditInfo(req, res) {
  */
 async function getTopCommunities(req, res) {
   const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
-  const limit = 250; // Allow 250 items per page 
+  const limit = 10; // Allow 10 items per page 
   const sortBy = "members"; // Default sorting by members 
 
   try {
