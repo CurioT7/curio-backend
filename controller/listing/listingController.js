@@ -34,10 +34,21 @@ async function randomPost(req, res) {
         .json({ success: false, message: "No posts found in the subreddit" });
     }
     //get random post using aggregate
-    const randomPost = await Post.aggregate([
+    let randomPost = await Post.aggregate([
       { $match: { linkedSubreddit: subreddit._id } },
       { $sample: { size: 1 } },
     ]);
+
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      if (user.hiddenPosts.includes(randomPost[0]._id)) {
+        randomPost = await Post.aggregate([
+          { $match: { linkedSubreddit: subreddit._id } },
+          { $sample: { size: 1 } },
+        ]);
+      }
+    }
+
     //increase of the number of views
     await Post.updateOne({ _id: randomPost[0]._id }, { $inc: { views: 1 } });
     const media = randomPost.media;
