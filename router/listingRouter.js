@@ -112,7 +112,11 @@ router.post("/r/:subreddit/suggestedSort", ListingController.setSuggestedSort);
  * @param {function} middleware - The controller function to handle the GET request.
  * @returns {object} Express router instance.
 */
-router.get("/homepage/:type", authenticate ,ListingController.getUserPosts);
+router.get(
+  "/homepage/:type/:timeThreshold?",
+  authenticate,
+  ListingController.getUserPosts
+);
 
 /**
  * 
@@ -131,7 +135,7 @@ router.get("/r/:subreddit/:postID/:type", ListingController.sortComments);
  * @returns {object} Express router instance.
  */
 router.get(
-  "/allpage/:type",
+  "/allpage/:type/:timeThreshold?",
   (req, res, next) => {
     authenticate(req, res, next, true);
   },

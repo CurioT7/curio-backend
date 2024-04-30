@@ -374,7 +374,7 @@ async function getUserPosts(req, res) {
       const { page } = req.query;
       const limit = 10; // Allow 20 items per page
       const skip = (page - 1) * limit;
-
+      const timeThreshold = req.query.timeFrame;
       const fetchPosts = async (subreddit) => {
         const subredditDetails = await Subreddit.findOne({
           name: subreddit.subreddit,
@@ -440,6 +440,17 @@ async function getUserPosts(req, res) {
                 };
               });
           case "top":
+            if (timeThreshold) {
+              if (req.params.time === "new") {
+                // Set time threshold to 2 hours ago
+                timeThreshold = moment().subtract(2, "hours").toDate();
+              } else {
+                // Default time threshold is 24 hours ago
+                timeThreshold = moment()
+                  .subtract(req.params.timeThreshold, "days")
+                  .toDate();
+              }
+            }
             return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
               .sort({ upvotes: -1 })
@@ -458,6 +469,7 @@ async function getUserPosts(req, res) {
                   };
                 });
               });
+          
           case "new":
             return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
@@ -694,7 +706,7 @@ async function guestHomePage(req, res) {
     const { page } = req.query;
     const limit = 10; // Allow 20 items per page
     const skip = (page - 1) * limit;
-
+    const timeThreshold = req.query.timeFrame;
     const fetchPosts = async () => {
       switch (type) {
         case "best":
@@ -733,6 +745,17 @@ async function guestHomePage(req, res) {
               };
             });
         case "top":
+          if (timeThreshold) {
+            if (req.params.time === "new") {
+              // Set time threshold to 2 hours ago
+              timeThreshold = moment().subtract(2, "hours").toDate();
+            } else {
+              // Default time threshold is 24 hours ago
+              timeThreshold = moment()
+                .subtract(req.params.timeThreshold, "days")
+                .toDate();
+            }
+          }
           return Post.find()
             .populate("originalPostId")
             .sort({ upvotes: -1 })
@@ -749,7 +772,10 @@ async function guestHomePage(req, res) {
                   post: post,
                 };
               });
-            });
+              
+            }
+          );
+        
         case "new":
           return Post.find()
             .populate("originalPostId")
