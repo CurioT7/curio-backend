@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const postController = require("../controller/post/postController");
+const { authenticate } = require("../middlewares/auth");
+const { auth } = require("google-auth-library");
 
 /**
  * Route to handle GET requests for getting a comments for a post.
@@ -37,7 +39,7 @@ router.patch("/updatecomments", postController.updatePostComments);
  * @param {function} middleware - The controller function to handle the POST request.
  * @returns {object} Express router instance.
  */
-router.post("/comments", postController.createComments);
+router.post("/comments",authenticate, postController.createComments);
 
 
 /**
@@ -49,7 +51,7 @@ router.post("/comments", postController.createComments);
  * @param {function} middleware - The controller function to handle the DELETE request.
  * @returns {object} Express router instance.
  */
-router.delete("/deletecomments/:commentId", postController.deleteComments);
+router.delete("/deletecomments/:commentId",authenticate,postController.deleteComments);
 
 
 /**
@@ -61,7 +63,7 @@ router.delete("/deletecomments/:commentId", postController.deleteComments);
  * @param {function} middleware - The controller function to handle the DELETE request.
  * @returns {object} Express router instance.
  */
-router.delete("/deletepost/:postId", postController.deletePost);
+router.delete("/deletepost/:postId",authenticate, postController.deletePost);
 
 
 /**
@@ -73,7 +75,7 @@ router.delete("/deletepost/:postId", postController.deletePost);
  * @param {function} middleware - The controller function to handle the PATCH request.
  * @returns {object} Express router instance.
  */
-router.patch("/editusertext", postController.editPostContent);
+router.patch("/editusertext",authenticate,postController.editPostContent);
 
 
 /**
@@ -85,7 +87,7 @@ router.patch("/editusertext", postController.editPostContent);
  * @param {function} middleware - The controller function to handle the POST request.
  * @returns {object} Express router instance.
  */
-router.post("/marknsfw", postController.markPostNSFW);
+router.post("/marknsfw",authenticate,postController.markPostNSFW);
 
 
 /**
@@ -97,6 +99,6 @@ router.post("/marknsfw", postController.markPostNSFW);
  * @param {function} middleware - The controller function to handle the POST request.
  * @returns {object} Express router instance.
  */
-router.post("/unmarknsfw", postController.unmarkPostNSFW);
+router.post("/unmarknsfw",authenticate, postController.unmarkPostNSFW);
 
 module.exports = router;

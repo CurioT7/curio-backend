@@ -53,16 +53,9 @@ async function getPostComments(req, res) {
  */
 
 async function createComments(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
   try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
     const { postId, content } = req.body;
 
     const post = await Post.findById(postId).populate("originalPostId");
@@ -82,14 +75,6 @@ async function createComments(req, res) {
           message: "Post is locked. Cannot add a comment.",
         });
     }
-
-      // check if user is authorized to comment
-      // if (post.linkedSubreddit.privacyMode === "private") {
-      //   const isMember = post.linkedSubreddit.members.includes(user._id);
-      //   if (!isMember) {
-      //     return res.status(403).json({ success: false, message: "You are not authorized to comment on this post." });
-      //   }
-      // }
 
     const comment = new Comment({
       content,
@@ -115,6 +100,7 @@ async function createComments(req, res) {
   
     await notification.save();
     return res.status(201).json({ success: true, comment });
+  }
   } catch (err) {
     console.log(err);
     return res
@@ -132,16 +118,9 @@ async function createComments(req, res) {
  * @returns {object} - Express response object
  */
 async function updatePostComments(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
   try {
+    if (req.user) {
+    const user = await User.findOne({ _id: req.user.userId });
     const {commentId, content }  = req.body;
     const comment = await Comment.findById(commentId);
 
@@ -157,7 +136,7 @@ async function updatePostComments(req, res) {
     comment.content = content;
     await comment.save();
     return res.status(200).json({ success: true, comment });
-
+  }
   } catch (err) {
     console.log(err);
     return res
@@ -176,16 +155,9 @@ async function updatePostComments(req, res) {
  */
 
 async function deleteComments(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
   try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
     const commentId = decodeURIComponent(req.params.commentId);
     const comment = await Comment.findById(commentId);
 
@@ -208,7 +180,7 @@ async function deleteComments(req, res) {
     );
 
     return res.status(200).json({ success: true, message: "comment deleted successfully" });
-
+  }
   } catch (err) {
     console.log(err);
     return res
@@ -227,16 +199,9 @@ async function deleteComments(req, res) {
  */
 
 async function deletePost (req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
   try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
     const postId = req.params.postId;
     const post = await Post.findById(postId).populate("originalPostId");
     if (!post) {
@@ -250,6 +215,7 @@ async function deletePost (req, res) {
 
     await post.deleteOne();
     return res.status(200).json({ success: true, message: "Post deleted successfully." });
+  }
   }
   catch (err) {
     console.log(err);
@@ -267,16 +233,9 @@ async function deletePost (req, res) {
  */
 
 async function editPostContent(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
   try {
+    if (req.user) {
+    const user = await User.findOne({ _id: req.user.userId });
     const { postId, content } = req.body;
     const post = await Post.findById(postId).populate("originalPostId");
     if (!post) {
@@ -291,6 +250,7 @@ async function editPostContent(req, res) {
     await post.save();
 
     return res.status(200).json({ success: true, post });
+  }
   } catch (err) {
     console.log(err);
     return res.status(500).json({ success: false, message: "Internal server error." });
@@ -308,16 +268,9 @@ async function editPostContent(req, res) {
 
 // NSFW = Not Safe For Work
 async function markPostNSFW(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
   try {
+    if (req.user) {
+    const user = await User.findOne({ _id: req.user.userId });
     const { postId } = req.body;
     const post = await Post.findById(postId).populate("originalPostId");
     if (!post) {
@@ -327,7 +280,7 @@ async function markPostNSFW(req, res) {
     post.isNSFW = true;
     await post.save();
     return res.status(200).json({ success: true, post });
-
+  }
   } catch (err) {
     console.log(err);
     return res.status(500).json({ success: false, message: "Internal server error." });
@@ -344,16 +297,9 @@ async function markPostNSFW(req, res) {
  */
 
 async function unmarkPostNSFW(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
   try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
     const { postId } = req.body;
     const post = await Post.findById(postId).populate("originalPostId");
     if (!post) {
@@ -362,7 +308,7 @@ async function unmarkPostNSFW(req, res) {
     post.isNSFW = false;
     await post.save();
     return res.status(200).json({ success: true, post });
-
+  }
   } catch (err) {
     console.log(err);
     return res.status(500).json({ success: false, message: "Internal server error." });
