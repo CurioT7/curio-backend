@@ -226,15 +226,10 @@ async function addUserToSubbreddit(user, communityName) {
  * @returns {object} res
  */
 async function friendRequest(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   const friendname = req.body.friendUsername;
 
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({
@@ -276,22 +271,16 @@ async function friendRequest(req, res) {
   }
 }
 
-
 /**
  * unfriend request to remove friendship or moderator_deInvite
  * @param {function} (req,res)
  * @returns {object} res
  */
 async function unFriendRequest(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
   const friendname = req.body.friendUsername;
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
 
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({
@@ -324,26 +313,19 @@ async function unFriendRequest(req, res) {
   }
 }
 
-
 /**
  * get user information
  * @param {function} (req,res)
  * @returns {object} res
  */
 async function getUserInfo(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
   const { friendUsername } = req.params; // Extract friend's username from request parameters
-    let media = {};
-    if (friend.media) {
-      media = await getFilesFromS3(friend.media);
-    }
+  let media = {};
+  if (friend.media) {
+    media = await getFilesFromS3(friend.media);
+  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -386,13 +368,9 @@ async function getUserInfo(req, res) {
 async function unFollowSubreddit(req, res) {
   try {
     const { subreddit } = req.body;
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
 
-    const userExists = await User.findOne({ _id: decoded.userId });
+    const userExists = await User.findById(req.user.userId);
+
     if (!userExists) {
       return res.status(404).json({
         success: false,
@@ -434,7 +412,6 @@ async function unFollowSubreddit(req, res) {
   }
 }
 
-
 /**
  * follow a subreddit
  * @param {String} (username)
@@ -444,13 +421,9 @@ async function unFollowSubreddit(req, res) {
 async function followSubreddit(req, res) {
   try {
     const { subreddit } = req.body;
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
 
-    const userExists = await User.findOne({ _id: decoded.userId });
+    const userExists = await User.findById(req.user.userId);
+
     if (!userExists) {
       return res.status(404).json({
         success: false,

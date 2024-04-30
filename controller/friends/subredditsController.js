@@ -122,15 +122,8 @@ async function createSubreddit(data, user) {
  */
 async function newSubreddit(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
+   
+    const user = await await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({

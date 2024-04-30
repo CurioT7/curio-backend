@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const subredditsController = require("../controller/friends/subredditsController");
-
+const { authenticate } = require("../middlewares/auth");    
 /**
  * Route to create a new subreddit.
  * @name POST /subreddit/createSubreddit
@@ -10,7 +10,11 @@ const subredditsController = require("../controller/friends/subredditsController
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-router.post("/createSubreddit", subredditsController.newSubreddit);
+router.post(
+  "/createSubreddit",
+  authenticate,
+  subredditsController.newSubreddit
+);
 
 /**
  * Route to get a subreddit info from a subreddit.

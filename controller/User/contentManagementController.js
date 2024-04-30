@@ -107,15 +107,11 @@ async function unhidePost(req, res) {
   }
 }
 async function spoilerPost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
   const postId = req.body.idpost;
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
+    const user =  await User.findById(req.user.userId);
     // Find the post by ID
-    const post = await Post.findOne({ _id: postId, authorID: decoded.userId });
+    const post = await Post.findOne({ _id: postId, authorID: user });
     if (!post) {
       return res.status(404).json({
         success: false,
@@ -136,15 +132,12 @@ async function spoilerPost(req, res) {
 }
 
 async function unspoilerPost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const postId = req.body.idpost; // Assuming the post ID is in the URL as /api/:idpost/unspoiler
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
+  const postId = req.body.idpost; 
+  
   try {
+   const user= await User.findById(req.user.userId);
     // Find the post by ID
-    const post = await Post.findOne({ _id: postId, authorID: decoded.userId });
+    const post = await Post.findOne({ _id: postId, authorID: user });
     if (!post) {
       return res.status(404).json({
         success: false,
