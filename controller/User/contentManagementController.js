@@ -729,13 +729,13 @@ async function getItemInfo(req, res) {
 
     if (objectType === "post") {
       item = await Post.findOne({ _id: objectID }).populate("originalPostId");
-      if (item.media) {
-        item.media = await getFilesFromS3(item.media);
-      }
     } else if (objectType === "comment") {
       item = await Comment.findOne({ _id: objectID });
     } else if (objectType === "subreddit") {
       item = await Subreddit.findOne({ _id: objectID });
+    }
+    if (item.media) {
+      item.media = await getFilesFromS3(item.media);
     }
     if (!item) {
       return res
