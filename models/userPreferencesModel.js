@@ -176,6 +176,10 @@ const userPreferencesSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  posts: {
+    type: Boolean,
+    default: true,
+  },
   upvotesPosts: {
     type: Boolean,
     default: true,
