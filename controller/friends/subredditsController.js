@@ -182,10 +182,13 @@ async function getSubredditInfo(req, res) {
         .status(404)
         .json({ success: false, message: "Subreddit not found" });
     }
-
+  let media = {};
+  if (subreddit.media) {
+    media = await getFilesFromS3(subreddit.media);
+  }
     return res.status(200).json({
       success: true,
-      subreddit: subreddit.toObject(), // Convert Mongoose document to plain JavaScript object
+      subreddit: { ...subreddit.toObject(), media: media }, 
     });
   } catch (error) {
     console.error("Error fetching subreddit:", error);

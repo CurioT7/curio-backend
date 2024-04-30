@@ -5,6 +5,7 @@ const Community = require("../../models/subredditModel");
 const brypt = require("bcrypt");
 const { verifyToken } = require("../../utils/tokens");
 const Notification = require("../../models/notificationModel");
+const { getFilesFromS3 } = require("../../utils/s3-bucket");
 
 require("dotenv").config();
 
@@ -337,7 +338,10 @@ async function getUserInfo(req, res) {
   }
 
   const { friendUsername } = req.params; // Extract friend's username from request parameters
-
+    let media = {};
+    if (friend.media) {
+      media = await getFilesFromS3(friend.media);
+    }
   try {
     const user = await User.findOne({ _id: decoded.userId });
     if (!user) {
@@ -361,7 +365,7 @@ async function getUserInfo(req, res) {
       username: friend.username,
       bio: friend.bio,
       profilePicture: friend.profilePicture,
-      // Add more fields as needed
+      media: media,
     });
   } catch (error) {
     console.error(error);
