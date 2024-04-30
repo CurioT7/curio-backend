@@ -15,7 +15,6 @@ const { getVoteStatusAndSubredditDetails } = require("../../utils/posts.js");
  * @returns {Object} - The response object containing the random post.
  */
 
-
 async function randomPost(req, res) {
   // random post linked with the subreddit
   try {
@@ -87,6 +86,12 @@ async function getTopPosts(req, res) {
       upvotes: -1,
     });
 
+    const media = topPosts.map((post) => post.media);
+    if (media) {
+      for (let i = 0; i < media.length; i++) {
+        topPosts[i].media = await getFilesFromS3(media[i]);
+      }
+    }
     if (topPosts.length > 0) {
       // If top-viewed posts exist, increment views of the first post
       await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
@@ -124,7 +129,12 @@ async function newPosts(req, res) {
     const posts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
       createdAt: -1,
     });
-
+    const media = posts.map((post) => post.media);
+    if (media) {
+      for (let i = 0; i < media.length; i++) {
+        posts[i].media = await getFilesFromS3(media[i]);
+      }
+    }
     const postIds = posts.map((post) => post._id);
     await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
@@ -157,7 +167,12 @@ async function hotPosts(req, res) {
     const posts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
       views: -1,
     });
-
+    const media = Posts.map((post) => post.media);
+    if (media) {
+      for (let i = 0; i < media.length; i++) {
+        Posts[i].media = await getFilesFromS3(media[i]);
+      }
+    }
     const postIds = posts.map((post) => post._id);
     await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
@@ -197,7 +212,12 @@ async function mostComments(req, res) {
     });
 
     posts.sort((a, b) => b.numComments - a.numComments);
-
+    const media = posts.map((post) => post.media);
+    if (media) {
+      for (let i = 0; i < media.length; i++) {
+        posts[i].media = await getFilesFromS3(media[i]);
+      }
+    }
     return res.status(200).json({ success: true, posts });
   } catch (error) {
     return res.status(400).json({
@@ -242,7 +262,12 @@ async function getTopPostsbytime(req, res) {
       linkedSubreddit: subreddit._id,
       createdAt: { $gte: timeThreshold }, // Filter posts created after the time threshold
     }).sort({ upvotes: -1 });
-
+    const media = topPosts.map((post) => post.media);
+    if (media) {
+      for (let i = 0; i < media.length; i++) {
+        topPosts[i].media = await getFilesFromS3(media[i]);
+      }
+    }
     if (topPosts.length > 0) {
       // Increment views of the first post if top posts exist
       await Post.updateOne({ _id: topPosts[0]._id }, { $inc: { views: 1 } });
@@ -781,13 +806,11 @@ async function guestHomePage(req, res) {
       const postsWithDetails = posts.map((post, index) => {
         return { ...post, details: detailsArray[index] };
       });
-      return res
-        .status(200)
-        .json({
-          success: true,
-          totalPosts: totalCount,
-          posts: postsWithDetails,
-        });
+      return res.status(200).json({
+        success: true,
+        totalPosts: totalCount,
+        posts: postsWithDetails,
+      });
     } else {
       return res
         .status(200)

@@ -6,6 +6,8 @@ require("dotenv").config();
 const { addUserToSubbreddit } = require("./friendController");
 const { verifyToken } = require("../../utils/tokens");
 const Notification = require("../../models/notificationModel");
+const { getFilesFromS3 } = require("../../utils/s3-bucket");
+
 /**
  * Check whether subreddit is available or not
  * @param {string} subreddit
