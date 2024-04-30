@@ -15,7 +15,6 @@ const { getVoteStatusAndSubredditDetails } = require("../../utils/posts.js");
  * @returns {Object} - The response object containing the random post.
  */
 
-
 async function randomPost(req, res) {
   // random post linked with the subreddit
   try {
@@ -34,28 +33,28 @@ async function randomPost(req, res) {
         .status(404)
         .json({ success: false, message: "No posts found in the subreddit" });
     }
-    const randomPost = posts[Math.floor(Math.random() * posts.length)];
+    //get random post using aggregate
+    const randomPost = await Post.aggregate([
+      { $match: { linkedSubreddit: subreddit._id } },
+      { $sample: { size: 1 } },
+    ]);
     //increase of the number of views
-    randomPost.views += 1;
-    await randomPost.save();
+    await Post.updateOne({ _id: randomPost[0]._id }, { $inc: { views: 1 } });
     const media = randomPost.media;
     let userVote = null;
     if (media) {
       randomPost.media = await getFilesFromS3(media);
     }
-    if (randomPost.type === "poll" && req.user) {
-      const user = await User.findById(req.user.userId);
-      randomPost.options.forEach((opt) => {
-        if (opt.voters.includes(user._id)) {
-          userVote = opt.name;
-        }
-      });
+    let detailsArray;
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      detailsArray = await getVoteStatusAndSubredditDetails(randomPost, user);
     }
 
     return res.status(200).json({
       success: true,
       post: randomPost,
-      userVote: userVote && userVote,
+      detailsArray: detailsArray && detailsArray,
     });
   } catch (err) {
     console.error("Error getting random post:", err);
@@ -781,13 +780,11 @@ async function guestHomePage(req, res) {
       const postsWithDetails = posts.map((post, index) => {
         return { ...post, details: detailsArray[index] };
       });
-      return res
-        .status(200)
-        .json({
-          success: true,
-          totalPosts: totalCount,
-          posts: postsWithDetails,
-        });
+      return res.status(200).json({
+        success: true,
+        totalPosts: totalCount,
+        posts: postsWithDetails,
+      });
     } else {
       return res
         .status(200)
