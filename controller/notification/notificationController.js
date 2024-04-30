@@ -132,145 +132,6 @@ async function getAllNotificationsForUser(req, res) {
 }
 
 /**
- * Disables notifications for a user based on the specified subreddit, post, or comment.
- * @async
- * @param {object} req - Express request object
- * @param {object} res - Express response object
- * @returns {object} - Express response object
- */
-async function disableNotificationsForUser(req, res) {
-  const { subredditName, postId, commentId } = req.body;
-  const type = req.params.type;
-  try {
-    if (req.user) {
-      const user = await User.findOne({ _id: req.user.userId });
-      const userPreferences = await UserPreferences.findOne({
-        username: user.username,
-      });
-      if (!user) {
-        return res.status(404).json({
-          status: "failed",
-          message: "User not found",
-        });
-      }
-
-      // // Check if comments notifications are allowed in user preferences
-      // if (userPreferences.comments || userPreferences.posts) {
-      //   return res.status(400).json({
-      //     success: false,
-      //     message: "Comments notifications are disabled in user preferences",
-      //   });
-      // }
-      // Update user preferences to disable comments and posts notifications
-
-
-      // Ensure that notificationSettings object exists and initialize it if not
-      if (!user.notificationSettings) {
-        user.notificationSettings = {
-          disabledSubreddits: [],
-          disabledPosts: [],
-          disabledComments: [],
-        };
-      }
-
-      // Check if subredditName is provided and exists in the database
-      if (subredditName) {
-        const subredditExists = await checkSubredditExists(subredditName);
-        if (!subredditExists) {
-          return res
-            .status(400)
-            .json({ success: false, message: "Subreddit does not exist" });
-        }
-      }
-
-      if (postId) {
-        const postExists = await checkPostExists(postId);
-        if (!postExists) {
-          return res
-            .status(400)
-            .json({ success: false, message: "Post does not exist" });
-        }
-      }
-
-      if (commentId) {
-        const commentExists = await checkCommentExists(commentId);
-        if (!commentExists) {
-          return res
-            .status(400)
-            .json({ success: false, message: "Comment does not exist" });
-        }
-      }
-      await Notification.updateMany(
-        { commentId: commentId },
-        { $set: { isDisabled: true } }
-      );
-
-     
-      // Check if the subreddit, post, or comment is already disabled for the user
-      if (
-        subredditName &&
-        user.notificationSettings.disabledSubreddits.includes(subredditName)
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Subreddit is already disabled for this user",
-        });
-      }
-      if (postId && user.notificationSettings.disabledPosts.includes(postId)) {
-        return res.status(400).json({
-          success: false,
-          message: "Post is already disabled for this user",
-        });
-      }
-      if (
-        commentId &&
-        user.notificationSettings.disabledComments.includes(commentId)
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Comment is already disabled for this user",
-        });
-      }
-      if (type) {
-
-        if (type === "posts") {
-          user.notificationSettings.disabledPosts = user.posts;
-          userPreferences.posts = false;
-        } else if (type === "comments") {
-          user.notificationSettings.disabledComments = user.comments;
-          userPreferences.comments = false;
-        } else {
-          return res
-            .status(400)
-            .json({ success: false, message: "Invalid notification type" });
-        }
-        await userPreferences.save();
-      }
-      // Update the user's notification settings based on the parameters
-      if (subredditName) {
-        user.notificationSettings.disabledSubreddits.push(subredditName);
-      }
-      if (postId) {
-        user.notificationSettings.disabledPosts.push(postId);
-      }
-      if (commentId) {
-        user.notificationSettings.disabledComments.push(commentId);
-      }
-
-      await user.save();
-
-      return res.status(200).json({
-        success: true,
-        message: "Notifications disabled successfully",
-      });
-    }
-  } catch (error) {
-    console.error("Error:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-}
-
-/**
  * Checks if a subreddit with the given name exists in the database.
  * @function checkSubredditExists
  * @param {string} subredditName - The name of the subreddit to check.
@@ -317,6 +178,141 @@ async function checkCommentExists(commentId) {
     return false;
   }
 }
+/**
+ * Disables notifications for a user based on the specified subreddit, post, or comment.
+ * @async
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @returns {object} - Express response object
+ */
+async function disableNotificationsForUser(req, res) {
+  const { subredditName, postId, commentId } = req.body;
+  const type = req.params.type;
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      const userPreferences = await UserPreferences.findOne({
+        username: user.username,
+      });
+      if (!user) {
+        return res.status(404).json({
+          status: "failed",
+          message: "User not found",
+        });
+      }
+
+      // Ensure that notificationSettings object exists and initialize it if not
+      if (!user.notificationSettings) {
+        user.notificationSettings = {
+          disabledSubreddits: [],
+          disabledPosts: [],
+          disabledComments: [],
+        };
+      }
+
+      // Check if subredditName is provided and exists in the database
+      if (subredditName) {
+        const subredditExists = await checkSubredditExists(subredditName);
+        if (!subredditExists) {
+          return res
+            .status(400)
+            .json({ success: false, message: "Subreddit does not exist" });
+        }
+      }
+
+      if (postId) {
+        const postExists = await checkPostExists(postId);
+        if (!postExists) {
+          return res
+            .status(400)
+            .json({ success: false, message: "Post does not exist" });
+        }
+      }
+
+      if (commentId) {
+        const commentExists = await checkCommentExists(commentId);
+        if (!commentExists) {
+          return res
+            .status(400)
+            .json({ success: false, message: "Comment does not exist" });
+        }
+      }
+
+      // Check if the subreddit, post, or comment is already disabled for the user
+      if (
+        subredditName &&
+        user.notificationSettings.disabledSubreddits.includes(subredditName)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Subreddit is already disabled for this user",
+        });
+      }
+      if (postId && user.notificationSettings.disabledPosts.includes(postId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Post is already disabled for this user",
+        });
+      }
+      if (
+        commentId &&
+        user.notificationSettings.disabledComments.includes(commentId)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Comment is already disabled for this user",
+        });
+      }
+      // Update the user's notification settings based on the parameters
+      if (subredditName) {
+        user.notificationSettings.disabledSubreddits.push(subredditName);
+      }
+      if (postId) {
+        user.notificationSettings.disabledPosts.push(postId);
+        await Notification.updateMany(
+          { postId: postId },
+          { $set: { isDisabled: true } }
+        );
+      }
+      if (commentId) {
+        user.notificationSettings.disabledComments.push(commentId);
+        await Notification.updateMany(
+          { commentId: commentId },
+          { $set: { isDisabled: true } }
+        );
+      }
+
+      await user.save();
+
+      if (type) {
+        if (type === "posts") {
+          user.notificationSettings.disabledPosts = user.posts.map(
+            (post) => post._id
+          );
+          userPreferences.posts = false;
+        } else if (type === "comments") {
+          user.notificationSettings.disabledComments = user.comments.map(
+            (comment) => comment._id
+          );
+          userPreferences.comments = false;
+        } else {
+          return res
+            .status(400)
+            .json({ success: false, message: "Invalid notification type" });
+        }
+        await userPreferences.save();
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Notifications disabled successfully",
+      });
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
 
 /**
  * Enables notifications for the authenticated user based on the provided parameters.
@@ -343,15 +339,6 @@ async function enableNotificationsForUser(req, res) {
             .json({ success: false, message: "Subreddit does not exist" });
         }
       }
-      // Check if comments notifications are allowed in user preferences
-      // if (!userPreferences.comments || !userPreferences.posts) {
-      //   return res.status(400).json({
-      //     success: false,
-      //     message: "Comments or posts notifications are enabled in user preferences",
-      //   });
-      // }
-      // Update user preferences to ebale comments and posts notifications
-    
 
       // Check if postId is provided and exists in the database
       if (postId) {
@@ -362,10 +349,6 @@ async function enableNotificationsForUser(req, res) {
             .json({ success: false, message: "Post does not exist" });
         }
       }
-      await Notification.updateMany(
-        { postId: postId },
-        { $set: { isDisabled: false } }
-      );
 
       // Check if commentId is provided and exists in the database
       if (commentId) {
@@ -376,28 +359,7 @@ async function enableNotificationsForUser(req, res) {
             .json({ success: false, message: "Comment does not exist" });
         }
       }
-      await Notification.updateMany(
-        { commentId: commentId },
-        { $set: { isDisabled: false } }
-      );
-      if (type) {
-        if (type === "posts") {
-          user.notificationSettings.disabledPosts =
-            user.notificationSettings.disabledPosts.filter((p) => p !== postId);
-          userPreferences.posts = true;
-        } else if (type === "comments") {
-          user.notificationSettings.disabledComments =
-            user.notificationSettings.disabledComments.filter(
-              (c) => c !== commentId
-            );
-          userPreferences.comments = true;
-        } else {
-          return res
-            .status(400)
-            .json({ success: false, message: "Invalid notification type" });
-        }
-        await userPreferences.save();
-      }
+
       // Check if subredditName, postId, or commentId is provided and exists in the disabled arrays
       if (
         (subredditName &&
@@ -424,6 +386,10 @@ async function enableNotificationsForUser(req, res) {
       }
       if (postId) {
         const index = user.notificationSettings.disabledPosts.indexOf(postId);
+        await Notification.updateMany(
+          { postId: postId },
+          { $set: { isDisabled: false } }
+        );
         if (index !== -1) {
           user.notificationSettings.disabledPosts.splice(index, 1);
         }
@@ -431,12 +397,35 @@ async function enableNotificationsForUser(req, res) {
       if (commentId) {
         const index =
           user.notificationSettings.disabledComments.indexOf(commentId);
+        await Notification.updateMany(
+          { commentId: commentId },
+          { $set: { isDisabled: false } }
+        );
         if (index !== -1) {
           user.notificationSettings.disabledComments.splice(index, 1);
         }
       }
 
       await user.save();
+
+      if (type) {
+        if (type === "posts") {
+          user.notificationSettings.disabledPosts =
+            user.notificationSettings.disabledPosts.filter((p) => p !== postId);
+          userPreferences.posts = true;
+        } else if (type === "comments") {
+          user.notificationSettings.disabledComments =
+            user.notificationSettings.disabledComments.filter(
+              (c) => c !== commentId
+            );
+          userPreferences.comments = true;
+        } else {
+          return res
+            .status(400)
+            .json({ success: false, message: "Invalid notification type" });
+        }
+        await userPreferences.save();
+      }
 
       return res
         .status(200)
