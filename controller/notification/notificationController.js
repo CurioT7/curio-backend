@@ -47,6 +47,12 @@ async function getUnsentNotificationsForUser(req, res) {
             isSent: false,
           },
         },
+        // Sort notifications by most recent
+        {
+          $sort: {
+            timestamp: -1, // Sort in descending order based on the timestamp field
+          },
+        },
       ]);
 
       await Notification.updateMany(
@@ -92,13 +98,19 @@ async function getAllNotificationsForUser(req, res) {
       const user = await User.findOne({ _id: req.user.userId });
 
       //find notifications by recipient name
-      const notifications = await Notification.aggregate([
-        {
-          $match: {
-            recipient: user.username,
+        const notifications = await Notification.aggregate([
+          {
+            $match: {
+              recipient: user.username,
+            },
           },
-        },
-      ]);
+          // Sort notifications by most recent
+          {
+            $sort: {
+              timestamp: -1, // Sort in descending order based on the timestamp field
+            },
+          },
+        ]);
 
       // Filter out hidden notifications
       const filteredNotifications = await filterHiddenNotifications(
