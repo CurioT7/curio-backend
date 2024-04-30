@@ -156,7 +156,7 @@ router.patch("/auth/resend_verification", userController.resendVerification);
  * @param {string} path - Express route path
  * @param {Function} middleware - Middleware function for route
  */
-router.post("/User/block", userBlockController.blockUser);
+router.post("/User/block",authenticate, userBlockController.blockUser);
 
 /**
  * Route to unblock a user.
@@ -167,7 +167,7 @@ router.post("/User/block", userBlockController.blockUser);
  * @param {string} path - Express route path
  * @param {Function} middleware - Middleware function for route
  */
-router.post("/User/unblock", userBlockController.unblockUser);
+router.post("/User/unblock",authenticate, userBlockController.unblockUser);
 
 /**
  * Route to hide a post.

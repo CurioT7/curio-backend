@@ -3,6 +3,7 @@ const identityController = require("../../controller/identity/identityController
 const router = express.Router();
 const multer = require("multer");
 const storage = multer.memoryStorage();
+const { authenticate } = require("../../middlewares/auth");
 
 const upload = multer({
   storage: storage,
@@ -20,7 +21,7 @@ const upload = multer({
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.get("/v1/me", identityController.getMe);
+router.get("/v1/me", authenticate, identityController.getMe);
 
 /**
  * Route to get user preferences
@@ -31,7 +32,7 @@ router.get("/v1/me", identityController.getMe);
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.get("/v1/me/prefs", identityController.getUserPreferences);
+router.get("/v1/me/prefs", authenticate, identityController.getUserPreferences);
 
 /**
  * Route to update user preferences
