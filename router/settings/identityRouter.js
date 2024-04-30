@@ -58,7 +58,7 @@ router.patch(
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.post("/mute", identityController.muteCommunity);
+router.post("/mute", authenticate, identityController.muteCommunity);
 
 /**
  *
@@ -70,7 +70,7 @@ router.post("/mute", identityController.muteCommunity);
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.post("/unmute", identityController.unmuteCommunity);
+router.post("/unmute",authenticate, identityController.unmuteCommunity);
 
 /**
  * Route to delete a user account
