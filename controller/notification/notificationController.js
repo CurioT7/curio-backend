@@ -290,11 +290,25 @@ async function disableNotificationsForUser(req, res) {
             (post) => post._id
           );
           userPreferences.posts = false;
+          for (const post of user.posts) {
+            user.notificationSettings.disabledPosts.push(post._id);
+            await Notification.updateMany(
+              { postId: post._id },
+              { $set: { isDisabled: true } }
+            );
+          }
         } else if (type === "comments") {
           user.notificationSettings.disabledComments = user.comments.map(
             (comment) => comment._id
           );
           userPreferences.comments = false;
+          for (const comment of user.comments) {
+            user.notificationSettings.disabledComments.push(comment._id);
+            await Notification.updateMany(
+              { commentId: comment._id },
+              { $set: { isDisabled: true } }
+            );
+          }
         } else {
           return res
             .status(400)
@@ -410,22 +424,39 @@ async function enableNotificationsForUser(req, res) {
 
       if (type) {
         if (type === "posts") {
-          user.notificationSettings.disabledPosts =
-            user.notificationSettings.disabledPosts.filter((p) => p !== postId);
-          userPreferences.posts = true;
-        } else if (type === "comments") {
-          user.notificationSettings.disabledComments =
-            user.notificationSettings.disabledComments.filter(
-              (c) => c !== commentId
+          for (const post of user.posts) {
+            const index = user.notificationSettings.disabledPosts.indexOf(post._id);
+            await Notification.updateMany(
+              { postId: post._id },
+              { $set: { isDisabled: false } }
             );
-          userPreferences.comments = true;
+            if (index !== -1) {
+              user.notificationSettings.disabledPosts.splice(index, 1);
+            
+            }
+          }
+          userPreferences.posts = true; 
+        } else if (type === "comments") {
+          for (const comment of user.comments) {
+            const index = user.notificationSettings.disabledComments.indexOf(comment._id);
+            await Notification.updateMany(
+              { commentId: comment._id },
+              { $set: { isDisabled: false } }
+            );
+            if (index !== -1) {
+              user.notificationSettings.disabledComments.splice(index, 1);
+              
+            }
+          }
+          userPreferences.comments = true; 
         } else {
           return res
             .status(400)
             .json({ success: false, message: "Invalid notification type" });
         }
-        await userPreferences.save();
+        await userPreferences.save(); 
       }
+
 
       return res
         .status(200)
