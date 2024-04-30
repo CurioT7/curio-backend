@@ -102,7 +102,7 @@ async function getVoteStatusAndSubredditDetails(items, user) {
         pollEnded = true;
       }
     }
-  
+    
     detailsArray.push({
       voteStatus,
       isUserMemberOfItemSubreddit,
