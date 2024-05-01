@@ -138,33 +138,7 @@ async function addFriend(username, friendUsername) {
         },
       }
     );
-      const disabledSubreddit =
-        friend.notificationSettings.disabledSubreddits.includes(
-          username.subreddit
-        );
-      if (disabledSubreddit) {
-        // Create a notification for the friend with isDisabled set to true
-        const notification = new Notification({
-          title: "New Follower (Disabled)",
-          message: `${username} started following you. Notifications are disabled for the subreddit "${friend.subreddit}".`,
-          recipient: friendUsername,
-          type: "Friend Request",
-          isDisabled: true,
-        });
-
-        // Save the notification to the database
-        await notification.save();
-      }
-    // Create a notification for the friend
-    const notification = new Notification({
-      title: "New Follower",
-      message: `${username} started following you.`,
-      recipient: friendUsername,
-      type: "Friend Request",
-    });
-
-    // Save the notification to the database
-    await notification.save();
+     
 
     return {
       status: true,
@@ -274,7 +248,31 @@ async function friendRequest(req, res) {
     }
 
     await addFriend(user.username, friendname);
+ const disabledSubreddit =
+   user.notificationSettings.disabledSubreddits.includes(user.subreddit);
+ if (disabledSubreddit) {
+   // Create a notification for the friend with isDisabled set to true
+   const notification = new Notification({
+     title: "New Follower (Disabled)",
+     message: `${user.username} started following you. Notifications are disabled for the subreddit "${friendname.subreddit}".`,
+     recipient: friendname,
+     type: "Friend Request",
+     isDisabled: true,
+   });
 
+   // Save the notification to the database
+   await notification.save();
+ }
+ // Create a notification for the friend
+ const notification = new Notification({
+   title: "New Follower",
+   message: `${user.username} started following you.`,
+   recipient: friendname,
+   type: "Friend Request",
+ });
+
+ // Save the notification to the database
+ await notification.save();
     return res.status(200).json({
       status: "success",
       message: "Friend added successfully",
