@@ -6,11 +6,20 @@ async function compose(req, res) {
   try {
     const subject = req.body.subject;
     const message = req.body.message;
-    const sender = await User.findById(req.user.userId);
-
+    let sender = await User.findById(req.user.userId);
+    if (req.body.subreddit) {
+      sender = await Subreddit.findOne({ name: req.body.subreddit });
+      let user = await User.findById(req.user.userId);
+      if (!sender.moderators.some((mod) => mod.username === user.username)) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not a moderator of this subreddit",
+        });
+      }
+    }
     //TODO handle if sent from subreddit
     let recipient;
-    if (!req.body.isSubreddit) {
+    if (!req.body.sendToSubreddit) {
       recipient = await User.findOne({ username: req.body.recipient });
       if (!recipient) {
         return res.status(400).json({
@@ -19,7 +28,8 @@ async function compose(req, res) {
         });
       }
     }
-    if (req.body.isSubreddit) {
+    //recipient is subreddit
+    if (req.body.sendToSubreddit) {
       const subreddit = await Subreddit.findOne({ name: req.body.recipient });
       if (!subreddit) {
         return res.status(400).json({
