@@ -24,14 +24,9 @@ const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
  */
 
 async function hidePost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const postId = req.body.postId;
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const postId = req.body.postId;
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -48,7 +43,9 @@ async function hidePost(req, res) {
         .status(400)
         .json({ success: false, message: "Post already hidden" });
     }
+
     user.hiddenPosts.push(postId);
+
     await user.save();
     return res
       .status(200)
@@ -71,14 +68,9 @@ async function hidePost(req, res) {
  */
 
 async function unhidePost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const postId = req.body.postId;
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const postId = req.body.postId;
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -270,13 +262,8 @@ async function unsave(req, res) {
  */
 
 async function saved_categories(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -304,13 +291,8 @@ async function saved_categories(req, res) {
  * @async
  */
 async function hidden(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -443,12 +425,7 @@ async function submitPost(req, res, user, imageKey) {
 
 async function submit(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -540,9 +517,7 @@ async function shareCrossPost(user, crossPostData) {
  */
 
 async function sharePost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  const user = await User.findOne({ _id: decoded.userId });
+  const user = await User.findOne({ _id: req.user.userId });
   if (!user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -659,7 +634,6 @@ async function lockItem(req, res) {
   }
 }
 
-
 /**
  * Unlocks a post item if the user has the necessary permissions.
  * @param {Object} req - The request object.
@@ -715,7 +689,6 @@ async function unlockItem(req, res) {
   }
 }
 
-
 /**
  * Retrieves information about a specific item based on its type.
  * @param {Object} req - The request object.
@@ -734,7 +707,6 @@ async function getItemInfo(req, res) {
       if (item.media) {
         item.media = await getFilesFromS3(item.media);
       }
-   
     } else if (objectType === "comment") {
       item = await Comment.findOne({ _id: objectID });
     } else if (objectType === "subreddit") {
@@ -785,6 +757,13 @@ async function castVote(req, res) {
           .status(404)
           .json({ success: false, message: "Item not found" });
       }
+      // Check if the user has disabled notifications for this item
+      const disabledNotifications = user.notificationSettings || {};
+      const isDisabled =
+        (itemName === "post" &&
+          disabledNotifications.disabledPosts.includes(itemID)) ||
+        (itemName === "comment" &&
+          disabledNotifications.disabledComments.includes(itemID));
 
       if (direction === 0) {
         // Find the existing vote in upvotes
@@ -855,6 +834,7 @@ async function castVote(req, res) {
         recipient: item.authorName,
         postId: itemName === "post" ? itemID : undefined,
         commentId: itemName === "comment" ? itemID : undefined,
+        isDisabled: isDisabled,
       });
 
       await notification.save();
@@ -1018,7 +998,7 @@ async function subredditOverview(req, res) {
         displayName: user.displayName,
         profilePicture: user.profilePicture,
         banner: user.banner,
-        about: user.bio,
+        about: user.about,
         createdAt: user.cakeDay,
         karma: user.karma,
         isUser: true,

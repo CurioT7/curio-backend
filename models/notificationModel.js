@@ -54,7 +54,11 @@ const notificationSchema = new Schema({
   },
   isViewed: {
     type: Boolean,
-    default: false, 
+    default: false,
+  },
+  isDisabled: {
+    type: Boolean,
+    default: false,
   },
 });
 
