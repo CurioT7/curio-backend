@@ -463,6 +463,7 @@ async function followSubreddit(req, res) {
         message: `${userExists.username} started following the subreddit "${subreddit}".`,
         recipient: moderator,
         type: "Subreddit Follower",
+        subredditName: subreddit,
       });
       await notification.save();
     }
@@ -473,6 +474,7 @@ async function followSubreddit(req, res) {
       message: `You have successfully followed the subreddit "${subreddit}".`,
       recipient: userExists.username,
       type: "Subreddit Followed",
+      subredditName: subreddit,
     });
     await userNotification.save();
 
