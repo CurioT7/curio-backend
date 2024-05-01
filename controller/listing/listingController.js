@@ -374,7 +374,6 @@ async function getUserPosts(req, res) {
       const { page } = req.query;
       const limit = 10; // Allow 20 items per page
       const skip = (page - 1) * limit;
-      const timeThreshold = req.query.timeFrame;
       const fetchPosts = async (subreddit) => {
         const subredditDetails = await Subreddit.findOne({
           name: subreddit.subreddit,
@@ -441,17 +440,7 @@ async function getUserPosts(req, res) {
                });
               });
           case "top":
-            if (timeThreshold) {
-              if (req.params.time === "new") {
-                // Set time threshold to 2 hours ago
-                timeThreshold = moment().subtract(2, "hours").toDate();
-              } else {
-                // Default time threshold is 24 hours ago
-                timeThreshold = moment()
-                  .subtract(req.params.timeThreshold, "days")
-                  .toDate();
-              }
-            }
+            
             return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
               .sort({ upvotes: -1 })
@@ -707,7 +696,6 @@ async function guestHomePage(req, res) {
     const { page } = req.query;
     const limit = 10; // Allow 20 items per page
     const skip = (page - 1) * limit;
-    const timeThreshold = req.query.timeFrame;
     const fetchPosts = async () => {
       switch (type) {
         case "best":
@@ -749,23 +737,8 @@ async function guestHomePage(req, res) {
               
             });
         case "top":
-          let queryTop = {};
-          if (timeThreshold) {
-            if (timeThreshold === "new") {
-              // Set time threshold to 2 hours ago
-              queryTop.createdAt = {
-                $gt: moment().subtract(2, "hours").toDate(),
-              };
-            } else {
-              // Default time threshold is 24 hours ago
-              queryTop.createdAt = {
-                $gt: moment()
-                  .subtract(parseInt(timeThreshold), "days")
-                  .toDate(),
-              };
-            }
-          }
-          return Post.find(queryTop)
+          
+          return Post.find()
             .populate("originalPostId")
             .sort({ upvotes: -1 })
             .skip(skip)
@@ -874,13 +847,7 @@ async function guestHomePage(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
-function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
+
 module.exports = {
   randomPost,
   getTopPosts,
