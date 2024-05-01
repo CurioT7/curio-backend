@@ -24,15 +24,29 @@ const mongoose = require("mongoose");
 async function getPostComments(req, res) {
   try {
     const postId = decodeURIComponent(req.params.postId);
-
     const post = await Post.findById(postId).populate("originalPostId");
-
     if (!post) {
       return res
         .status(404)
         .json({ success: false, message: "Post not found." });
+      }
+    if (req.headers.authorization) {
+      const token = req.headers.authorization.split(" ")[1];
+      const decoded = await verifyToken(token);
+      if (!decoded) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const user = await User.findOne({ _id: decoded.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const postComments = await Comment.find({ linkedPost: post._id });
+      const detailsArray = await getVoteStatusAndSubredditDetails(postComments,user);
+      const commentsWithDetails = postComments.map((comment, index) => {
+      return { ...comment.toObject(), details: detailsArray[index] };
+      });
+      res.status(200).json(commentsWithDetails);
     }
-
     const postComments = await Comment.find({ linkedPost: post._id });
     return res.status(200).json({ success: true, comments: postComments });
   } catch (err) {
