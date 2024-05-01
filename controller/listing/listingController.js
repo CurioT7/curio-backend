@@ -381,9 +381,9 @@ async function getUserPosts(req, res) {
       const user = await User.findOne({ _id: req.user.userId });
       let totalCount;
 
-      const type = req.params.type;
-      const page = parseInt(req.query.page) || 1;
-      const timeFrame = req.query.timeFrame;
+        const type = req.params.type;
+        const timeFrame = req.params.timeframe;
+        const { page } = req.params.query;
       const limit = 10; // Allow 20 items per page
       const skip = (page - 1) * limit;
 
@@ -503,13 +503,18 @@ async function getUserPosts(req, res) {
       };
 
    
+const subredditPosts = await Promise.all(user.subreddits.map(fetchPosts));
 
+const flattenedPosts = subredditPosts.flat();
+
+      let fetchedPosts = flattenedPosts;
       if (timeFrame) {
         switch (timeFrame) {
           case "day":
             fetchedPosts = fetchedPosts.filter(
               (post) => post.post.createdAt > Date.now() - 86400000
             );
+
             break;
           case "week":
             fetchedPosts = fetchedPosts.filter(
@@ -538,11 +543,7 @@ async function getUserPosts(req, res) {
             return res.status(400).json({ message: "Invalid time frame" });
         }
       }
- const subredditPosts = await Promise.all(user.subreddits.map(fetchPosts));
-
- const flattenedPosts = subredditPosts.flat();
-
- let fetchedPosts = flattenedPosts;
+ 
       // Get vote status and subreddit details for each post
       const detailsArray = await getVoteStatusAndSubredditDetails(
         flattenedPosts.map(({ post }) => post), // Extracting only the post from each flattened post object
