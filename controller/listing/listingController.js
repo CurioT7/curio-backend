@@ -83,7 +83,6 @@ async function randomPost(req, res) {
 async function getTopPosts(req, res) {
   try {
     const subredditName = decodeURIComponent(req.params.subreddit);
-    // Find the subreddit
     const subreddit = await Subreddit.findOne({ name: subredditName });
 
     if (!subreddit) {
@@ -92,7 +91,6 @@ async function getTopPosts(req, res) {
         .json({ success: false, message: "Subreddit not found" });
     }
 
-    // Find top-viewed posts sorted by upvotes in descending order
     const topPosts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
       upvotes: -1,
     });
@@ -103,10 +101,27 @@ async function getTopPosts(req, res) {
         topPosts[i].media = await getFilesFromS3(media[i]);
       }
     }
+
     if (topPosts.length > 0) {
-      // If top-viewed posts exist, increment views of the first post
-      await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
-      return res.status(200).json({ success: true, post: topPosts });
+      // Increment views of the first post if top posts exist
+      await Post.updateOne({ _id: topPosts[0]._id }, { $inc: { views: 1 } });
+
+      // If user is authenticated, get vote status and subreddit details
+      let detailsArray;
+      if (req.user) {
+        const user = await User.findOne({ _id: req.user.userId });
+        detailsArray = await getVoteStatusAndSubredditDetails(topPosts, user);
+      }
+
+      return res.status(200).json({
+        success: true,
+        posts: detailsArray
+          ? posts.map((post, index) => ({
+              ...post,
+              details: detailsArray[index],
+            }))
+          : posts,
+      });
     } else {
       return res
         .status(404)
@@ -115,7 +130,7 @@ async function getTopPosts(req, res) {
   } catch (error) {
     return res
       .status(400)
-      .json({ success: false, message: "Error getting top post" });
+      .json({ success: false, message: "Error getting top posts" });
   }
 }
 
@@ -256,33 +271,45 @@ async function getTopPostsbytime(req, res) {
         .json({ success: false, message: "Subreddit not found" });
     }
 
-    // Get the time threshold based on the request
     let timeThreshold;
     if (req.params.time === "new") {
-      // Set time threshold to 2 hours ago
       timeThreshold = moment().subtract(2, "hours").toDate();
     } else {
-      // Default time threshold is 24 hours ago
       timeThreshold = moment()
         .subtract(req.params.timeThreshold, "days")
         .toDate();
     }
 
-    // Find top-viewed posts sorted by upvotes and filtered by creation time
     const topPosts = await Post.find({
       linkedSubreddit: subreddit._id,
-      createdAt: { $gte: timeThreshold }, // Filter posts created after the time threshold
+      createdAt: { $gte: timeThreshold },
     }).sort({ upvotes: -1 });
+
     const media = topPosts.map((post) => post.media);
     if (media) {
       for (let i = 0; i < media.length; i++) {
         topPosts[i].media = await getFilesFromS3(media[i]);
       }
     }
+
     if (topPosts.length > 0) {
-      // Increment views of the first post if top posts exist
       await Post.updateOne({ _id: topPosts[0]._id }, { $inc: { views: 1 } });
-      return res.status(200).json({ success: true, post: topPosts });
+
+      let detailsArray;
+      if (req.user) {
+        const user = await User.findOne({ _id: req.user.userId });
+        detailsArray = await getVoteStatusAndSubredditDetails(topPosts, user);
+      }
+
+      return res.status(200).json({
+        success: true,
+        posts: detailsArray
+          ? topPosts.map((post, index) => ({
+              ...post,
+              details: detailsArray[index],
+            }))
+          : topPosts,
+      });
     } else {
       return res.status(404).json({
         success: false,
@@ -290,9 +317,10 @@ async function getTopPostsbytime(req, res) {
       });
     }
   } catch (error) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Error getting top post" });
+    return res.status(400).json({
+      success: false,
+      message: "Error getting top posts",
+    });
   }
 }
 /**
