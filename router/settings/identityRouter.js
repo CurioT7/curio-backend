@@ -3,7 +3,6 @@ const identityController = require("../../controller/identity/identityController
 const router = express.Router();
 const multer = require("multer");
 const storage = multer.memoryStorage();
-const { authenticate } = require("../../middlewares/auth");
 
 const upload = multer({
   storage: storage,
@@ -21,7 +20,7 @@ const upload = multer({
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.get("/v1/me", authenticate, identityController.getMe);
+router.get("/v1/me", identityController.getMe);
 
 /**
  * Route to get user preferences
@@ -32,7 +31,7 @@ router.get("/v1/me", authenticate, identityController.getMe);
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.get("/v1/me/prefs", authenticate, identityController.getUserPreferences);
+router.get("/v1/me/prefs", identityController.getUserPreferences);
 
 /**
  * Route to update user preferences
@@ -58,7 +57,7 @@ router.patch(
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.post("/mute", authenticate, identityController.muteCommunity);
+router.post("/mute", identityController.muteCommunity);
 
 /**
  *
@@ -70,7 +69,7 @@ router.post("/mute", authenticate, identityController.muteCommunity);
  * @param {string} path - Express route path
  * @param {callback} middleware - Express middleware callback
  */
-router.post("/unmute",authenticate, identityController.unmuteCommunity);
+router.post("/unmute", identityController.unmuteCommunity);
 
 /**
  * Route to delete a user account

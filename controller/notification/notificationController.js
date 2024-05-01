@@ -615,10 +615,10 @@ const getUnreadNotifications = async (req, res) => {
       );
 
       // Get the count of unread notifications
-      const unreadCount = filteredNotifications.length;
+      const unreadCount = unreadNotifications.length;
       return res
         .status(200)
-        .json({ success: true, unreadCount, unreadNotifications:filteredNotifications });
+        .json({ success: true, unreadCount, filteredNotifications });
     }
   } catch (error) {
     console.error("Error:", error);
@@ -655,14 +655,10 @@ const getReadNotifications = async (req, res) => {
       );
 
       // Get the count of read notifications
-      const readCount = filteredNotifications.length;
+      const readCount = readNotifications.length;
       return res
         .status(200)
-        .json({
-          success: true,
-          readCount,
-          readNotifications:filteredNotifications,
-        });
+        .json({ success: true, readCount, filteredNotifications });
     }
   } catch (error) {
     console.error("Error:", error);

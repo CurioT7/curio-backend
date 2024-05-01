@@ -19,9 +19,13 @@ require("dotenv").config();
  */
 
 async function getMe(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   try {
-    if (req.user) {
-    const userExists = await User.findOne({ _id: req.user.userId });
+    const userExists = await User.findOne({ _id: decoded.userId });
     if (!userExists) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -36,7 +40,6 @@ async function getMe(req, res) {
     };
 
     res.json(response);
-  }
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -51,9 +54,13 @@ async function getMe(req, res) {
  * @param {Object} res - Express response object
  */
 async function getUserPreferences(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   try {
-    if (req.user) {
-    const user = await User.findOne({ _id: req.user.userId });
+    const user = await User.findOne({ _id: decoded.userId });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -84,7 +91,6 @@ async function getUserPreferences(req, res) {
     }
 
     res.json(preferences);
-  }
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -224,13 +230,17 @@ async function updateUserPreferences(req, res) {
  */
 
 async function muteCommunity(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const communityToMute = req.body.communityToMute;
   try {
-    const communityToMute = req.body.communityToMute;
-    if (req.user) {
-      const user = await User.findOne({ _id: req.user.userId });
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     const community = await Subreddit.findOne({ name: communityToMute });
     if (!community) {
@@ -257,7 +267,6 @@ async function muteCommunity(req, res) {
     await userPreferences.save();
 
     res.json({ message: "Community successfully muted" });
-  }
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -274,13 +283,18 @@ async function muteCommunity(req, res) {
  */
 
 async function unmuteCommunity(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const communityToUnmute = req.body.communityToUnmute;
   try {
-    const communityToUnmute = req.body.communityToUnmute;
-    if (req.user) {
-      const user = await User.findOne({ _id: req.user.userId });
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     const community = await Subreddit.findOne({ name: communityToUnmute });
     if (!community) {
       return res.status(404).json({ message: "Community not found" });
@@ -307,7 +321,6 @@ async function unmuteCommunity(req, res) {
     await userPreferences.save();
 
     res.json({ message: "Community successfully unmuted" });
-    }
   } catch (error) {
     return res.status(500).json({
       success: false,
