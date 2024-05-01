@@ -199,7 +199,7 @@ async function checkCommentExists(commentId) {
  */
 async function disableNotificationsForUser(req, res) {
   const { subredditName, postId, commentId } = req.body;
-  const type = req.params.type;
+  const type = req.params.type; // Include the type parameter
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
@@ -296,8 +296,10 @@ async function disableNotificationsForUser(req, res) {
 
       await user.save();
 
+      // Include logic based on the type parameter
       if (type) {
         if (type === "posts") {
+          // Disable notifications for posts
           user.notificationSettings.disabledPosts = user.posts.map(
             (post) => post._id
           );
@@ -310,6 +312,7 @@ async function disableNotificationsForUser(req, res) {
             );
           }
         } else if (type === "comments") {
+          // Disable notifications for comments
           user.notificationSettings.disabledComments = user.comments.map(
             (comment) => comment._id
           );
@@ -349,7 +352,7 @@ async function disableNotificationsForUser(req, res) {
  */
 async function enableNotificationsForUser(req, res) {
   const { subredditName, postId, commentId } = req.body;
-  const type = req.params.type;
+  const type = req.params.type; // Include the type parameter
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
@@ -434,8 +437,10 @@ async function enableNotificationsForUser(req, res) {
 
       await user.save();
 
+      // Include logic based on the type parameter
       if (type) {
         if (type === "posts") {
+          // Enable notifications for posts
           for (const post of user.posts) {
             const index = user.notificationSettings.disabledPosts.indexOf(post._id);
             await Notification.updateMany(
@@ -444,11 +449,11 @@ async function enableNotificationsForUser(req, res) {
             );
             if (index !== -1) {
               user.notificationSettings.disabledPosts.splice(index, 1);
-            
             }
           }
           userPreferences.posts = true; 
         } else if (type === "comments") {
+          // Enable notifications for comments
           for (const comment of user.comments) {
             const index = user.notificationSettings.disabledComments.indexOf(comment._id);
             await Notification.updateMany(
@@ -457,7 +462,6 @@ async function enableNotificationsForUser(req, res) {
             );
             if (index !== -1) {
               user.notificationSettings.disabledComments.splice(index, 1);
-              
             }
           }
           userPreferences.comments = true; 
@@ -468,7 +472,6 @@ async function enableNotificationsForUser(req, res) {
         }
         await userPreferences.save(); 
       }
-
 
       return res
         .status(200)

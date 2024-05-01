@@ -138,7 +138,23 @@ async function addFriend(username, friendUsername) {
         },
       }
     );
+      const disabledSubreddit =
+        friend.notificationSettings.disabledSubreddits.includes(
+          username.subreddit
+        );
+      if (disabledSubreddit) {
+        // Create a notification for the friend with isDisabled set to true
+        const notification = new Notification({
+          title: "New Follower (Disabled)",
+          message: `${username} started following you. Notifications are disabled for the subreddit "${friend.subreddit}".`,
+          recipient: friendUsername,
+          type: "Friend Request",
+          isDisabled: true,
+        });
 
+        // Save the notification to the database
+        await notification.save();
+      }
     // Create a notification for the friend
     const notification = new Notification({
       title: "New Follower",
@@ -451,6 +467,22 @@ async function followSubreddit(req, res) {
       });
     }
 
+    // Check if notifications are disabled for the subreddit
+    const disabledSubreddit =
+      userExists.notificationSettings.disabledSubreddits.includes(subreddit);
+    if (disabledSubreddit) {
+      // Create a notification for the user with isDisabled set to true
+      const notification = new Notification({
+        title: "Subreddit Followed (Disabled)",
+        message: `You have followed the subreddit "${subreddit}", but notifications are disabled for this subreddit.`,
+        recipient: userExists.username,
+        type: "Subreddit Followed",
+        subredditName: subreddit,
+        isDisabled: true,
+      });
+      await notification.save();
+    }
+
     await followSubreddits(userExists.username, subreddit);
 
     // Notify the moderators of the subreddit
@@ -490,6 +522,7 @@ async function followSubreddit(req, res) {
     });
   }
 }
+
 
 /**
  * Retrieves followers or followings of a user along with their profile pictures.

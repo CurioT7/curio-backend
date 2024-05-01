@@ -56,54 +56,68 @@ async function createComments(req, res) {
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-    const { postId, content } = req.body;
+      const { postId, content } = req.body;
 
-    const post = await Post.findById(postId).populate("originalPostId");
+      const post = await Post.findById(postId).populate("originalPostId");
 
-    if (!post) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Post not found." });
-    }
+      if (!post) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Post not found." });
+      }
 
-    // Check if the post is locked
-    if (post.isLocked) {
-      return res
-        .status(403)
-        .json({
+      // Check if the post is locked
+      if (post.isLocked) {
+        return res.status(403).json({
           success: false,
           message: "Post is locked. Cannot add a comment.",
         });
+      }
+
+      // Check if comments are disabled for the post's subreddit
+      const subreddit = await Community.findOne({ name: post.linkedSubreddit });
+      if (subreddit.disableComments) {
+        // Create a notification for the post author with isDisabled set to true
+        const notification = new Notification({
+          title: "New Comment (Disabled)",
+          message: `${user.username} commented on your post "${post.title}", but comments are disabled for this subreddit.`,
+          recipient: post.authorName,
+          type: "comment",
+          isDisabled: true,
+        });
+
+        await notification.save();
+      }
+
+      const comment = new Comment({
+        content,
+        authorName: user.username,
+        createdAt: new Date(),
+        upvotes: 0,
+        downvotes: 0,
+        linkedPost: postId,
+        linkedSubreddit: post.linkedSubreddit,
+        awards: 0,
+      });
+
+      await comment.save();
+      post.comments.push(comment._id);
+      await post.save();
+
+      // Create a notification for the post author
+      const notification = new Notification({
+        title: "New Comment",
+        message: `${user.username} commented on your post "${post.title}".`,
+        recipient: post.authorName,
+        type: "comment",
+      });
+
+      await notification.save();
+
+      return res.status(201).json({ success: true, comment });
     }
-
-    const comment = new Comment({
-      content,
-      authorName: user.username,
-      createdAt: new Date(),
-      upvotes: 0,
-      downvotes: 0,
-      linkedPost: postId,
-      linkedSubreddit: post.linkedSubreddit,
-      awards: 0,
-    });
-
-    await comment.save();
-    post.comments.push(comment._id);
-    await post.save();
-
-    // Create a notification for the post author
-    const notification = new Notification({
-      title: "New Comment",
-      message: `${user.username} commented on your post "${post.title}".`,
-      recipient: post.authorName, 
-      type: "comment",
-    }); 
-  
-    await notification.save();
-    return res.status(201).json({ success: true, comment });
-  }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return res
       .status(500)
       .json({ success: false, message: "Internal server Error" });
