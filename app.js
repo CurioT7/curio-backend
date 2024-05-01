@@ -33,7 +33,6 @@ const app = express();
  */
 async function connectToDatabase() {
   try {
-    console.log(process.env.MONGODB_URI)
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
