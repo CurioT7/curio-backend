@@ -432,12 +432,13 @@ async function getUserPosts(req, res) {
                     post.media = await getFilesFromS3(post.media);
                   }
                 }
-                const randomIndex = Math.floor(Math.random() * posts.length);
-                const randomPost = posts[randomIndex];
-                return {
-                  subreddit: subreddit.name,
-                  post: randomPost,
-                };
+               return posts.map((randomPost) => {
+                 const randomIndex = Math.floor(Math.random() * posts.length);
+                 randomPost = posts[randomIndex];
+                 return {
+                   post: randomPost,
+                 };
+               });
               });
           case "top":
             if (timeThreshold) {
@@ -469,7 +470,7 @@ async function getUserPosts(req, res) {
                   };
                 });
               });
-          
+
           case "new":
             return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
@@ -738,25 +739,33 @@ async function guestHomePage(req, res) {
                   post.media = await getFilesFromS3(post.media);
                 }
               }
-              const randomIndex = Math.floor(Math.random() * posts.length);
-              const randomPost = posts[randomIndex];
-              return {
-                post: randomPost,
-              };
+              return posts.map((randomPost) => {
+                const randomIndex = Math.floor(Math.random() * posts.length);
+                 randomPost = posts[randomIndex];
+                return {
+                  post: randomPost,
+                };
+              });
+              
             });
         case "top":
+          let queryTop = {};
           if (timeThreshold) {
-            if (req.params.time === "new") {
+            if (timeThreshold === "new") {
               // Set time threshold to 2 hours ago
-              timeThreshold = moment().subtract(2, "hours").toDate();
+              queryTop.createdAt = {
+                $gt: moment().subtract(2, "hours").toDate(),
+              };
             } else {
               // Default time threshold is 24 hours ago
-              timeThreshold = moment()
-                .subtract(req.params.timeThreshold, "days")
-                .toDate();
+              queryTop.createdAt = {
+                $gt: moment()
+                  .subtract(parseInt(timeThreshold), "days")
+                  .toDate(),
+              };
             }
           }
-          return Post.find()
+          return Post.find(queryTop)
             .populate("originalPostId")
             .sort({ upvotes: -1 })
             .skip(skip)
@@ -772,10 +781,8 @@ async function guestHomePage(req, res) {
                   post: post,
                 };
               });
-              
-            }
-          );
-        
+            });
+
         case "new":
           return Post.find()
             .populate("originalPostId")
@@ -812,6 +819,24 @@ async function guestHomePage(req, res) {
                 };
               });
             });
+        case "top/week":
+          return Post.find()
+            .populate("originalPostId")
+            .sort({ upvotes: -1 })
+            .skip(skip)
+            .limit(limit)
+            .then(async (posts) => {
+              for (const post of posts) {
+                if (post.media) {
+                  post.media = await getFilesFromS3(post.media);
+                }
+              }
+              return posts.map((post) => {
+                return {
+                  post: post,
+                };
+              });
+            }); 
         default:
           return Promise.reject("Invalid posts type");
       }
@@ -849,7 +874,13 @@ async function guestHomePage(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
-
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
 module.exports = {
   randomPost,
   getTopPosts,
