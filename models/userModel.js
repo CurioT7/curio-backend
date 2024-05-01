@@ -269,6 +269,12 @@ const userSchema = new mongoose.Schema({
       ref: "Message",
     },
   ],
+  mentions: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Message",
+    },
+  ],
   media: {
     type: String,
   },

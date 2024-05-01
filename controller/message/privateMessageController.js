@@ -39,7 +39,7 @@ async function compose(req, res) {
       }
       //send to moderators
       recipient = subreddit.moderators;
-      console.log(recipient.length);
+
       if (recipient.length > 1) {
         //TODO check if this works
         for (let i = 0; i < recipient.length; i++) {
@@ -55,7 +55,6 @@ async function compose(req, res) {
         recipient = await User.findOne({
           username: subreddit.moderators[0].username,
         });
-        console.log(recipient);
       }
     }
 
@@ -92,6 +91,78 @@ async function compose(req, res) {
   }
 }
 
+async function getMessages(messagesId) {
+  try {
+    // Fetch messages with sender and recipient populated
+    const messages = await Message.find({ _id: { $in: messagesId } })
+      .populate({ path: "sender", select: "username" })
+      .populate({ path: "recipient", select: "username" });
+
+    return messages.map((message) => {
+      return {
+        id: message._id,
+        sender: message.sender ? message.sender.username : null, // Check if sender is defined
+        recipient: message.recipient ? message.recipient.username : null, // Check if recipient is defined
+        subject: message.subject,
+        message: message.message,
+        timestamp: message.timestamp,
+        isRead: message.isRead,
+        isSent: message.isSent,
+        isPrivate: message.isPrivate,
+      };
+    });
+  } catch (error) {
+    console.error("Error while fetching messages:", error);
+    throw error; // Rethrow the error for further handling
+  }
+}
+
+async function inbox(req, res) {
+  try {
+    const type = req.params.type;
+    const user = await User.findById(req.user.userId);
+    let messages = [];
+    switch (type) {
+      case "all":
+        messages = [...user.receivedPrivateMessages, ...user.mentions];
+        break;
+      case "unread":
+        messages = user.receivedPrivateMessages.filter(
+          (message) => !message.isRead
+        );
+        break;
+      case "messages":
+        messages = [
+          ...user.receivedPrivateMessages,
+          ...user.sentPrivateMessages,
+        ];
+        break;
+      case "UsernameMentions":
+        messages = user.mentions;
+        break;
+      default:
+        return res.status(400).json({
+          success: false,
+          message: "Invalid type",
+        });
+    }
+
+    messages = await getMessages(messages);
+    messages.sort((a, b) => b.timestamp - a.timestamp);
+
+    res.status(200).json({
+      success: true,
+      messages,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
 module.exports = {
   compose,
+  inbox,
 };
