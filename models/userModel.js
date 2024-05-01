@@ -256,6 +256,9 @@ const userSchema = new mongoose.Schema({
       },
     },
   ],
+  media: {
+    type: String,
+  },
 });
 
 /**

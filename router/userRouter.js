@@ -201,7 +201,7 @@ router.post("/unhide", authenticate, contentManagementController.unhidePost);
  * @param {string} path - Express route path
  * @param {Function} middleware - Middleware function for route
  */
-router.post("/spoil", contentManagementController.spoilerPost);
+router.post("/spoil",authenticate, contentManagementController.spoilerPost);
 /**
  * Route to unspoiler a post.
  * @name POST/User/unspoil
@@ -211,7 +211,11 @@ router.post("/spoil", contentManagementController.spoilerPost);
  * @param {string} path - Express route path
  * @param {Function} middleware - Middleware function for route
  */
-router.post("/unspoil", contentManagementController.unspoilerPost);
+router.post(
+  "/unspoil",
+  authenticate,
+  contentManagementController.unspoilerPost
+);
 
 /**
  * Route to save a post or comment.
