@@ -144,6 +144,7 @@ async function addFriend(username, friendUsername) {
       title: "New Follower",
       message: `${username} started following you.`,
       recipient: friendUsername,
+      type: "Friend Request",
     });
 
     // Save the notification to the database
@@ -461,6 +462,7 @@ async function followSubreddit(req, res) {
         title: "New Follower",
         message: `${userExists.username} started following the subreddit "${subreddit}".`,
         recipient: moderator,
+        type: "Subreddit Follower",
       });
       await notification.save();
     }
@@ -470,6 +472,7 @@ async function followSubreddit(req, res) {
       title: "Subreddit Followed",
       message: `You have successfully followed the subreddit "${subreddit}".`,
       recipient: userExists.username,
+      type: "Subreddit Followed",
     });
     await userNotification.save();
 

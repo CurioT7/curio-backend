@@ -60,6 +60,14 @@ const notificationSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  type: {
+    type: String,
+    required: true,
+  },
+  subredditName: {
+    type: String,
+    ref: "Subreddit",
+  },
 });
 
 /**
