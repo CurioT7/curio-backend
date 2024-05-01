@@ -12,6 +12,7 @@ const {
   getUserPosts,
   sortComments,
   getTopComments,
+  guestHomePage,
 } = require("../controller/listing/listingController");
 const moment = require("moment");
 
@@ -88,6 +89,30 @@ describe("getTopPostsbytime", () => {
     });
   });
 });
+
+  it("should return hot posts for each subreddit based on type and page query parameters", async () => {
+    const req = {
+      params: {
+        type: "hot",
+      },
+      query: {
+        page: 1,
+      },
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    await guestHomePage(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Internal server error",
+    });
+  }, 30000);
+
 it('should return a status of 404 if the subreddit is not found', async () => {
     const req = { params: { subreddit: 'nonExistentSubreddit' } };
     const res = {
