@@ -16,6 +16,7 @@ const {
   castVote,
   addToHistory,
   getHistory,
+  clearHistory,
 } = require("../controller/User/contentManagementController");
 const { s3, sendFileToS3, getFilesFromS3 } = require("../utils/s3-bucket");
 const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
@@ -937,7 +938,7 @@ describe("shareLink function", () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Internal server error', error: expect.any(Error) });
     });
-//get from history
+//get  history
     // Returns a JSON response with status 500 and error message when an error occurs while retrieving user or post details.
     it('should return a JSON response with status 500 and error message when an error occurs while retrieving user or post details', async () => {
       // Mock the request and response objects
@@ -957,93 +958,77 @@ describe("shareLink function", () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Internal server error', error: new Error('User not found') });
     });
+       // Retrieve browsing history for authenticated user with recent posts
+    it('should retrieve browsing history for authenticated user with recent posts', async () => {
+      const req = { user: { userId: '123' } };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+      const user = { recentPosts: ['post1', 'post2'] };
+      const post1 = { _id: 'post1', originalPostId: 'originalPost1' };
+      const post2 = { _id: 'post2', originalPostId: 'originalPost2' };
+      const details1 = { voteStatus: 'upvote', subredditDetails: 'details1' };
+      const details2 = { voteStatus: 'downvote', subredditDetails: 'details2' };
+      User.findOne = jest.fn().mockResolvedValue(user);
+      Post.find = jest.fn().mockResolvedValue([post1, post2]);
+      Post.find.populate = jest.fn().mockReturnThis();
 
-// describe("addToHistory function", () => {
-//   let req, res;
+      post1.toObject = jest.fn().mockReturnValue(post1);
+      post2.toObject = jest.fn().mockReturnValue(post2);
 
-//   beforeEach(() => {
-//     req = {
-//       headers: { authorization: "Bearer fake.token" },
-//       body: { postID: "post123" },
-//     };
-//     res = {
-//       status: jest.fn(() => res),
-//       json: jest.fn(),
-//     };
-//   });
+      await getHistory(req, res);
 
-//   it("should add a post to user history if not already present", async () => {
-//     verifyToken.mockResolvedValue({ userId: "user123" });
-//     User.findOne.mockResolvedValue({ recentPosts: [], save: jest.fn() });
-//     Post.findOne.mockResolvedValue({ _id: "post123" });
+      expect(User.findOne).toHaveBeenCalledWith({ _id: req.user.userId });
+      expect(Post.find).toHaveBeenCalledWith({ _id: { $in: user.recentPosts } });
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ success: false, message: "Internal server error", error: expect.anything() });
+    });
+        // When there is an internal server error, the function should return a 500 status code
+    it('should return a 500 status code when there is an internal server error', async () => {
+      const req = { user: { userId: '123' } };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+      const user = { recentPosts: [] };
+      User.findOne = jest.fn().mockRejectedValue(new Error('Internal server error'));
 
-//     await addToHistory(req, res);
+      await getHistory(req, res);
 
-//     expect(res.status).toHaveBeenCalledWith(200);
-//     expect(res.json).toHaveBeenCalledWith({
-//       success: true,
-//       message: "Post added to history",
-//     });
-//   });
-// });
+      expect(User.findOne).toHaveBeenCalledWith({ _id: req.user.userId });
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Internal server error', error: new Error('Internal server error') });
+    });
+//clear history
+    // Successfully clear the history of recent posts for an authenticated user
+    it('should clear the history of recent posts for an authenticated user', async () => {
+      const req = { user: { userId: '123' } };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const user = { recentPosts: ['post1', 'post2'] };
+      User.findOne = jest.fn().mockResolvedValue(user);
+      user.save = jest.fn().mockResolvedValue();
 
-// describe("getHistory function", () => {
-//   let req, res;
+      await clearHistory(req, res);
 
-//   beforeEach(() => {
-//     req = {
-//       headers: { authorization: "Bearer fake.token" },
-//     };
-//     res = {
-//       status: jest.fn(() => res),
-//       json: jest.fn(),
-//     };
+      expect(User.findOne).toHaveBeenCalledWith({ _id: '123' });
+      expect(user.recentPosts).toEqual([]);
+      expect(user.save).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: 'History cleared successfully' });
+    });
+    // Return a 500 status code and an error message if an error occurs
+    it('should return a 500 status code and an error message if an error occurs', async () => {
+      const req = { user: { userId: '123' } };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      User.findOne = jest.fn().mockRejectedValue(new Error('Internal server error'));
 
-//     // Mock setup for Post.find
-//     Post.find = jest.fn(); 
-//   });
+      await clearHistory(req, res);
 
-//   it("should retrieve the user's browsing history", async () => {
-//     verifyToken.mockResolvedValue({ userId: "user123" });
-//     User.findOne.mockResolvedValue({ recentPosts: ["post123"] });
-//     Post.find.mockResolvedValue([{ _id: "post123", title: "Example Post" }]);
-
-//     await getHistory(req, res);
-
-//     expect(res.status).toHaveBeenCalledWith(200);
-//     expect(res.json).toHaveBeenCalledWith({
-//       success: true,
-//       recentPosts: [{ _id: "post123", title: "Example Post" }],
-//     });
-//   });  
-// });
-
-// describe("getHistory function", () => {
-//   let req, res;
-
-//   beforeEach(() => {
-//     req = {
-//       headers: {},
-//     };
-//     res = {
-//       status: jest.fn(() => res),
-//       json: jest.fn(),
-//     };
-
-//     // Mock setup for Post.find
-//     Post.find = jest.fn(); 
-//   });
-
-//   it("should send false when no post id is provided", async () => {
-//     await getHistory(req, res);
-
-//     expect(res.status).toHaveBeenCalledWith(500);
-//     expect(res.json).toHaveBeenCalledWith({
-//       success: false,
-//       message: "Internal server error",
-//     });
-//   });  
-// });
+      expect(User.findOne).toHaveBeenCalledWith({ _id: '123' });
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Internal server error', error: new Error('Internal server error') });
+    });
 
 describe("spoilerPost function", () => {
   let req, res, postFindOneAndUpdateMock;

@@ -1,4 +1,160 @@
-// // Successfully retrieve all posts made by a specific user
+const {
+  getJoinedCommunities,
+  getPostsByUser,
+  getCommentsByUser,
+  getVotedContent,
+  getUpvotedContent,
+  getDownvotedContent,
+  getAboutInformation,
+  getOverviewInformation,
+  fetchPostsByUsername,
+  findUserByUsername,
+  handleServerError,
+} = require("../controller/profile/profileController");
+const { s3, sendFileToS3, getFilesFromS3 } = require("../utils/s3-bucket");
+const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
+const { verifyToken, authorizeUser } = require("../utils/tokens");
+
+const User = require("../models/userModel");
+const Post = require("../models/postModel");
+const Comment = require("../models/commentModel");
+const Subreddit = require("../models/subredditModel");
+
+
+//   it("should fetch and return posts and comments for a valid user", async () => {
+//     // Arrange
+//     const req = { params: { username: "validUser" } };
+//     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+//     User.findOne.mockResolvedValue({});
+//     Post.find.mockResolvedValue(["Post1", "Post2"]);
+//     Comment.find.mockResolvedValue(["Comment1", "Comment2"]);
+
+//     // Act
+//     await getOverviewInformation(req, res);
+
+//     // Assert
+//     expect(res.status).toHaveBeenCalledWith(200);
+//     expect(res.json).toHaveBeenCalledWith({
+//       userPosts: expect.any(Array),
+//       userComments: expect.any(Array),
+//     });
+//   });
+// });
+
+// describe("getJoinedCommunities", () => {
+//   it("should return communities joined by the user", async () => {
+//     // Arrange
+//     const req = { params: { username: "communityUser" } };
+//     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+//     User.findOne.mockResolvedValue({
+//       subreddits: [{ subreddit: "community1" }, { subreddit: "community2" }],
+//     });
+//     Subreddit.find.mockResolvedValue([
+//       { _doc: { name: "community1", members: [] } },
+//       { _doc: { name: "community2", members: [1, 2, 3] } },
+//     ]);
+
+//     // Act
+//     await getJoinedCommunities(req, res);
+
+//     // Assert
+//     expect(res.status).toHaveBeenCalledWith(200);
+//     expect(res.json).toHaveBeenCalledWith(expect.any(Object));
+//   });
+// });
+
+
+
+//fetch posts by user
+    // Should fetch posts made by a specific user when given a valid username
+    it('should fetch posts made by a specific user when given a valid username', async () => {
+      // Arrange
+      const username = 'validUsername';
+      const expectedPosts = [{ title: 'Post 1', save: jest.fn() }, { title: 'Post 2', save: jest.fn() }];
+
+      // Mock the Post.find() function
+      Post.find = jest.fn().mockReturnValue({ populate: jest.fn().mockResolvedValue(expectedPosts) });
+
+      // Act
+      const result = await fetchPostsByUsername(username);
+
+      // Assert
+      expect(result).toEqual(expectedPosts);
+      expect(Post.find).toHaveBeenCalledWith({ authorName: username });
+    });
+    // Should return an empty array when given a username with no posts
+    it('should return an empty array when given a username with no posts', async () => {
+      // Arrange
+      const username = 'noPostsUsername';
+      const expectedPosts = [];
+
+      // Mock the Post.find() function
+      Post.find = jest.fn().mockReturnValue({ populate: jest.fn().mockResolvedValue(expectedPosts) });
+
+      // Act
+      const result = await fetchPostsByUsername(username);
+
+      // Assert
+      expect(result).toEqual(expectedPosts);
+      expect(Post.find).toHaveBeenCalledWith({ authorName: username });
+    });
+
+// get voted content
+     // Should fetch upvoted posts and comments when voteType is "upvotes"
+    it('should fetch upvoted posts and comments when voteType is "upvotes"', async () => {
+      const req = { user: { userId: '123' } };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+      const user = { upvotes: [{ itemId: '456' }] };
+      const post = { _id: '456' };
+      const comment = { _id: '456' };
+
+      User.findOne = jest.fn().mockResolvedValue(user);
+      Post.find = jest.fn().mockResolvedValue([post]);
+      Comment.find = jest.fn().mockResolvedValue([comment]);
+
+      await getVotedContent(req, res, next, 'upvotes');
+
+      expect(User.findOne).toHaveBeenCalledWith({ _id: '123' });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ votedPosts: [post], votedComments: [comment] });
+    });
+    // Should return 400 status code and error message when voteType is not "upvotes" or "downvotes"
+    it('should return 400 status code and error message when voteType is not "upvotes" or "downvotes"', async () => {
+      const req = { user: { userId: '123' } };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+      const user = { upvotes: [{ itemId: '456' }] };
+
+      User.findOne = jest.fn().mockResolvedValue(user);
+
+      await getVotedContent(req, res, next, 'invalid');
+
+      expect(User.findOne).toHaveBeenCalledWith({ _id: '123' });
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Invalid vote type' });
+    });
+
+        // Should handle server error and return 500 status code
+    it('should handle server error and return 500 status code', async () => {
+      const req = { user: { userId: '123' } };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+
+      User.findOne = jest.fn().mockRejectedValue(new Error('Server Error'));
+
+      await getVotedContent(req, res, next, 'upvotes');
+
+      expect(User.findOne).toHaveBeenCalledWith({ _id: '123' });
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Server Error', error: 'Server Error' });
+    });
+
+
+
+// Successfully retrieve all posts made by a specific user
 // it("should retrieve all posts made by a specific user", async () => {
 //   const req = { params: { username: "testUser" } };
 //   const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
