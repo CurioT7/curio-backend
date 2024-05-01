@@ -692,142 +692,143 @@ async function getBestComments(subredditId, postId) {
  */
 async function guestHomePage(req, res) {
   try {
-    const { type } = req.params;
+    const { type, timeFrame } = req.params;
     const { page } = req.query;
-    const limit = 10; // Allow 20 items per page
+    const limit = 10; // Allow 10 items per page
     const skip = (page - 1) * limit;
+
     const fetchPosts = async () => {
       switch (type) {
         case "best":
+          // Fetch best posts
           return Post.find()
             .populate("originalPostId")
             .sort({ upvotes: -1, views: -1, comments: -1 })
             .skip(skip)
             .limit(limit)
             .then(async (posts) => {
+              // Retrieve media files for each post
               for (const post of posts) {
                 if (post.media) {
                   post.media = await getFilesFromS3(post.media);
                 }
               }
-              return posts.map((post) => {
-                return {
-                  post: post,
-                };
-              });
+              return posts.map((post) => ({ post }));
             });
         case "random":
+          // Fetch random posts
           return Post.find()
             .populate("originalPostId")
             .skip(skip)
             .limit(limit)
             .then(async (posts) => {
+              // Retrieve media files for each post
               for (const post of posts) {
                 if (post.media) {
                   post.media = await getFilesFromS3(post.media);
                 }
               }
-              return posts.map((randomPost) => {
-                const randomIndex = Math.floor(Math.random() * posts.length);
-                 randomPost = posts[randomIndex];
-                return {
-                  post: randomPost,
-                };
-              });
-              
+              return posts.map((randomPost) => ({ post: randomPost }));
             });
         case "top":
-          
+          // Fetch top posts
           return Post.find()
             .populate("originalPostId")
             .sort({ upvotes: -1 })
             .skip(skip)
             .limit(limit)
             .then(async (posts) => {
+              // Retrieve media files for each post
               for (const post of posts) {
                 if (post.media) {
                   post.media = await getFilesFromS3(post.media);
                 }
               }
-              return posts.map((post) => {
-                return {
-                  post: post,
-                };
-              });
+              return posts.map((post) => ({ post }));
             });
-
         case "new":
+          // Fetch new posts
           return Post.find()
             .populate("originalPostId")
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .then(async (posts) => {
+              // Retrieve media files for each post
               for (const post of posts) {
                 if (post.media) {
                   post.media = await getFilesFromS3(post.media);
                 }
               }
-              return posts.map((post) => {
-                return {
-                  post: post,
-                };
-              });
+              return posts.map((post) => ({ post }));
             });
         case "hot":
+          // Fetch hot posts
           return Post.find()
             .populate("originalPostId")
             .sort({ views: -1 })
             .skip(skip)
             .limit(limit)
             .then(async (posts) => {
+              // Retrieve media files for each post
               for (const post of posts) {
                 if (post.media) {
                   post.media = await getFilesFromS3(post.media);
                 }
               }
-              return posts.map((post) => {
-                return {
-                  post: post,
-                };
-              });
+              return posts.map((post) => ({ post }));
             });
-        case "top/week":
-          return Post.find()
-            .populate("originalPostId")
-            .sort({ upvotes: -1 })
-            .skip(skip)
-            .limit(limit)
-            .then(async (posts) => {
-              for (const post of posts) {
-                if (post.media) {
-                  post.media = await getFilesFromS3(post.media);
-                }
-              }
-              return posts.map((post) => {
-                return {
-                  post: post,
-                };
-              });
-            }); 
         default:
           return Promise.reject("Invalid posts type");
       }
     };
 
-    const posts = await fetchPosts();
+    let fetchedPosts = await fetchPosts();
+
+    if (timeFrame) {
+      switch (timeFrame) {
+        case "day":
+          fetchedPosts = fetchedPosts.filteredPosts(
+            (post) => post.post.createdAt > Date.now() - 86400000
+          );
+          break;
+        case "week":
+          fetchedPosts = fetchedPosts.filteredPosts(
+            (post) => post.post.createdAt > Date.now() - 604800000
+          );
+          break;
+        case "month":
+          fetchedPosts = fetchedPosts.filteredPosts(
+            (post) => post.post.createdAt > Date.now() - 2628000000
+          );
+          break;
+        case "year":
+          fetchedPosts = fetchedPosts.filteredPosts(
+            (post) => post.post.createdAt > Date.now() - 31540000000
+          );
+          break;
+        case "hour":
+          fetchedPosts = fetchedPosts.filteredPosts(
+            (post) => post.post.createdAt > Date.now() - 3600000
+          );
+          break;
+        case "all":
+          // No need to filter
+          break;
+        default:
+          return res.status(400).json({ message: "Invalid time frame" });
+      }
+    }
 
     const totalCount = await Post.countDocuments();
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-      // Get vote status and subreddit details for each post
       const detailsArray = await getVoteStatusAndSubredditDetails(
-        posts.map(({ post }) => post),
+        fetchedPosts.map(({ post }) => post),
         user
       );
 
-      // Combine posts and their details
-      const postsWithDetails = posts.map((post, index) => {
+      const postsWithDetails = fetchedPosts.map((post, index) => {
         return { ...post, details: detailsArray[index] };
       });
       return res.status(200).json({
@@ -836,9 +837,11 @@ async function guestHomePage(req, res) {
         posts: postsWithDetails,
       });
     } else {
-      return res
-        .status(200)
-        .json({ success: true, totalPosts: totalCount, posts: posts });
+      return res.status(200).json({
+        success: true,
+        totalPosts: totalCount,
+        posts: fetchedPosts,
+      });
     }
   } catch (error) {
     console.error("Error fetching user posts:", error);
