@@ -40,7 +40,7 @@ async function getPostComments(req, res) {
       const commentsWithDetails = postComments.map((comment, index) => {
       return { ...comment.toObject(), details: detailsArray[index] };
       });
-      res.status(200).json(commentsWithDetails);
+      return res.status(200).json(commentsWithDetails);
     }
     const postComments = await Comment.find({ linkedPost: post._id });
     return res.status(200).json({ success: true, comments: postComments });
