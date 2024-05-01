@@ -326,7 +326,13 @@ router.post("/unlock", authenticate, contentManagementController.unlockItem);
  * @param {Object} res - The response object.
  * @returns {Object} The JSON response containing the item information or an error message.
  */
-router.get("/info", contentManagementController.getItemInfo);
+router.get(
+  "/info",
+  (req, res, next) => {
+    authenticate(req, res, next, true);
+  },
+  contentManagementController.getItemInfo
+);
 
 /**
  * Route handler for casting a vote on a post or a comment.

@@ -692,8 +692,9 @@ async function getItemInfo(req, res) {
   try {
     const objectID = req.query.objectID;
     const objectType = req.query.objectType;
+
     let item;
-    let details;
+    let itemWithDetails;
 
     if (objectType === "post") {
       item = await Post.findOne({ _id: objectID }).populate("originalPostId");
@@ -705,12 +706,29 @@ async function getItemInfo(req, res) {
     } else if (objectType === "subreddit") {
       item = await Subreddit.findOne({ _id: objectID });
     }
+
     if (!item) {
       return res
         .status(404)
-        .json({ success: false, message: "Item not found", media: item.media });
+        .json({ success: false, message: "Item not found" });
+    }
+
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+
+      if (objectType === "post" || objectType === "comment") {
+        // Get vote status and subreddit details for the item
+        const details = await getVoteStatusAndSubredditDetails(item, user);
+
+        // Combine item and its details
+        itemWithDetails = { ...item.toObject(), details };
+      }
+    }
+
+    if (itemWithDetails) {
+      return res.status(200).json({ success: true, item: itemWithDetails });
     } else {
-      return res.status(200).json({ success: true, item, details });
+      return res.status(200).json({ success: true, item });
     }
   } catch (error) {
     console.log(error);
