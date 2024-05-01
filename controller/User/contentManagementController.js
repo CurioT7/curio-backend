@@ -622,36 +622,37 @@ async function lockItem(req, res) {
         return res
           .status(404)
           .json({ success: false, message: "Post not found" });
-      } else {
-        // Check if the user is a moderator or creator of the linked subreddit
-        const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
-        if (subredditOfPost) {
-          const subredditRole = user.subreddits.find(
-            (sub) => sub.subreddit === subredditOfPost.name
-          );
-          if (
-            !subredditRole ||
-            (subredditRole.role !== "moderator" && subredditRole.role !== "creator")
-          ) {
-            return res.status(403).json({
-              success: false,
-              message: "User is not authorized to lock posts in this subreddit",
-            });
-          }
-        } else {
-          await Post.findOneAndUpdate(
-            { _id: itemID },
-            { isLocked: true },
-            { new: true }
-          );
-          return res
-            .status(200)
-            .json({ success: true, message: "Post locked successfully" });
+      }
+
+      // Check if the user is a moderator or creator of the linked subreddit
+      const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
+      if (subredditOfPost) {
+        const subredditRole = user.subreddits.find(
+          (sub) => sub.subreddit === subredditOfPost.name
+        );
+        if (
+          !subredditRole ||
+          (subredditRole.role !== "moderator" &&
+            subredditRole.role !== "creator")
+        ) {
+          return res.status(403).json({
+            success: false,
+            message: "User is not authorized to lock posts in this subreddit",
+          });
         }
       }
+
+      // If the user is authorized, lock the post
+      await Post.findByIdAndUpdate(itemID, { isLocked: true });
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Post locked successfully" });
+    } else {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
@@ -675,37 +676,38 @@ async function unlockItem(req, res) {
         return res
           .status(404)
           .json({ success: false, message: "Post not found" });
-      } else {
-        // Check if the user is a moderator or creator of the linked subreddit
-        const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
-        if (subredditOfPost){
-          const subredditRole = user.subreddits.find(
-            (sub) => sub.subreddit === subredditOfPost.name
-          );
-      
-          if (
-            !subredditRole ||
-            (subredditRole.role !== "moderator" && subredditRole.role !== "creator")
-          ) {
-            return res.status(403).json({
-              success: false,
-              message: "User is not authorized to unlock posts in this subreddit",
-            });
-          }
-        } else {
-          await Post.findOneAndUpdate(
-            { _id: itemID },
-            { isLocked: false },
-            { new: true }
-          );
-          return res
-            .status(200)
-            .json({ success: true, message: "Post unlocked successfully" });
+      }
+
+      // Check if the user is a moderator or creator of the linked subreddit
+      const subredditOfPost = await Subreddit.findById(post.linkedSubreddit);
+      if (subredditOfPost) {
+        const subredditRole = user.subreddits.find(
+          (sub) => sub.subreddit === subredditOfPost.name
+        );
+
+        if (
+          !subredditRole ||
+          (subredditRole.role !== "moderator" &&
+            subredditRole.role !== "creator")
+        ) {
+          return res.status(403).json({
+            success: false,
+            message: "User is not authorized to unlock posts in this subreddit",
+          });
         }
       }
+
+      // If the user is authorized, unlock the post
+      await Post.findByIdAndUpdate(itemID, { isLocked: false });
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Post unlocked successfully" });
+    } else {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
@@ -727,12 +729,9 @@ async function getItemInfo(req, res) {
 
     if (objectType === "post") {
       item = await Post.findOne({ _id: objectID }).populate("originalPostId");
-       if (item.media) {
-         item.media = await getFilesFromS3(item.media);
-       }
-      //TODO check why this doesn't work
-      // Get vote status and subreddit details for each post
-      details = await getVoteStatusAndSubredditDetails(item);
+      if (item.media) {
+        item.media = await getFilesFromS3(item.media);
+      }
     } else if (objectType === "comment") {
       item = await Comment.findOne({ _id: objectID });
     } else if (objectType === "subreddit") {
@@ -764,7 +763,6 @@ async function getItemInfo(req, res) {
  */
 async function castVote(req, res) {
   try {
-    
     const itemID = req.body.itemID;
     const itemName = req.body.itemName;
     const direction = req.body.direction;
@@ -784,7 +782,14 @@ async function castVote(req, res) {
           .status(404)
           .json({ success: false, message: "Item not found" });
       }
-
+      // Check if the user has disabled notifications for this item
+      const disabledNotifications = user.notificationSettings || {};
+      const isDisabled =
+        (itemName === "post" &&
+          disabledNotifications.disabledPosts.includes(itemID)) ||
+        (itemName === "comment" &&
+          disabledNotifications.disabledComments.includes(itemID));
+      
       if (direction === 0) {
         // Find the existing vote in upvotes
         const existingUpvoteIndex = user.upvotes.findIndex(
@@ -813,16 +818,6 @@ async function castVote(req, res) {
           }
         }
 
-        // Notify the author
-        const notification = new Notification({
-          title: "New Vote",
-          message: `Your ${itemName === "post" ? "post" : "comment"} has been ${direction === 1 ? "upvoted" : "downvoted"
-            } by ${user.username}.`,
-          recipient: item.authorName,
-        });
-
-        await notification.save();
-
         await Promise.all([item.save(), user.save()]);
         return res
           .status(200)
@@ -835,11 +830,11 @@ async function castVote(req, res) {
           (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
         ) !== -1
           ? user.upvotes.findIndex(
-            (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
-          )
+              (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+            )
           : user.downvotes.findIndex(
-            (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
-          );
+              (vote) => vote.itemId.equals(itemID) && vote.itemType === itemName
+            );
       if (existingVoteIndex !== -1) {
         return res.status(400).json({
           success: false,
@@ -855,7 +850,19 @@ async function castVote(req, res) {
         item.downvotes += 1;
         user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
       }
+      // Notify the author
+      const notification = new Notification({
+        title: "New Vote",
+        message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
+          direction === 1 ? "upvoted" : "downvoted"
+        } by ${user.username}.`,
+        recipient: item.authorName,
+        postId: itemName === "post" ? itemID : undefined,
+        commentId: itemName === "comment" ? itemID : undefined,
+        isDisabled: isDisabled,
+      });
 
+      await notification.save();
       await Promise.all([item.save(), user.save()]);
       return res
         .status(200)
@@ -940,7 +947,8 @@ async function getHistory(req, res) {
       }
       // Get vote status and subreddit details for each post
       const detailsArray = await getVoteStatusAndSubredditDetails(
-        recentPostDetails
+        recentPostDetails,
+        user
       );
 
       // Combine posts and their details
@@ -1015,7 +1023,7 @@ async function subredditOverview(req, res) {
         displayName: user.displayName,
         profilePicture: user.profilePicture,
         banner: user.banner,
-        about: user.bio,
+        about: user.about,
         createdAt: user.cakeDay,
         karma: user.karma,
         isUser: true,

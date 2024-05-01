@@ -43,6 +43,23 @@ const notificationSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  postId: {
+    type: Schema.Types.ObjectId,
+    ref: "Post",
+  },
+
+  commentId: {
+    type: Schema.Types.ObjectId,
+    ref: "Comment",
+  },
+  isViewed: {
+    type: Boolean,
+    default: false,
+  },
+  isDisabled: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 /**

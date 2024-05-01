@@ -138,24 +138,18 @@ async function newSubreddit(req, res) {
     }
 
     const result = await createSubreddit(req.body, user);
+    console.log("adad");
     if (!result.success) {
       return res.status(400).json({
         success: false,
         message: result.error,
       });
     }
-
-    const addUserResult = await addUserToSubbreddit(user, result.communityName);
-    if (!addUserResult.success) {
-      return res.status(400).json({
-        success: false,
-        message: addUserResult.message,
-      });
-    }
+    await addUserToSubbreddit(user, result.communityName);
 
     return res.status(201).json({
       success: true,
-      message: addUserResult.message,
+      message: result.response,
       communityName: result.communityName,
     });
   } catch (error) {

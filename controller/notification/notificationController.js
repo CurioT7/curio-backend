@@ -1,11 +1,31 @@
-const User = require('../../models/userModel');
-const Notification = require('../../models/notificationModel');
+const User = require("../../models/userModel");
+const Notification = require("../../models/notificationModel");
 const { verifyToken } = require("../../utils/tokens");
-const Post = require('../../models/postModel'); 
+const Post = require("../../models/postModel");
 require("dotenv").config();
 const brypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const Subreddit = require('../../models/subredditModel');
+const Subreddit = require("../../models/subredditModel");
+const UserPreferences = require("../../models/userPreferencesModel");
+
+/**
+ * Filters out hidden notifications for a given user.
+ * @param {Array<Object>} notifications - The array of notifications to filter.
+ * @param {Object} user - The user object containing hidden notifications.
+ * @returns {Promise<Array<Object>>} A promise that resolves to an array of filtered notifications.
+ * @throws {Error} If an error occurs during filtering.
+ */
+async function filterHiddenNotifications(notifications, user) {
+  try {
+    const hiddenNotifications = await user.hiddenNotifications;
+    notifications = await notifications.filter(
+      (notification) => !hiddenNotifications.includes(notification._id)
+    );
+    return notifications;
+  } catch (err) {
+    throw new Error(err);
+  }
+}
 
 /**
  * Retrieves unsent notifications for the authenticated user and updates the isSent flag.
@@ -19,12 +39,18 @@ async function getUnsentNotificationsForUser(req, res) {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
 
-      // Use aggregation to find notifications by recipient ID 
+      // Use aggregation to find notifications by recipient ID
       const notifications = await Notification.aggregate([
         {
           $match: {
             recipient: user.username,
             isSent: false,
+          },
+        },
+        // Sort notifications by most recent
+        {
+          $sort: {
+            timestamp: -1, // Sort in descending order based on the timestamp field
           },
         },
       ]);
@@ -37,14 +63,20 @@ async function getUnsentNotificationsForUser(req, res) {
         },
         { $set: { isSent: true } }
       );
+      // Filter out hidden notifications
+      const filteredNotifications = await filterHiddenNotifications(
+        notifications,
+        user
+      );
       if (notifications.length == 0) {
-        return res
-          .status(200)
-          .json({ success: true, message: "There are no unsent notifications" });
+        return res.status(200).json({
+          success: true,
+          message: "There are no unsent notifications",
+        });
       } else {
         return res
           .status(200)
-          .json({ success: true, notifications: notifications });
+          .json({ success: true, notifications: filteredNotifications });
       }
     }
   } catch (error) {
@@ -66,13 +98,25 @@ async function getAllNotificationsForUser(req, res) {
       const user = await User.findOne({ _id: req.user.userId });
 
       //find notifications by recipient name
-      const notifications = await Notification.aggregate([
-        {
-          $match: {
-            recipient: user.username,
+        const notifications = await Notification.aggregate([
+          {
+            $match: {
+              recipient: user.username,
+            },
           },
-        },
-      ]);
+          // Sort notifications by most recent
+          {
+            $sort: {
+              timestamp: -1, // Sort in descending order based on the timestamp field
+            },
+          },
+        ]);
+
+      // Filter out hidden notifications
+      const filteredNotifications = await filterHiddenNotifications(
+        notifications,
+        user
+      );
 
       // If the user hasn't joined any communities, suggest a random Subreddit
       if (user.subreddits.length === 0) {
@@ -91,7 +135,7 @@ async function getAllNotificationsForUser(req, res) {
 
       return res
         .status(200)
-        .json({ success: true, notifications: notifications });
+        .json({ success: true, notifications: filteredNotifications });
     }
   } catch (error) {
     console.error("Error:", error);
@@ -100,20 +144,68 @@ async function getAllNotificationsForUser(req, res) {
 }
 
 /**
+ * Checks if a subreddit with the given name exists in the database.
+ * @function checkSubredditExists
+ * @param {string} subredditName - The name of the subreddit to check.
+ * @returns {Promise<boolean>} A Promise that resolves to true if the subreddit exists, false otherwise.
+ */
+async function checkSubredditExists(subredditName) {
+  try {
+    const subreddit = await Subreddit.findOne({ name: subredditName });
+    return subreddit !== null;
+  } catch (error) {
+    console.error("Error checking subreddit:", error);
+    return false;
+  }
+}
+
+/**
+ * Checks if a post with the given ID exists in the database.
+ * @function checkPostExists
+ * @param {string} postId - The ID of the post to check.
+ * @returns {Promise<boolean>} A Promise that resolves to true if the post exists, false otherwise.
+ */
+async function checkPostExists(postId) {
+  try {
+    const post = await Post.findById(postId);
+    return post !== null;
+  } catch (error) {
+    console.error("Error checking post:", error);
+    return false;
+  }
+}
+
+/**
+ * Checks if a comment with the given ID exists in the database.
+ * @function checkCommentExists
+ * @param {string} commentId - The ID of the comment to check.
+ * @returns {Promise<boolean>} A Promise that resolves to true if the comment exists, false otherwise.
+ */
+async function checkCommentExists(commentId) {
+  try {
+    const comment = await Comment.findById(commentId);
+    return comment !== null;
+  } catch (error) {
+    console.error("Error checking comment:", error);
+    return false;
+  }
+}
+/**
  * Disables notifications for a user based on the specified subreddit, post, or comment.
  * @async
  * @param {object} req - Express request object
  * @param {object} res - Express response object
- * @returns {object} - Express response object 
+ * @returns {object} - Express response object
  */
-async function disableNotificationsForUser  (req, res) {
-
+async function disableNotificationsForUser(req, res) {
   const { subredditName, postId, commentId } = req.body;
-
+  const type = req.params.type;
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-
+      const userPreferences = await UserPreferences.findOne({
+        username: user.username,
+      });
       if (!user) {
         return res.status(404).json({
           status: "failed",
@@ -126,7 +218,7 @@ async function disableNotificationsForUser  (req, res) {
         user.notificationSettings = {
           disabledSubreddits: [],
           disabledPosts: [],
-          disabledComments: []
+          disabledComments: [],
         };
       }
 
@@ -134,103 +226,119 @@ async function disableNotificationsForUser  (req, res) {
       if (subredditName) {
         const subredditExists = await checkSubredditExists(subredditName);
         if (!subredditExists) {
-          return res.status(400).json({ success: false, message: "Subreddit does not exist" });
+          return res
+            .status(400)
+            .json({ success: false, message: "Subreddit does not exist" });
         }
       }
 
       if (postId) {
         const postExists = await checkPostExists(postId);
         if (!postExists) {
-          return res.status(400).json({ success: false, message: "Post does not exist" });
+          return res
+            .status(400)
+            .json({ success: false, message: "Post does not exist" });
         }
       }
 
       if (commentId) {
         const commentExists = await checkCommentExists(commentId);
         if (!commentExists) {
-          return res.status(400).json({ success: false, message: "Comment does not exist" });
+          return res
+            .status(400)
+            .json({ success: false, message: "Comment does not exist" });
         }
       }
 
       // Check if the subreddit, post, or comment is already disabled for the user
-      if (subredditName && user.notificationSettings.disabledSubreddits.includes(subredditName)) {
-        return res.status(400).json({ success: false, message: "Subreddit is already disabled for this user" });
+      if (
+        subredditName &&
+        user.notificationSettings.disabledSubreddits.includes(subredditName)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Subreddit is already disabled for this user",
+        });
       }
       if (postId && user.notificationSettings.disabledPosts.includes(postId)) {
-        return res.status(400).json({ success: false, message: "Post is already disabled for this user" });
+        return res.status(400).json({
+          success: false,
+          message: "Post is already disabled for this user",
+        });
       }
-      if (commentId && user.notificationSettings.disabledComments.includes(commentId)) {
-        return res.status(400).json({ success: false, message: "Comment is already disabled for this user" });
+      if (
+        commentId &&
+        user.notificationSettings.disabledComments.includes(commentId)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Comment is already disabled for this user",
+        });
       }
-
       // Update the user's notification settings based on the parameters
       if (subredditName) {
         user.notificationSettings.disabledSubreddits.push(subredditName);
       }
       if (postId) {
         user.notificationSettings.disabledPosts.push(postId);
+        await Notification.updateMany(
+          { postId: postId },
+          { $set: { isDisabled: true } }
+        );
       }
       if (commentId) {
         user.notificationSettings.disabledComments.push(commentId);
+        await Notification.updateMany(
+          { commentId: commentId },
+          { $set: { isDisabled: true } }
+        );
       }
 
       await user.save();
 
-      return res.status(200).json({ success: true, message: "Notifications disabled successfully" });
+      if (type) {
+        if (type === "posts") {
+          user.notificationSettings.disabledPosts = user.posts.map(
+            (post) => post._id
+          );
+          userPreferences.posts = false;
+          for (const post of user.posts) {
+            user.notificationSettings.disabledPosts.push(post._id);
+            await Notification.updateMany(
+              { postId: post._id },
+              { $set: { isDisabled: true } }
+            );
+          }
+        } else if (type === "comments") {
+          user.notificationSettings.disabledComments = user.comments.map(
+            (comment) => comment._id
+          );
+          userPreferences.comments = false;
+          for (const comment of user.comments) {
+            user.notificationSettings.disabledComments.push(comment._id);
+            await Notification.updateMany(
+              { commentId: comment._id },
+              { $set: { isDisabled: true } }
+            );
+          }
+        } else {
+          return res
+            .status(400)
+            .json({ success: false, message: "Invalid notification type" });
+        }
+        await userPreferences.save();
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Notifications disabled successfully",
+      });
     }
   } catch (error) {
     console.error("Error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
-};
-
-/**
- * Checks if a subreddit with the given name exists in the database.
- * @function checkSubredditExists
- * @param {string} subredditName - The name of the subreddit to check.
- * @returns {Promise<boolean>} A Promise that resolves to true if the subreddit exists, false otherwise.
- */
-async function checkSubredditExists  (subredditName)  {
-  try {
-    const subreddit = await Subreddit.findOne({ name: subredditName });
-    return subreddit !== null;
-  } catch (error) {
-    console.error("Error checking subreddit:", error);
-    return false;
-  }
-};
-
-/**
- * Checks if a post with the given ID exists in the database.
- * @function checkPostExists
- * @param {string} postId - The ID of the post to check.
- * @returns {Promise<boolean>} A Promise that resolves to true if the post exists, false otherwise.
- */
-async function checkPostExists  (postId)  {
-  try {
-    const post = await Post.findById(postId);
-    return post !== null;
-  } catch (error) {
-    console.error("Error checking post:", error);
-    return false;
-  }
-};
-
-/**
- * Checks if a comment with the given ID exists in the database.
- * @function checkCommentExists
- * @param {string} commentId - The ID of the comment to check.
- * @returns {Promise<boolean>} A Promise that resolves to true if the comment exists, false otherwise.
- */
-async function checkCommentExists  (commentId)  {
-  try {
-    const comment = await Comment.findById(commentId);
-    return comment !== null;
-  } catch (error) {
-    console.error("Error checking comment:", error);
-    return false;
-  }
-};
+}
 
 /**
  * Enables notifications for the authenticated user based on the provided parameters.
@@ -240,13 +348,14 @@ async function checkCommentExists  (commentId)  {
  * @returns {void}
  */
 async function enableNotificationsForUser(req, res) {
-
   const { subredditName, postId, commentId } = req.body;
-
+  const type = req.params.type;
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-
+      const userPreferences = await UserPreferences.findOne({
+        username: user.username,
+      });
       // Check if subredditName is provided and exists in the database
       if (subredditName) {
         const subredditExists = await checkSubredditExists(subredditName);
@@ -303,6 +412,10 @@ async function enableNotificationsForUser(req, res) {
       }
       if (postId) {
         const index = user.notificationSettings.disabledPosts.indexOf(postId);
+        await Notification.updateMany(
+          { postId: postId },
+          { $set: { isDisabled: false } }
+        );
         if (index !== -1) {
           user.notificationSettings.disabledPosts.splice(index, 1);
         }
@@ -310,12 +423,52 @@ async function enableNotificationsForUser(req, res) {
       if (commentId) {
         const index =
           user.notificationSettings.disabledComments.indexOf(commentId);
+        await Notification.updateMany(
+          { commentId: commentId },
+          { $set: { isDisabled: false } }
+        );
         if (index !== -1) {
           user.notificationSettings.disabledComments.splice(index, 1);
         }
       }
 
       await user.save();
+
+      if (type) {
+        if (type === "posts") {
+          for (const post of user.posts) {
+            const index = user.notificationSettings.disabledPosts.indexOf(post._id);
+            await Notification.updateMany(
+              { postId: post._id },
+              { $set: { isDisabled: false } }
+            );
+            if (index !== -1) {
+              user.notificationSettings.disabledPosts.splice(index, 1);
+            
+            }
+          }
+          userPreferences.posts = true; 
+        } else if (type === "comments") {
+          for (const comment of user.comments) {
+            const index = user.notificationSettings.disabledComments.indexOf(comment._id);
+            await Notification.updateMany(
+              { commentId: comment._id },
+              { $set: { isDisabled: false } }
+            );
+            if (index !== -1) {
+              user.notificationSettings.disabledComments.splice(index, 1);
+              
+            }
+          }
+          userPreferences.comments = true; 
+        } else {
+          return res
+            .status(400)
+            .json({ success: false, message: "Invalid notification type" });
+        }
+        await userPreferences.save(); 
+      }
+
 
       return res
         .status(200)
@@ -377,7 +530,6 @@ const hideNotifications = async (req, res) => {
   }
 };
 
-
 /**
  * unhide notifications for a user.
  * @async
@@ -386,11 +538,10 @@ const hideNotifications = async (req, res) => {
  * @returns {Promise<void>} A promise that resolves once the notifications are hidden.
  */
 const unhideNotifications = async (req, res) => {
-
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-     
+
       const notificationID = req.body.notificationID;
 
       // Find the notification by its ID and recipient
@@ -429,7 +580,6 @@ const unhideNotifications = async (req, res) => {
   }
 };
 
-
 /**
  * Get unread notifications and their count for a user.
  * @async
@@ -438,36 +588,42 @@ const unhideNotifications = async (req, res) => {
  * @returns {Promise<void>} A promise that resolves with unread notifications and their count.
  */
 const getUnreadNotifications = async (req, res) => {
-   try {
-     if (req.user) {
-       const user = await User.findOne({ _id: req.user.userId });
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-       if (!user) {
-         return res.status(404).json({
-           status: "failed",
-           message: "User not found",
-         });
-       }
-       // Find unread notifications for the user
-       const unreadNotifications = await Notification.aggregate([
-         {
-           $match: {
-             recipient: user.username,
-             isRead: false,
-           },
-         },
-       ]);
+      if (!user) {
+        return res.status(404).json({
+          status: "failed",
+          message: "User not found",
+        });
+      }
+      // Find unread notifications for the user
+      const unreadNotifications = await Notification.aggregate([
+        {
+          $match: {
+            recipient: user.username,
+            isRead: false,
+          },
+        },
+      ]);
 
-       // Get the count of unread notifications
-       const unreadCount = unreadNotifications.length;
-         return res
-           .status(200)
-           .json({ success: true, unreadCount, unreadNotifications });
-     }
-   } catch (error) {
-     console.error("Error:", error);
-     return res.status(500).json({ message: "Internal server error" });
-   }
+      // Filter out hidden notifications
+      const filteredNotifications = await filterHiddenNotifications(
+        unreadNotifications,
+        user
+      );
+
+      // Get the count of unread notifications
+      const unreadCount = unreadNotifications.length;
+      return res
+        .status(200)
+        .json({ success: true, unreadCount, filteredNotifications });
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 };
 
 /**
@@ -478,30 +634,36 @@ const getUnreadNotifications = async (req, res) => {
  * @returns {Promise<void>} A promise that resolves with unread notifications and their count.
  */
 const getReadNotifications = async (req, res) => {
-   try {
-     if (req.user) {
-       const user = await User.findOne({ _id: req.user.userId });
-   
-       // Find read notifications for the user
-       const readNotifications = await Notification.aggregate([
-         {
-           $match: {
-             recipient: user.username,
-             isRead: true,
-           },
-         },
-       ]);
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
 
-       // Get the count of read notifications
-       const readCount = readNotifications.length;
-         return res
-           .status(200)
-           .json({ success: true, readCount, readNotifications });
-     }
-   } catch (error) {
-     console.error("Error:", error);
-     return res.status(500).json({ message: "Internal server error" });
-   }
+      // Find read notifications for the user
+      const readNotifications = await Notification.aggregate([
+        {
+          $match: {
+            recipient: user.username,
+            isRead: true,
+          },
+        },
+      ]);
+
+      // Filter out hidden notifications
+      const filteredNotifications = await filterHiddenNotifications(
+        readNotifications,
+        user
+      );
+
+      // Get the count of read notifications
+      const readCount = readNotifications.length;
+      return res
+        .status(200)
+        .json({ success: true, readCount, filteredNotifications });
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 };
 
 /**
@@ -512,7 +674,6 @@ const getReadNotifications = async (req, res) => {
  * @returns {Object} The response containing the status of the operation.
  */
 const readNotifications = async (req, res) => {
-
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
@@ -534,8 +695,7 @@ const readNotifications = async (req, res) => {
       if (notification.recipient !== user.username) {
         return res.status(400).json({
           success: false,
-          message:
-            "Notification does not belong to the user",
+          message: "Notification does not belong to the user",
         });
       }
       if (notification.isRead) {
@@ -559,6 +719,33 @@ const readNotifications = async (req, res) => {
   }
 };
 
+/**
+ * Mark all notifications as viewed.
+ * This function updates the `isViewed` field of all notifications to true.
+ *
+ * @async
+ * @function markAllNotificationsViewed
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @returns {object} The response object.
+ * @throws {Error} Will throw an error if there's an internal server error.
+ */
+async function markAllNotificationsViewed(req, res) {
+  try {
+    if (req.user) {
+      await Notification.updateMany({}, { isViewed: true });
+
+      return res
+        .status(200)
+        .json({ success: true, message: "All notifications marked as viewed" });
+    }
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
 
 module.exports = {
   getAllNotificationsForUser,
@@ -570,4 +757,6 @@ module.exports = {
   getReadNotifications,
   getUnsentNotificationsForUser,
   readNotifications,
+  markAllNotificationsViewed,
 };
+

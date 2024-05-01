@@ -8,6 +8,8 @@ const {
 } = require("../../utils/tokens");
 require("dotenv").config();
 const Notification = require("../../models/notificationModel");
+const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
+
 
 // Function to retrieve all comments for a post.
 /**
@@ -23,7 +25,7 @@ async function getPostComments(req, res) {
   try {
     const postId = decodeURIComponent(req.params.postId);
 
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("originalPostId");
 
     if (!post) {
       return res
@@ -63,7 +65,7 @@ async function createComments(req, res) {
   try {
     const { postId, content } = req.body;
 
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("originalPostId");
 
     if (!post) {
       return res
@@ -71,18 +73,23 @@ async function createComments(req, res) {
         .json({ success: false, message: "Post not found." });
     }
 
-      // Check if the post is locked
-      if (post.isLocked) {
-        return res.status(403).json({ success: false, message: "Post is locked. Cannot add a comment." });
-      }
+    // Check if the post is locked
+    if (post.isLocked) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Post is locked. Cannot add a comment.",
+        });
+    }
 
       // check if user is authorized to comment
-      if (post.linkedSubreddit.privacyMode === "private") {
-        const isMember = post.linkedSubreddit.members.includes(user._id);
-        if (!isMember) {
-          return res.status(403).json({ success: false, message: "You are not authorized to comment on this post." });
-        }
-      }
+      // if (post.linkedSubreddit.privacyMode === "private") {
+      //   const isMember = post.linkedSubreddit.members.includes(user._id);
+      //   if (!isMember) {
+      //     return res.status(403).json({ success: false, message: "You are not authorized to comment on this post." });
+      //   }
+      // }
 
     const comment = new Comment({
       content,
@@ -98,11 +105,12 @@ async function createComments(req, res) {
     await comment.save();
     post.comments.push(comment._id);
     await post.save();
+
     // Create a notification for the post author
     const notification = new Notification({
       title: "New Comment",
       message: `${user.username} commented on your post "${post.title}".`,
-      recipient: post.author, // Assuming `author` is the username of the post author
+      recipient: post.authorName, // Assuming `author` is the username of the post author
     }); 
   
     await notification.save();
@@ -187,14 +195,18 @@ async function deleteComments(req, res) {
 
     // Check if the user is the author of the comment
     const isAuthor = comment.authorName === user.username;
-    // Check if the user is a moderator of the subreddit
-    const isModerator = comment.linkedSubreddit.moderators;
 
-    if (!isAuthor && !isModerator) {
+    if (!isAuthor) {
       return res.status(403).json({ success: false, message: "You are not authorized to delete this comment." });
     }
 
     await Comment.deleteOne({ _id: commentId });
+
+    await Post.updateOne(
+      { _id: comment.linkedPost },
+      { $pull: { comments: commentId } }
+    );
+
     return res.status(200).json({ success: true, message: "comment deleted successfully" });
 
   } catch (err) {
@@ -226,16 +238,13 @@ async function deletePost (req, res) {
   }
   try {
     const postId = req.params.postId;
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("originalPostId");
     if (!post) {
       return res.status(404).json({ success: false, message: "Post not found." });
     } 
     // Check if the user is the author of the post
     const isAuthor = post.authorName === user.username;
-    // Check if the user is a moderator of the subreddit
-    const isModerator = post.linkedSubreddit.moderators;
-
-    if (!isAuthor && !isModerator) {
+    if (!isAuthor) {
         return res.status(403).json({ success: false, message: "You are not authorized to delete this post." });
     }
 
@@ -269,7 +278,7 @@ async function editPostContent(req, res) {
   }
   try {
     const { postId, content } = req.body;
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("originalPostId");
     if (!post) {
       return res.status(404).json({ success: false, message: "Post not found." });
     }
@@ -280,8 +289,8 @@ async function editPostContent(req, res) {
 
     post.content = content;
     await post.save();
-    return res.status(200).json({ success: true, post });
 
+    return res.status(200).json({ success: true, post });
   } catch (err) {
     console.log(err);
     return res.status(500).json({ success: false, message: "Internal server error." });
@@ -310,7 +319,7 @@ async function markPostNSFW(req, res) {
   }
   try {
     const { postId } = req.body;
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("originalPostId");
     if (!post) {
       return res.status(404).json({ success: false, message: "Post not found." });
     }
@@ -346,7 +355,7 @@ async function unmarkPostNSFW(req, res) {
   }
   try {
     const { postId } = req.body;
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("originalPostId");
     if (!post) {
       return res.status(404).json({ success: false, message: "Post not found." });
     }

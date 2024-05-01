@@ -61,7 +61,7 @@ router.get("/me/friends/:friendUsername", friendsController.getUserInfo);
  * @returns {Promise<void>} A Promise that resolves when the operation is completed.
  */
 router.get(
-  "/:friends",
+  "/getfriends/:friends",
   authenticate,
   friendsController.getFollowersOrFollowings
 );

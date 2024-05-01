@@ -30,12 +30,6 @@ async function search(req, res) {
         .json({ message: "No posts found for the given query" });
     }
 
-    if (posts.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No posts found for the given query" });
-    }
-
     const postIds = posts.map((post) => post._id);
     await Post.updateMany(
       { _id: { $in: postIds } },
@@ -605,6 +599,52 @@ async function searchCommunities(req, res) {
   }
 }
 
+/**
+ * Search for hashtags based on a query.
+ * @async
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<Object>} - The search results.
+ * @throws {Error} - If there is an error searching for hashtags.
+ */
+
+async function searchHashtags(req, res) {
+  try {
+    const hashtag = decodeURIComponent(req.params.hashtag);
+    console.log(`Hashtag parameter received: ${hashtag}`);
+
+    if (!hashtag || !hashtag.startsWith('#')) {
+      return res.status(400).json({ message: "Invalid search query. Must start with '#'" });
+    }
+
+
+    const posts = await Post.find({
+      content: { $in: [hashtag] },
+
+    });
+
+    if (posts.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No posts found for the given query" });
+    }
+
+    const postIds = posts.map((post) => post._id);
+    
+    await Post.updateMany(
+      { _id: { $in: postIds } },
+      { $inc: { searchCount: 1 } }
+    );
+
+    res.status(200).json({
+      posts,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
 module.exports = {
   search,
   trendingSearches,
@@ -612,4 +652,5 @@ module.exports = {
   searchSuggestions,
   searchPeople,
   searchCommunities,
+  searchHashtags,
 };
