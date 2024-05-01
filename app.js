@@ -22,6 +22,7 @@ const searchRouter = require("./router/searchRouter");
 const categoryRouter = require("./router/categoryRouter");
 const postRouter = require("./router/postRouter");
 const notificationRouter = require("./router/notificationRouter");
+const messageRouter = require("./router/messageRouter");
 
 const cors = require("cors");
 
@@ -58,7 +59,6 @@ app.use(
   })
 );
 
-
 app.get("/", (req, res) => {
   res.send("Hello World");
 });
@@ -82,7 +82,7 @@ app.use("/api/user", profileRouter);
 app.use("/api", searchRouter);
 app.use("/api", postRouter);
 app.use("/api/notifications", notificationRouter);
-
+app.use("/api", messageRouter);
 
 const PORT = process.env.PORT;
 const server = app.listen(PORT, () => {

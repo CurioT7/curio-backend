@@ -12,6 +12,9 @@ const messageSchema = new Schema({
     ref: "User",
     required: true,
   },
+  subject: {
+    type: String,
+  },
   message: {
     type: String,
     required: true,
@@ -25,6 +28,10 @@ const messageSchema = new Schema({
     default: false,
   },
   isSent: {
+    type: Boolean,
+    default: false,
+  },
+  isPrivate: {
     type: Boolean,
     default: false,
   },
