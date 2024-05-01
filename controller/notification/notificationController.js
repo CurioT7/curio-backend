@@ -437,7 +437,6 @@ async function enableNotificationsForUser(req, res) {
 
       await user.save();
 
-      // Include logic based on the type parameter
       if (type) {
         if (type === "posts") {
           // Enable notifications for posts
