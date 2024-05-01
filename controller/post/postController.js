@@ -31,12 +31,7 @@ async function getPostComments(req, res) {
         .json({ success: false, message: "Post not found." });
       }
     if (req.user) {
-      const token = req.headers.authorization.split(" ")[1];
-      const decoded = await verifyToken(token);
-      if (!decoded) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      const user = await User.findOne({ _id: decoded.userId });
+      const user = await User.findOne({ _id: req.user.userId });
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
