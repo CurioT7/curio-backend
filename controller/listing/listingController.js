@@ -83,7 +83,6 @@ async function randomPost(req, res) {
 async function getTopPosts(req, res) {
   try {
     const subredditName = decodeURIComponent(req.params.subreddit);
-    // Find the subreddit
     const subreddit = await Subreddit.findOne({ name: subredditName });
 
     if (!subreddit) {
@@ -92,7 +91,6 @@ async function getTopPosts(req, res) {
         .json({ success: false, message: "Subreddit not found" });
     }
 
-    // Find top-viewed posts sorted by upvotes in descending order
     const topPosts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
       upvotes: -1,
     });
@@ -103,10 +101,27 @@ async function getTopPosts(req, res) {
         topPosts[i].media = await getFilesFromS3(media[i]);
       }
     }
+
     if (topPosts.length > 0) {
-      // If top-viewed posts exist, increment views of the first post
-      await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
-      return res.status(200).json({ success: true, post: topPosts });
+      // Increment views of the first post if top posts exist
+      await Post.updateOne({ _id: topPosts[0]._id }, { $inc: { views: 1 } });
+
+      // If user is authenticated, get vote status and subreddit details
+      let detailsArray;
+      if (req.user) {
+        const user = await User.findOne({ _id: req.user.userId });
+        detailsArray = await getVoteStatusAndSubredditDetails(topPosts, user);
+      }
+
+      return res.status(200).json({
+        success: true,
+        posts: detailsArray
+          ? posts.map((post, index) => ({
+              ...post,
+              details: detailsArray[index],
+            }))
+          : posts,
+      });
     } else {
       return res
         .status(404)
@@ -115,7 +130,7 @@ async function getTopPosts(req, res) {
   } catch (error) {
     return res
       .status(400)
-      .json({ success: false, message: "Error getting top post" });
+      .json({ success: false, message: "Error getting top posts" });
   }
 }
 
@@ -256,33 +271,45 @@ async function getTopPostsbytime(req, res) {
         .json({ success: false, message: "Subreddit not found" });
     }
 
-    // Get the time threshold based on the request
     let timeThreshold;
     if (req.params.time === "new") {
-      // Set time threshold to 2 hours ago
       timeThreshold = moment().subtract(2, "hours").toDate();
     } else {
-      // Default time threshold is 24 hours ago
       timeThreshold = moment()
         .subtract(req.params.timeThreshold, "days")
         .toDate();
     }
 
-    // Find top-viewed posts sorted by upvotes and filtered by creation time
     const topPosts = await Post.find({
       linkedSubreddit: subreddit._id,
-      createdAt: { $gte: timeThreshold }, // Filter posts created after the time threshold
+      createdAt: { $gte: timeThreshold },
     }).sort({ upvotes: -1 });
+
     const media = topPosts.map((post) => post.media);
     if (media) {
       for (let i = 0; i < media.length; i++) {
         topPosts[i].media = await getFilesFromS3(media[i]);
       }
     }
+
     if (topPosts.length > 0) {
-      // Increment views of the first post if top posts exist
       await Post.updateOne({ _id: topPosts[0]._id }, { $inc: { views: 1 } });
-      return res.status(200).json({ success: true, post: topPosts });
+
+      let detailsArray;
+      if (req.user) {
+        const user = await User.findOne({ _id: req.user.userId });
+        detailsArray = await getVoteStatusAndSubredditDetails(topPosts, user);
+      }
+
+      return res.status(200).json({
+        success: true,
+        posts: detailsArray
+          ? topPosts.map((post, index) => ({
+              ...post,
+              details: detailsArray[index],
+            }))
+          : topPosts,
+      });
     } else {
       return res.status(404).json({
         success: false,
@@ -290,9 +317,10 @@ async function getTopPostsbytime(req, res) {
       });
     }
   } catch (error) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Error getting top post" });
+    return res.status(400).json({
+      success: false,
+      message: "Error getting top posts",
+    });
   }
 }
 /**
@@ -381,10 +409,12 @@ async function getUserPosts(req, res) {
       const user = await User.findOne({ _id: req.user.userId });
       let totalCount;
 
-      const { type } = req.params;
-      const { page } = req.query;
+        const type = req.params.type;
+        const timeFrame = req.params.timeframe;
+        const { page } = req.params.query;
       const limit = 10; // Allow 20 items per page
       const skip = (page - 1) * limit;
+
       const fetchPosts = async (subreddit) => {
         const subredditDetails = await Subreddit.findOne({
           name: subreddit.subreddit,
@@ -398,158 +428,181 @@ async function getUserPosts(req, res) {
 
         switch (type) {
           case "best":
-            return Post.find({ linkedSubreddit: subredditDetails._id })
-              .populate("originalPostId")
-              .skip(skip)
-              .limit(limit)
-              .then(async (posts) => {
-                for (const post of posts) {
-                  if (post.media) {
-                    post.media = await getFilesFromS3(post.media);
-                  }
-                }
-                // Sort posts based on the proportion of upvotes to downvotes
-                const sortedPosts = posts.sort((a, b) => {
-                  const karmaA = a.upvotes - a.downvotes;
-                  const karmaB = b.upvotes - b.downvotes;
-
-                  // Calculate the proportion of upvotes to downvotes for each post
-                  const proportionA =
-                    karmaA > 0 ? karmaA / (karmaA + a.downvotes) : 0;
-                  const proportionB =
-                    karmaB > 0 ? karmaB / (karmaB + b.downvotes) : 0;
-
-                  // Sort posts based on the proportion of upvotes to downvotes
-                  return proportionB - proportionA;
-                });
-
-                return sortedPosts.map((post) => {
-                  return {
-                    subreddit: subreddit.name,
-                    post: post,
-                  };
-                });
-              });
-
-          case "random":
-            return Post.find({ linkedSubreddit: subredditDetails._id })
-              .populate("originalPostId")
-              .skip(skip)
-              .limit(limit)
-              .then(async (posts) => {
-                for (const post of posts) {
-                  if (post.media) {
-                    post.media = await getFilesFromS3(post.media);
-                  }
-                }
-               return posts.map((randomPost) => {
-                 const randomIndex = Math.floor(Math.random() * posts.length);
-                 randomPost = posts[randomIndex];
-                 return {
-                   post: randomPost,
-                 };
-               });
-              });
-          case "top":
-            
+            // Fetch best posts
             return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
               .sort({ upvotes: -1 })
               .skip(skip)
               .limit(limit)
               .then(async (posts) => {
+                // Retrieve media files for each post
                 for (const post of posts) {
                   if (post.media) {
                     post.media = await getFilesFromS3(post.media);
                   }
                 }
-                return posts.map((post) => {
-                  return {
-                    subreddit: subreddit.name,
-                    post: post,
-                  };
-                });
+                return posts.map((post) => ({
+                  subreddit: subreddit.name,
+                  post,
+                }));
+              });
+
+          case "random":
+            // Fetch random posts
+            return Post.find({ linkedSubreddit: subredditDetails._id })
+              .populate("originalPostId")
+              .skip(skip)
+              .limit(limit)
+              .then(async (posts) => {
+                // Retrieve media files for each post
+                for (const post of posts) {
+                  if (post.media) {
+                    post.media = await getFilesFromS3(post.media);
+                  }
+                }
+                const randomIndex = Math.floor(Math.random() * posts.length);
+                const randomPost = posts[randomIndex];
+                return [{ post: randomPost }];
               });
 
           case "new":
+            // Fetch new posts
             return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
               .sort({ createdAt: -1 })
               .skip(skip)
               .limit(limit)
               .then(async (posts) => {
+                // Retrieve media files for each post
                 for (const post of posts) {
                   if (post.media) {
                     post.media = await getFilesFromS3(post.media);
                   }
                 }
-                return posts.map((post) => {
-                  return {
-                    subreddit: subreddit.name,
-                    post: post,
-                  };
-                });
+                return posts.map((post) => ({
+                  subreddit: subreddit.name,
+                  post,
+                }));
               });
+
+          case "top":
+            // Fetch top posts
+            return Post.find({ linkedSubreddit: subredditDetails._id })
+              .populate("originalPostId")
+              .sort({ upvotes: -1 })
+              .skip(skip)
+              .limit(limit)
+              .then(async (posts) => {
+                // Retrieve media files for each post
+                for (const post of posts) {
+                  if (post.media) {
+                    post.media = await getFilesFromS3(post.media);
+                  }
+                }
+                return posts.map((post) => ({
+                  subreddit: subreddit.name,
+                  post,
+                }));
+              });
+
           case "hot":
+            // Fetch hot posts
             return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
               .sort({ views: -1 })
               .skip(skip)
               .limit(limit)
               .then(async (posts) => {
+                // Retrieve media files for each post
                 for (const post of posts) {
                   if (post.media) {
                     post.media = await getFilesFromS3(post.media);
                   }
                 }
-                return posts.map((post) => {
-                  return {
-                    subreddit: subreddit.name,
-                    post: post,
-                  };
-                });
+                return posts.map((post) => ({
+                  subreddit: subreddit.name,
+                  post,
+                }));
               });
+
           default:
             return Promise.reject("Invalid posts type");
         }
       };
 
-      const subredditPosts = await Promise.all(user.subreddits.map(fetchPosts));
+   
+const subredditPosts = await Promise.all(user.subreddits.map(fetchPosts));
 
-      const flattenedPosts = subredditPosts.flat();
+const flattenedPosts = subredditPosts.flat();
 
-      const filteredPosts = await filterHiddenPosts(flattenedPosts, user);
+      let fetchedPosts = flattenedPosts;
+      if (timeFrame) {
+        switch (timeFrame) {
+          case "day":
+            fetchedPosts = fetchedPosts.filter(
+              (post) => post.post.createdAt > Date.now() - 86400000
+            );
 
+            break;
+          case "week":
+            fetchedPosts = fetchedPosts.filter(
+              (post) => post.post.createdAt > Date.now() - 604800000
+            );
+            break;
+          case "month":
+            fetchedPosts = fetchedPosts.filter(
+              (post) => post.post.createdAt > Date.now() - 2628000000
+            );
+            break;
+          case "year":
+            fetchedPosts = fetchedPosts.filter(
+              (post) => post.post.createdAt > Date.now() - 31540000000
+            );
+            break;
+          case "hour":
+            fetchedPosts = fetchedPosts.filter(
+              (post) => post.post.createdAt > Date.now() - 3600000
+            );
+            break;
+          case "all":
+            // No need to filter
+            break;
+          default:
+            return res.status(400).json({ message: "Invalid time frame" });
+        }
+      }
+ 
       // Get vote status and subreddit details for each post
       const detailsArray = await getVoteStatusAndSubredditDetails(
-        filteredPosts.map(({ post }) => post), // Extracting only the post from each filtered post object
+        flattenedPosts.map(({ post }) => post), // Extracting only the post from each flattened post object
         user
       );
 
       // Combine posts and their details
-      const postsWithDetails = filteredPosts.map((post, index) => {
-        return { ...post, details: detailsArray[index] }; // Use the filtered post directly without calling toObject()
+      const postsWithDetails = fetchedPosts.map((post, index) => {
+        return { ...post, details: detailsArray[index] }; // Use the fetched post directly without calling toObject()
       });
 
       await Promise.all(
-        filteredPosts.map(({ post }) =>
+        fetchedPosts.map(({ post }) =>
           Post.updateOne({ _id: post._id }, { $inc: { views: 1 } })
         )
       );
 
-      return res.status(200).json({
-        success: true,
-        totalPosts: totalCount,
+      res.status(200).json({
+        totalCount,
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limit),
         posts: postsWithDetails,
       });
+    } else {
+      res.status(401).json({ message: "Unauthorized" });
     }
   } catch (error) {
-    console.error("Error fetching user posts:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
+    res.status(500).json({ message: error.message });
   }
 }
+
 
 /**
  * Sort comments for a post within a subreddit based on the specified type.
@@ -703,8 +756,9 @@ async function getBestComments(subredditId, postId) {
  */
 async function guestHomePage(req, res) {
   try {
-    const { type, timeFrame } = req.params;
-    const { page } = req.query;
+    const type = req.params.type;
+    const timeFrame = req.params.timeframe;
+    const { page } = req.params.query;
     const limit = 10; // Allow 10 items per page
     const skip = (page - 1) * limit;
 
@@ -799,27 +853,27 @@ async function guestHomePage(req, res) {
     if (timeFrame) {
       switch (timeFrame) {
         case "day":
-          fetchedPosts = fetchedPosts.filteredPosts(
+          fetchedPosts = fetchedPosts.filter(
             (post) => post.post.createdAt > Date.now() - 86400000
           );
           break;
         case "week":
-          fetchedPosts = fetchedPosts.filteredPosts(
+          fetchedPosts = fetchedPosts.filter(
             (post) => post.post.createdAt > Date.now() - 604800000
           );
           break;
         case "month":
-          fetchedPosts = fetchedPosts.filteredPosts(
+          fetchedPosts = fetchedPosts.filter(
             (post) => post.post.createdAt > Date.now() - 2628000000
           );
           break;
         case "year":
-          fetchedPosts = fetchedPosts.filteredPosts(
+          fetchedPosts = fetchedPosts.filter(
             (post) => post.post.createdAt > Date.now() - 31540000000
           );
           break;
         case "hour":
-          fetchedPosts = fetchedPosts.filteredPosts(
+          fetchedPosts = fetchedPosts.filter(
             (post) => post.post.createdAt > Date.now() - 3600000
           );
           break;
