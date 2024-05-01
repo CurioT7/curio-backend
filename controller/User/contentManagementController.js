@@ -828,6 +828,7 @@ async function castVote(req, res) {
         postId: itemName === "post" ? itemID : undefined,
         commentId: itemName === "comment" ? itemID : undefined,
         isDisabled: isDisabled,
+        type: itemName,
       });
 
       await notification.save();

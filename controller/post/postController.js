@@ -95,7 +95,8 @@ async function createComments(req, res) {
     const notification = new Notification({
       title: "New Comment",
       message: `${user.username} commented on your post "${post.title}".`,
-      recipient: post.authorName, // Assuming `author` is the username of the post author
+      recipient: post.authorName, 
+      type: "comment",
     }); 
   
     await notification.save();
