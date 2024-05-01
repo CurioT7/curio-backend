@@ -758,6 +758,12 @@ async function castVote(req, res) {
         (itemName === "comment" &&
           disabledNotifications.disabledComments.includes(itemID));
 
+      // Check if the postId or commentId exists in the notificationSettings
+      const isPostDisabled =
+        user.notificationSettings.disabledPosts.includes(itemID);
+      const isCommentDisabled =
+        user.notificationSettings.disabledComments.includes(itemID);
+
       if (direction === 0) {
         // Find the existing vote in upvotes
         const existingUpvoteIndex = user.upvotes.findIndex(
@@ -818,20 +824,35 @@ async function castVote(req, res) {
         item.downvotes += 1;
         user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
       }
+      if (isPostDisabled || isCommentDisabled) {
+        // Send notification
+        const notification = new Notification({
+          title: "Notification",
+          message: `Notifications are disabled for this ${itemName}.`,
+          recipient: user.username, // or item.authorName
+          postId: itemName === "post" ? itemID : undefined,
+          commentId: itemName === "comment" ? itemID : undefined,
+          isDisabled: true,
+          type: itemName,
+        });
+        await notification.save();
+      }
       // Notify the author
-      const notification = new Notification({
-        title: "New Vote",
-        message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
-          direction === 1 ? "upvoted" : "downvoted"
-        } by ${user.username}.`,
-        recipient: item.authorName,
-        postId: itemName === "post" ? itemID : undefined,
-        commentId: itemName === "comment" ? itemID : undefined,
-        isDisabled: isDisabled,
-        type: itemName,
-      });
+      if (!isDisabled) {
+        const notification = new Notification({
+          title: "New Vote",
+          message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
+            direction === 1 ? "upvoted" : "downvoted"
+          } by ${user.username}.`,
+          recipient: item.authorName,
+          postId: itemName === "post" ? itemID : undefined,
+          commentId: itemName === "comment" ? itemID : undefined,
+          isDisabled: isDisabled,
+          type: itemName,
+        });
 
-      await notification.save();
+        await notification.save();
+      }
       await Promise.all([item.save(), user.save()]);
       return res
         .status(200)

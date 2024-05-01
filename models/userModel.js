@@ -227,13 +227,13 @@ const userSchema = new mongoose.Schema({
     ],
     disabledPosts: [
       {
-        type: Schema.Types.ObjectId, // Store the IDs of disabled posts
+        type: Schema.Types.ObjectId, 
         ref: "Post", 
       },
     ],
     disabledComments: [
       {
-        type: Schema.Types.ObjectId, // Store the IDs of disabled comments
+        type: Schema.Types.ObjectId, 
         ref: "Comment", 
       },
     ],
