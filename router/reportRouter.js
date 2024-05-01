@@ -6,6 +6,7 @@
 const express = require("express");
 const router = express.Router();
 const reportController = require("../controller/profile/reportController");
+const { authenticate } = require("../middlewares/auth");
 
 /**
  * Route to handle POST requests for reporting a user.
@@ -16,7 +17,7 @@ const reportController = require("../controller/profile/reportController");
  * @param {function} middleware - The controller function to handle the POST request.
  * @returns {object} Express router instance.
  */
-router.post("/report_user", reportController.reportUser);
+router.post("/report_user", authenticate ,reportController.reportUser);
 
 /**
  * Route for reporting content.
@@ -27,7 +28,7 @@ router.post("/report_user", reportController.reportUser);
  * @param {object} res - The response object.
  * @returns {void}
  */
-router.post("/report", reportController.reportContent);
+router.post("/report", authenticate, reportController.reportContent);
 
 /**
  * Route for retrieving reported content from the specified subreddit.
@@ -37,6 +38,6 @@ router.post("/report", reportController.reportContent);
  * @param {NextFunction} next - The Express NextFunction middleware.
  * @returns {void}
  */
-router.get("/:subreddit/getReports", reportController.getReportedContent);
+router.get("/:subreddit/getReports", authenticate, reportController.getReportedContent);
 
 module.exports = router;
