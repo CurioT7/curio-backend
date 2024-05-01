@@ -6,6 +6,8 @@ require("dotenv").config();
 const { addUserToSubbreddit } = require("./friendController");
 const { verifyToken } = require("../../utils/tokens");
 const Notification = require("../../models/notificationModel");
+const { getFilesFromS3 } = require("../../utils/s3-bucket");
+
 /**
  * Check whether subreddit is available or not
  * @param {string} subreddit
@@ -120,15 +122,8 @@ async function createSubreddit(data, user) {
  */
 async function newSubreddit(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
+   
+    const user = await await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({
@@ -180,10 +175,13 @@ async function getSubredditInfo(req, res) {
         .status(404)
         .json({ success: false, message: "Subreddit not found" });
     }
-
+  let media = {};
+  if (subreddit.media) {
+    media = await getFilesFromS3(subreddit.media);
+  }
     return res.status(200).json({
       success: true,
-      subreddit: subreddit.toObject(), // Convert Mongoose document to plain JavaScript object
+      subreddit: { ...subreddit.toObject(), media: media }, 
     });
   } catch (error) {
     console.error("Error fetching subreddit:", error);

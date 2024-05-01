@@ -15,7 +15,6 @@ const { getVoteStatusAndSubredditDetails } = require("../../utils/posts.js");
  * @returns {Object} - The response object containing the random post.
  */
 
-
 async function randomPost(req, res) {
   // random post linked with the subreddit
   try {
@@ -34,28 +33,39 @@ async function randomPost(req, res) {
         .status(404)
         .json({ success: false, message: "No posts found in the subreddit" });
     }
-    const randomPost = posts[Math.floor(Math.random() * posts.length)];
+    //get random post using aggregate
+    let randomPost = await Post.aggregate([
+      { $match: { linkedSubreddit: subreddit._id } },
+      { $sample: { size: 1 } },
+    ]);
+
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      if (user.hiddenPosts.includes(randomPost[0]._id)) {
+        randomPost = await Post.aggregate([
+          { $match: { linkedSubreddit: subreddit._id } },
+          { $sample: { size: 1 } },
+        ]);
+      }
+    }
+
     //increase of the number of views
-    randomPost.views += 1;
-    await randomPost.save();
+    await Post.updateOne({ _id: randomPost[0]._id }, { $inc: { views: 1 } });
     const media = randomPost.media;
     let userVote = null;
     if (media) {
       randomPost.media = await getFilesFromS3(media);
     }
-    if (randomPost.type === "poll" && req.user) {
-      const user = await User.findById(req.user.userId);
-      randomPost.options.forEach((opt) => {
-        if (opt.voters.includes(user._id)) {
-          userVote = opt.name;
-        }
-      });
+    let detailsArray;
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      detailsArray = await getVoteStatusAndSubredditDetails(randomPost, user);
     }
 
     return res.status(200).json({
       success: true,
       post: randomPost,
-      userVote: userVote && userVote,
+      detailsArray: detailsArray && detailsArray,
     });
   } catch (err) {
     console.error("Error getting random post:", err);
@@ -87,6 +97,12 @@ async function getTopPosts(req, res) {
       upvotes: -1,
     });
 
+    const media = topPosts.map((post) => post.media);
+    if (media) {
+      for (let i = 0; i < media.length; i++) {
+        topPosts[i].media = await getFilesFromS3(media[i]);
+      }
+    }
     if (topPosts.length > 0) {
       // If top-viewed posts exist, increment views of the first post
       await Post.updateMany({ _id: post._id }, { $inc: { views: 1 } });
@@ -124,7 +140,12 @@ async function newPosts(req, res) {
     const posts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
       createdAt: -1,
     });
-
+    const media = posts.map((post) => post.media);
+    if (media) {
+      for (let i = 0; i < media.length; i++) {
+        posts[i].media = await getFilesFromS3(media[i]);
+      }
+    }
     const postIds = posts.map((post) => post._id);
     await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
@@ -157,7 +178,12 @@ async function hotPosts(req, res) {
     const posts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
       views: -1,
     });
-
+    const media = Posts.map((post) => post.media);
+    if (media) {
+      for (let i = 0; i < media.length; i++) {
+        Posts[i].media = await getFilesFromS3(media[i]);
+      }
+    }
     const postIds = posts.map((post) => post._id);
     await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
@@ -197,7 +223,12 @@ async function mostComments(req, res) {
     });
 
     posts.sort((a, b) => b.numComments - a.numComments);
-
+    const media = posts.map((post) => post.media);
+    if (media) {
+      for (let i = 0; i < media.length; i++) {
+        posts[i].media = await getFilesFromS3(media[i]);
+      }
+    }
     return res.status(200).json({ success: true, posts });
   } catch (error) {
     return res.status(400).json({
@@ -242,7 +273,12 @@ async function getTopPostsbytime(req, res) {
       linkedSubreddit: subreddit._id,
       createdAt: { $gte: timeThreshold }, // Filter posts created after the time threshold
     }).sort({ upvotes: -1 });
-
+    const media = topPosts.map((post) => post.media);
+    if (media) {
+      for (let i = 0; i < media.length; i++) {
+        topPosts[i].media = await getFilesFromS3(media[i]);
+      }
+    }
     if (topPosts.length > 0) {
       // Increment views of the first post if top posts exist
       await Post.updateOne({ _id: topPosts[0]._id }, { $inc: { views: 1 } });
@@ -349,7 +385,6 @@ async function getUserPosts(req, res) {
       const { page } = req.query;
       const limit = 10; // Allow 20 items per page
       const skip = (page - 1) * limit;
-
       const fetchPosts = async (subreddit) => {
         const subredditDetails = await Subreddit.findOne({
           name: subreddit.subreddit,
@@ -407,14 +442,16 @@ async function getUserPosts(req, res) {
                     post.media = await getFilesFromS3(post.media);
                   }
                 }
-                const randomIndex = Math.floor(Math.random() * posts.length);
-                const randomPost = posts[randomIndex];
-                return {
-                  subreddit: subreddit.name,
-                  post: randomPost,
-                };
+               return posts.map((randomPost) => {
+                 const randomIndex = Math.floor(Math.random() * posts.length);
+                 randomPost = posts[randomIndex];
+                 return {
+                   post: randomPost,
+                 };
+               });
               });
           case "top":
+            
             return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
               .sort({ upvotes: -1 })
@@ -433,6 +470,7 @@ async function getUserPosts(req, res) {
                   };
                 });
               });
+
           case "new":
             return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
@@ -665,133 +703,156 @@ async function getBestComments(subredditId, postId) {
  */
 async function guestHomePage(req, res) {
   try {
-    const { type } = req.params;
+    const { type, timeFrame } = req.params;
     const { page } = req.query;
-    const limit = 10; // Allow 20 items per page
+    const limit = 10; // Allow 10 items per page
     const skip = (page - 1) * limit;
 
     const fetchPosts = async () => {
       switch (type) {
         case "best":
+          // Fetch best posts
           return Post.find()
             .populate("originalPostId")
             .sort({ upvotes: -1, views: -1, comments: -1 })
             .skip(skip)
             .limit(limit)
             .then(async (posts) => {
+              // Retrieve media files for each post
               for (const post of posts) {
                 if (post.media) {
                   post.media = await getFilesFromS3(post.media);
                 }
               }
-              return posts.map((post) => {
-                return {
-                  post: post,
-                };
-              });
+              return posts.map((post) => ({ post }));
             });
         case "random":
+          // Fetch random posts
           return Post.find()
             .populate("originalPostId")
             .skip(skip)
             .limit(limit)
             .then(async (posts) => {
+              // Retrieve media files for each post
               for (const post of posts) {
                 if (post.media) {
                   post.media = await getFilesFromS3(post.media);
                 }
               }
-              const randomIndex = Math.floor(Math.random() * posts.length);
-              const randomPost = posts[randomIndex];
-              return {
-                post: randomPost,
-              };
+              return posts.map((randomPost) => ({ post: randomPost }));
             });
         case "top":
+          // Fetch top posts
           return Post.find()
             .populate("originalPostId")
             .sort({ upvotes: -1 })
             .skip(skip)
             .limit(limit)
             .then(async (posts) => {
+              // Retrieve media files for each post
               for (const post of posts) {
                 if (post.media) {
                   post.media = await getFilesFromS3(post.media);
                 }
               }
-              return posts.map((post) => {
-                return {
-                  post: post,
-                };
-              });
+              return posts.map((post) => ({ post }));
             });
         case "new":
+          // Fetch new posts
           return Post.find()
             .populate("originalPostId")
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .then(async (posts) => {
+              // Retrieve media files for each post
               for (const post of posts) {
                 if (post.media) {
                   post.media = await getFilesFromS3(post.media);
                 }
               }
-              return posts.map((post) => {
-                return {
-                  post: post,
-                };
-              });
+              return posts.map((post) => ({ post }));
             });
         case "hot":
+          // Fetch hot posts
           return Post.find()
             .populate("originalPostId")
             .sort({ views: -1 })
             .skip(skip)
             .limit(limit)
             .then(async (posts) => {
+              // Retrieve media files for each post
               for (const post of posts) {
                 if (post.media) {
                   post.media = await getFilesFromS3(post.media);
                 }
               }
-              return posts.map((post) => {
-                return {
-                  post: post,
-                };
-              });
+              return posts.map((post) => ({ post }));
             });
         default:
           return Promise.reject("Invalid posts type");
       }
     };
 
-    const posts = await fetchPosts();
+    let fetchedPosts = await fetchPosts();
+
+    if (timeFrame) {
+      switch (timeFrame) {
+        case "day":
+          fetchedPosts = fetchedPosts.filteredPosts(
+            (post) => post.post.createdAt > Date.now() - 86400000
+          );
+          break;
+        case "week":
+          fetchedPosts = fetchedPosts.filteredPosts(
+            (post) => post.post.createdAt > Date.now() - 604800000
+          );
+          break;
+        case "month":
+          fetchedPosts = fetchedPosts.filteredPosts(
+            (post) => post.post.createdAt > Date.now() - 2628000000
+          );
+          break;
+        case "year":
+          fetchedPosts = fetchedPosts.filteredPosts(
+            (post) => post.post.createdAt > Date.now() - 31540000000
+          );
+          break;
+        case "hour":
+          fetchedPosts = fetchedPosts.filteredPosts(
+            (post) => post.post.createdAt > Date.now() - 3600000
+          );
+          break;
+        case "all":
+          // No need to filter
+          break;
+        default:
+          return res.status(400).json({ message: "Invalid time frame" });
+      }
+    }
 
     const totalCount = await Post.countDocuments();
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-      // Get vote status and subreddit details for each post
       const detailsArray = await getVoteStatusAndSubredditDetails(
-        posts.map(({ post }) => post),
+        fetchedPosts.map(({ post }) => post),
         user
       );
 
-      // Combine posts and their details
-      const postsWithDetails = posts.map((post, index) => {
+      const postsWithDetails = fetchedPosts.map((post, index) => {
         return { ...post, details: detailsArray[index] };
       });
-      return res
-        .status(200)
-        .json({
-          success: true,
-          totalPosts: totalCount,
-          posts: postsWithDetails,
-        });
+      return res.status(200).json({
+        success: true,
+        totalPosts: totalCount,
+        posts: postsWithDetails,
+      });
     } else {
-      return res
-        .status(200)
-        .json({ success: true, totalPosts: totalCount, posts: posts });
+      return res.status(200).json({
+        success: true,
+        totalPosts: totalCount,
+        posts: fetchedPosts,
+      });
     }
   } catch (error) {
     console.error("Error fetching user posts:", error);

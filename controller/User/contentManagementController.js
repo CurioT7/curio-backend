@@ -24,14 +24,9 @@ const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
  */
 
 async function hidePost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const postId = req.body.postId;
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const postId = req.body.postId;
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -48,7 +43,9 @@ async function hidePost(req, res) {
         .status(400)
         .json({ success: false, message: "Post already hidden" });
     }
+
     user.hiddenPosts.push(postId);
+
     await user.save();
     return res
       .status(200)
@@ -71,14 +68,9 @@ async function hidePost(req, res) {
  */
 
 async function unhidePost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const postId = req.body.postId;
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const postId = req.body.postId;
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -107,15 +99,11 @@ async function unhidePost(req, res) {
   }
 }
 async function spoilerPost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
   const postId = req.body.idpost;
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
+    const user =  await User.findById(req.user.userId);
     // Find the post by ID
-    const post = await Post.findOne({ _id: postId, authorID: decoded.userId });
+    const post = await Post.findOne({ _id: postId, authorID: user });
     if (!post) {
       return res.status(404).json({
         success: false,
@@ -136,15 +124,12 @@ async function spoilerPost(req, res) {
 }
 
 async function unspoilerPost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const postId = req.body.idpost; // Assuming the post ID is in the URL as /api/:idpost/unspoiler
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
+  const postId = req.body.idpost; 
+  
   try {
+   const user= await User.findById(req.user.userId);
     // Find the post by ID
-    const post = await Post.findOne({ _id: postId, authorID: decoded.userId });
+    const post = await Post.findOne({ _id: postId, authorID: user });
     if (!post) {
       return res.status(404).json({
         success: false,
@@ -270,13 +255,8 @@ async function unsave(req, res) {
  */
 
 async function saved_categories(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -304,13 +284,8 @@ async function saved_categories(req, res) {
  * @async
  */
 async function hidden(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -443,12 +418,7 @@ async function submitPost(req, res, user, imageKey) {
 
 async function submit(req, res) {
   try {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findOne({ _id: req.user.userId });
     if (!user) {
       return res
         .status(404)
@@ -540,9 +510,7 @@ async function shareCrossPost(user, crossPostData) {
  */
 
 async function sharePost(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  const user = await User.findOne({ _id: decoded.userId });
+  const user = await User.findOne({ _id: req.user.userId });
   if (!user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -789,7 +757,7 @@ async function castVote(req, res) {
           disabledNotifications.disabledPosts.includes(itemID)) ||
         (itemName === "comment" &&
           disabledNotifications.disabledComments.includes(itemID));
-      
+
       if (direction === 0) {
         // Find the existing vote in upvotes
         const existingUpvoteIndex = user.upvotes.findIndex(

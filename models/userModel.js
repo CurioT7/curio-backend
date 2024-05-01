@@ -269,6 +269,9 @@ const userSchema = new mongoose.Schema({
       ref: "Message",
     },
   ],
+  media: {
+    type: String,
+  },
 });
 
 /**

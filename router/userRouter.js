@@ -156,7 +156,7 @@ router.patch("/auth/resend_verification", userController.resendVerification);
  * @param {string} path - Express route path
  * @param {Function} middleware - Middleware function for route
  */
-router.post("/User/block", userBlockController.blockUser);
+router.post("/User/block",authenticate, userBlockController.blockUser);
 
 /**
  * Route to unblock a user.
@@ -167,7 +167,7 @@ router.post("/User/block", userBlockController.blockUser);
  * @param {string} path - Express route path
  * @param {Function} middleware - Middleware function for route
  */
-router.post("/User/unblock", userBlockController.unblockUser);
+router.post("/User/unblock",authenticate, userBlockController.unblockUser);
 
 /**
  * Route to hide a post.
@@ -179,7 +179,7 @@ router.post("/User/unblock", userBlockController.unblockUser);
  * @param {Function} middleware - Middleware function for route
  */
 
-router.post("/hide", contentManagementController.hidePost);
+router.post("/hide", authenticate, contentManagementController.hidePost);
 
 /**
  * Route to unhide a post.
@@ -191,7 +191,7 @@ router.post("/hide", contentManagementController.hidePost);
  * @param {Function} middleware - Middleware function for route
  */
 
-router.post("/unhide", contentManagementController.unhidePost);
+router.post("/unhide", authenticate, contentManagementController.unhidePost);
 /**
  * Route to spoiler a post.
  * @name POST/User/spoil
@@ -201,7 +201,7 @@ router.post("/unhide", contentManagementController.unhidePost);
  * @param {string} path - Express route path
  * @param {Function} middleware - Middleware function for route
  */
-router.post("/spoil", contentManagementController.spoilerPost);
+router.post("/spoil",authenticate, contentManagementController.spoilerPost);
 /**
  * Route to unspoiler a post.
  * @name POST/User/unspoil
@@ -211,7 +211,11 @@ router.post("/spoil", contentManagementController.spoilerPost);
  * @param {string} path - Express route path
  * @param {Function} middleware - Middleware function for route
  */
-router.post("/unspoil", contentManagementController.unspoilerPost);
+router.post(
+  "/unspoil",
+  authenticate,
+  contentManagementController.unspoilerPost
+);
 
 /**
  * Route to save a post or comment.
@@ -247,7 +251,7 @@ router.post("/unsave", contentManagementController.unsave);
  * @param {Function} middleware - Middleware function for route
  */
 
-router.get("/saved_categories", contentManagementController.saved_categories);
+router.get("/saved_categories", authenticate, contentManagementController.saved_categories);
 
 /**
  * Route to get hidden posts.
@@ -259,7 +263,7 @@ router.get("/saved_categories", contentManagementController.saved_categories);
  * @param {Function} middleware - Middleware function for route
  */
 
-router.get("/hidden", contentManagementController.hidden);
+router.get("/hidden", authenticate, contentManagementController.hidden);
 
 /**
  * Route to submit a post.
@@ -273,6 +277,7 @@ router.get("/hidden", contentManagementController.hidden);
 
 router.post(
   "/submit",
+  authenticate,
   upload.single("media"),
   contentManagementController.submit
 );
@@ -286,7 +291,7 @@ router.post(
  * @param {string} path - Express route path
  */
 
-router.post("/share", contentManagementController.sharePost);
+router.post("/share", authenticate, contentManagementController.sharePost);
 
 /**
  * Route to get a post link.
@@ -332,7 +337,7 @@ router.get("/info", contentManagementController.getItemInfo);
  * @param {Object} res - Express response object.
  * @returns {Object} JSON response indicating success or failure.
  */
-router.post("/vote", authenticate ,contentManagementController.castVote);
+router.post("/vote", authenticate, contentManagementController.castVote);
 
 /**
  * Add a post to the user's browsing history.
@@ -365,7 +370,11 @@ router.get("/getHistory", authenticate, contentManagementController.getHistory);
  * @returns {Error}  401 - Unauthorized
  * @returns {Error}  500 - Internal server error
  */
-router.delete("/clear-history", authenticate ,contentManagementController.clearHistory);
+router.delete(
+  "/clear-history",
+  authenticate,
+  contentManagementController.clearHistory
+);
 
 /**
  * Retrieve the user's browsing history.
