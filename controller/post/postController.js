@@ -30,7 +30,7 @@ async function getPostComments(req, res) {
         .status(404)
         .json({ success: false, message: "Post not found." });
       }
-    if (req.headers.authorization) {
+    if (req.user) {
       const token = req.headers.authorization.split(" ")[1];
       const decoded = await verifyToken(token);
       if (!decoded) {
