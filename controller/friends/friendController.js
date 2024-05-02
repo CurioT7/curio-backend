@@ -466,9 +466,9 @@ async function followSubreddit(req, res) {
     }
 
     // Check if notifications are disabled for the subreddit
-    const disabledSubreddit =
+    const isDisabledSubreddit =
       userExists.notificationSettings.disabledSubreddits.includes(subreddit);
-    if (disabledSubreddit) {
+    if (isDisabledSubreddit) {
       // Create a notification for the user with isDisabled set to true
       const notification = new Notification({
         title: "Subreddit Followed (Disabled)",
@@ -488,26 +488,41 @@ async function followSubreddit(req, res) {
       (moderator) => moderator.username
     );
     for (const moderator of moderators) {
-      const notification = new Notification({
-        title: "New Follower",
-        message: `${userExists.username} started following the subreddit "${subreddit}".`,
-        recipient: moderator,
-        type: "Subreddit Follower",
+      if (isDisabledSubreddit) {
+        // Create a notification for the user with isDisabled set to true
+        const notification = new Notification({
+          title: "Subreddit Followed (Disabled)",
+          message: `You have followed the subreddit "${subreddit}", but notifications are disabled for this subreddit.`,
+          recipient: userExists.username,
+          type: "Subreddit Followed",
+          subredditName: subreddit,
+          isDisabled: true,
+        });
+        await notification.save();
+      }
+      if (!isDisabledSubreddit) {
+
+        const notification = new Notification({
+          title: "New Follower",
+          message: `${userExists.username} started following the subreddit "${subreddit}".`,
+          recipient: moderator,
+          type: "Subreddit Follower",
+          subredditName: subreddit,
+        });
+        await notification.save();
+      }
+    }
+    if (!isDisabledSubreddit) {
+      // Create a notification for the user
+      const userNotification = new Notification({
+        title: "Subreddit Followed",
+        message: `You have successfully followed the subreddit "${subreddit}".`,
+        recipient: userExists.username,
+        type: "Subreddit Followed",
         subredditName: subreddit,
       });
-      await notification.save();
+      await userNotification.save();
     }
-
-    // Create a notification for the user
-    const userNotification = new Notification({
-      title: "Subreddit Followed",
-      message: `You have successfully followed the subreddit "${subreddit}".`,
-      recipient: userExists.username,
-      type: "Subreddit Followed",
-      subredditName: subreddit,
-    });
-    await userNotification.save();
-
     return res.status(200).json({
       success: true,
       message: "Subreddit followed successfully",

@@ -83,16 +83,27 @@ async function createComments(req, res) {
         });
       }
 
-      // Check if comments are disabled for the post's subreddit
-      const subreddit = await Community.findOne({ name: post.linkedSubreddit });
-      if (subreddit.disableComments) {
+      // Check if comments are disabled for the subreddit
+      const disableComments =
+        user.notificationSettings.disabledPosts.includes(postId);
+      if (disableComments) {
         // Create a notification for the post author with isDisabled set to true
         const notification = new Notification({
           title: "New Comment (Disabled)",
-          message: `${user.username} commented on your post "${post.title}", but comments are disabled for this subreddit.`,
+          message: `${user.username} commented on your post "${post.title}", but comments are disabled for this post.`,
           recipient: post.authorName,
           type: "comment",
           isDisabled: true,
+        });
+
+        await notification.save();
+      } else {
+        // Create a notification for the post author
+        const notification = new Notification({
+          title: "New Comment",
+          message: `${user.username} commented on your post "${post.title}".`,
+          recipient: post.authorName,
+          type: "comment",
         });
 
         await notification.save();
@@ -113,16 +124,6 @@ async function createComments(req, res) {
       post.comments.push(comment._id);
       await post.save();
 
-      // Create a notification for the post author
-      const notification = new Notification({
-        title: "New Comment",
-        message: `${user.username} commented on your post "${post.title}".`,
-        recipient: post.authorName,
-        type: "comment",
-      });
-
-      await notification.save();
-
       return res.status(201).json({ success: true, comment });
     }
   } catch (err) {
@@ -132,6 +133,7 @@ async function createComments(req, res) {
       .json({ success: false, message: "Internal server Error" });
   }
 }
+
 
 // Function to update(edit) comments for a post.
 /**

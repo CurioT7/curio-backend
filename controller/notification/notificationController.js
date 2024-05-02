@@ -278,6 +278,10 @@ async function disableNotificationsForUser(req, res) {
       // Update the user's notification settings based on the parameters
       if (subredditName) {
         user.notificationSettings.disabledSubreddits.push(subredditName);
+         await Notification.updateMany(
+           { subredditName: subredditName },
+           { $set: { isDisabled: true } }
+         );
       }
       if (postId) {
         user.notificationSettings.disabledPosts.push(postId);
