@@ -228,6 +228,127 @@ async function getTopCommunities(req, res) {
       .json({ success: false,message: "Internal server error", error:error.message});
   }
 }
+/**
+ * Create a new moderation for a subreddit.
+ * @async
+ * @param {object} req - The request object.
+ * @param {object} res - The response object.
+ * @returns {Promise<void>} A promise that resolves once the response is sent.
+ * @function
+ * @name createModeration
+ * @returns {object} response
+ 
+ */
+async function createModeration(req, res) {
+  try {
+    const decodedURI = decodeURIComponent(req.params.subreddit);
+    const subreddit = await Community.findOne({ name: decodedURI });
+    const moderationName = req.body.moderationName;
+    const role = req.body.role;
+    const user = await User.findById(req.user.userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (!subreddit) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subreddit not found" });
+    }
+
+    if (!role) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Role not provided" });
+    }
+
+    // Check if the user is the creator of the subreddit
+    const isCreator = subreddit.moderators.some(
+      (mod) => mod.username === user.username && mod.role === "creator"
+    );
+    if (!isCreator) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Only the creator of the subreddit can add moderators",
+        });
+    }
+
+    // Check if the user to be added as moderator exists
+    const moderatorUser = await User.findOne({ username: moderationName });
+    if (!moderatorUser) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "User to be added as moderator not found",
+        });
+    }
+
+    // Check if the user is already a moderator of the subreddit
+    const isAlreadyModerator = subreddit.moderators.some(
+      (mod) => mod.username === moderationName
+    );
+    if (isAlreadyModerator) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "User is already a moderator of the subreddit",
+        });
+    }
+
+    // Check if the user is a member of the subreddit
+    const isMember = subreddit.members.some(
+      (member) => member.username === moderationName
+    );
+    if (!isMember) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "User is not a member of the subreddit",
+        });
+    }
+
+    // Add the user as a moderator to the subreddit
+    subreddit.moderators.push({ username: moderationName, role: role });
+    await subreddit.save();
+
+    // Update the user's moderator role for the subreddit
+    await User.findOneAndUpdate(
+      { username: moderationName },
+      {
+        $addToSet: {
+          moderators: {
+            subreddit: subreddit.name,
+            role: role,
+          },
+        },
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Moderator added successfully",
+      moderator: { username: moderationName, role: role },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+}
+
+
 
 module.exports = {
   newSubreddit,
@@ -235,4 +356,5 @@ module.exports = {
   createSubreddit,
   getSubredditInfo,
   getTopCommunities,
+  createModeration,
 };
