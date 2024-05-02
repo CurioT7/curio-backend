@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const { hashPassword } = require("../utils/passwords");
 const UserPreferences = require("./userPreferencesModel");
+const SendmailTransport = require("nodemailer/lib/sendmail-transport");
 
 const Schema = mongoose.Schema;
 
@@ -253,6 +254,24 @@ const userSchema = new mongoose.Schema({
       option: {
         type: String,
       },
+    },
+  ],
+  sentPrivateMessages: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Message",
+    },
+  ],
+  receivedPrivateMessages: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Message",
+    },
+  ],
+  mentions: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Message",
     },
   ],
   media: {

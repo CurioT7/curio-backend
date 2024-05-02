@@ -162,6 +162,18 @@ const subredditSchema = new Schema({
     default: "hot",
     enum: ["hot", "new", "top", "mostComments"],
   },
+  sentPrivateMessages: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Message",
+    },
+  ],
+  receivedPrivateMessages: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Message",
+    },
+  ],
 });
 /**
  * Creates a model for the Subreddit schema.
