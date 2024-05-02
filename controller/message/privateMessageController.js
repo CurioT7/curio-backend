@@ -9,6 +9,12 @@ async function compose(req, res) {
     let sender = await User.findById(req.user.userId);
     if (req.body.subreddit) {
       sender = await Subreddit.findOne({ name: req.body.subreddit });
+      if (!sender) {
+        return res.status(400).json({
+          success: false,
+          message: "No subreddit found with that name",
+        });
+      }
       let user = await User.findById(req.user.userId);
       if (!sender.moderators.some((mod) => mod.username === user.username)) {
         return res.status(403).json({
