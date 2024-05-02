@@ -143,7 +143,7 @@ async function inbox(req, res) {
           ...user.sentPrivateMessages,
         ];
         break;
-      case "UsernameMentions":
+      case "usernameMentions":
         messages = user.mentions;
         break;
       default:
