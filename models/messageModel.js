@@ -10,7 +10,10 @@ const messageSchema = new Schema({
   recipient: {
     type: Schema.Types.ObjectId,
     ref: "User",
-    required: true,
+  },
+  recipientSubreddit: {
+    type: Schema.Types.ObjectId,
+    ref: "Subreddit",
   },
   postId: {
     type: Schema.Types.ObjectId,

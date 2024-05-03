@@ -40,8 +40,9 @@ async function compose(req, res) {
       }
     }
     //recipient is subreddit
+    let subreddit;
     if (req.body.sendToSubreddit) {
-      const subreddit = await Subreddit.findOne({ name: req.body.recipient });
+      subreddit = await Subreddit.findOne({ name: req.body.recipient });
       if (!subreddit) {
         return res.status(400).json({
           success: false,
@@ -73,6 +74,7 @@ async function compose(req, res) {
       sender,
       type: "message",
       senderSubreddit: senderSubreddit && senderSubreddit,
+      recipientSubreddit: subreddit && subreddit,
       recipient,
       subject,
       message,
@@ -89,8 +91,15 @@ async function compose(req, res) {
       recipient.receivedPrivateMessages.push(sentMessage);
     }
 
+    await sentMessage.save();
+
+    if (subreddit) {
+      sentMessage.recipient = null;
+      await sentMessage.save();
+    }
+
     //save alll parallel
-    await Promise.all([sentMessage.save(), sender.save(), recipient.save()]);
+    await Promise.all([sender.save(), recipient.save(), subreddit.save()]);
 
     res.status(200).json({
       success: true,
@@ -110,6 +119,7 @@ async function getMessages(messagesId) {
     const messages = await Message.find({ _id: { $in: messagesId } })
       .populate({ path: "sender", select: "username" })
       .populate({ path: "recipient", select: "username" })
+      .populate({ path: "recipientSubreddit", select: "name" })
       .populate({ path: "senderSubreddit", select: "name" })
       .populate({ path: "linkedSubreddit", select: "name" })
       .sort({ timestamp: -1 });
