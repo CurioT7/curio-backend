@@ -12,6 +12,18 @@ const messageSchema = new Schema({
     ref: "User",
     required: true,
   },
+  postId: {
+    type: Schema.Types.ObjectId,
+    ref: "Post",
+  },
+  linkedSubreddit: {
+    type: Schema.Types.ObjectId,
+    ref: "Subreddit",
+  },
+  type: {
+    type: String,
+    enum: ["message", "userMention"],
+  },
   subject: {
     type: String,
   },

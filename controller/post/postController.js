@@ -91,24 +91,39 @@ async function createComments(req, res) {
 
       //check if content contains a mention
       if (comment.content.includes("u/")) {
+        console.log("Ya alah");
         const mentionedUsers = comment.content.match(/u\/\w+/g);
-        const mentionedUsersNames = mentionedUsers.map((user) => user.slice(2));
+        const mentionedUsersNames = mentionedUsers.map((user) =>
+          user.slice(2).toString()
+        );
         const users = await User.find({
           username: { $in: mentionedUsersNames },
         });
         users.forEach(async (mentionedUser) => {
+          console.log(mentionedUser);
           const notification = new Notification({
             title: "Mention",
             message: `${user.username} mentioned you in a comment.`,
             recipient: mentionedUser.username,
           });
           const message = new Message({
-            sender: user.username,
-            recipient: mentionedUser.username,
+            sender: user,
+            recipient: mentionedUser,
+            type: "userMention",
             message: `${user.username} mentioned you in a comment: ${comment.content}`,
             createdAt: new Date(),
+            isPrivate: true,
+            isSent: true,
+            postId: post._id,
+            linkedSubreddit: post.linkedSubreddit,
           });
-          await Promise.all([notification.save(), message.save()]);
+          mentionedUser.mentions.push(message._id);
+          //save
+          await Promise.all([
+            notification.save(),
+            message.save(),
+            mentionedUser.save(),
+          ]);
         });
       }
 

@@ -114,6 +114,8 @@ async function getMessages(messagesId) {
         timestamp: message.timestamp,
         isRead: message.isRead,
         isSent: message.isSent,
+        postId: message.postId && message.postId,
+        linkedSubreddit: message.linkedSubreddit && message.linkedSubreddit,
         isPrivate: message.isPrivate,
       };
     });
@@ -145,6 +147,7 @@ async function inbox(req, res) {
         break;
       case "usernameMentions":
         messages = user.mentions;
+        console.log(messages);
         break;
       default:
         return res.status(400).json({
