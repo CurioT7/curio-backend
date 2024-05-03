@@ -692,8 +692,9 @@ async function getItemInfo(req, res) {
   try {
     const objectID = req.query.objectID;
     const objectType = req.query.objectType;
+
     let item;
-    let details;
+    let itemWithDetails;
 
     if (objectType === "post") {
       item = await Post.findOne({ _id: objectID }).populate("originalPostId");
@@ -705,12 +706,29 @@ async function getItemInfo(req, res) {
     } else if (objectType === "subreddit") {
       item = await Subreddit.findOne({ _id: objectID });
     }
+
     if (!item) {
       return res
         .status(404)
-        .json({ success: false, message: "Item not found", media: item.media });
+        .json({ success: false, message: "Item not found" });
+    }
+
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+
+      if (objectType === "post" || objectType === "comment") {
+        // Get vote status and subreddit details for the item
+        const details = await getVoteStatusAndSubredditDetails(item, user);
+
+        // Combine item and its details
+        itemWithDetails = { ...item.toObject(), details };
+      }
+    }
+
+    if (itemWithDetails) {
+      return res.status(200).json({ success: true, item: itemWithDetails });
     } else {
-      return res.status(200).json({ success: true, item, details });
+      return res.status(200).json({ success: true, item });
     }
   } catch (error) {
     console.log(error);
@@ -757,6 +775,12 @@ async function castVote(req, res) {
           disabledNotifications.disabledPosts.includes(itemID)) ||
         (itemName === "comment" &&
           disabledNotifications.disabledComments.includes(itemID));
+
+      // Check if the postId or commentId exists in the notificationSettings
+      const isPostDisabled =
+        user.notificationSettings.disabledPosts.includes(itemID);
+      const isCommentDisabled =
+        user.notificationSettings.disabledComments.includes(itemID);
 
       if (direction === 0) {
         // Find the existing vote in upvotes
@@ -818,19 +842,35 @@ async function castVote(req, res) {
         item.downvotes += 1;
         user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
       }
+      if (isPostDisabled || isCommentDisabled) {
+        // Send notification
+        const notification = new Notification({
+          title: "Notification",
+          message: `Notifications are disabled for this ${itemName}.`,
+          recipient: user.username, // or item.authorName
+          postId: itemName === "post" ? itemID : undefined,
+          commentId: itemName === "comment" ? itemID : undefined,
+          isDisabled: true,
+          type: itemName,
+        });
+        await notification.save();
+      }
       // Notify the author
-      const notification = new Notification({
-        title: "New Vote",
-        message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
-          direction === 1 ? "upvoted" : "downvoted"
-        } by ${user.username}.`,
-        recipient: item.authorName,
-        postId: itemName === "post" ? itemID : undefined,
-        commentId: itemName === "comment" ? itemID : undefined,
-        isDisabled: isDisabled,
-      });
+      if (!isDisabled) {
+        const notification = new Notification({
+          title: "New Vote",
+          message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
+            direction === 1 ? "upvoted" : "downvoted"
+          } by ${user.username}.`,
+          recipient: item.authorName,
+          postId: itemName === "post" ? itemID : undefined,
+          commentId: itemName === "comment" ? itemID : undefined,
+          isDisabled: isDisabled,
+          type: itemName,
+        });
 
-      await notification.save();
+        await notification.save();
+      }
       await Promise.all([item.save(), user.save()]);
       return res
         .status(200)

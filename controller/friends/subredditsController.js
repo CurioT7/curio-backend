@@ -97,6 +97,8 @@ async function createSubreddit(data, user) {
       title: "Subreddit Created",
       message: `You have successfully created the subreddit "${subredditName}".`,
       recipient: username,
+      subredditName: subredditName,
+      type: "subreddit",
     });
     await notification.save();
 

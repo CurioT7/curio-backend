@@ -24,15 +24,27 @@ const mongoose = require("mongoose");
 async function getPostComments(req, res) {
   try {
     const postId = decodeURIComponent(req.params.postId);
-
     const post = await Post.findById(postId).populate("originalPostId");
-
     if (!post) {
       return res
         .status(404)
         .json({ success: false, message: "Post not found." });
     }
-
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const postComments = await Comment.find({ linkedPost: post._id });
+      const detailsArray = await getVoteStatusAndSubredditDetails(
+        postComments,
+        user
+      );
+      const commentsWithDetails = postComments.map((comment, index) => {
+        return { ...comment.toObject(), details: detailsArray[index] };
+      });
+      return res.status(200).json(commentsWithDetails);
+    }
     const postComments = await Comment.find({ linkedPost: post._id });
     return res.status(200).json({ success: true, comments: postComments });
   } catch (err) {
@@ -136,7 +148,7 @@ async function createComments(req, res) {
       return res.status(201).json({ success: true, comment });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return res
       .status(500)
       .json({ success: false, message: "Internal server Error" });

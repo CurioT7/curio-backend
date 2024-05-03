@@ -222,20 +222,20 @@ const userSchema = new mongoose.Schema({
   notificationSettings: {
     disabledSubreddits: [
       {
-        type: String, // Store the names of disabled subreddits
+        type: String, 
         ref: "Subreddit",
       },
     ],
     disabledPosts: [
       {
-        type: Schema.Types.ObjectId, // Store the IDs of disabled posts
-        ref: "Post", // Reference to the Post model
+        type: Schema.Types.ObjectId, 
+        ref: "Post", 
       },
     ],
     disabledComments: [
       {
-        type: Schema.Types.ObjectId, // Store the IDs of disabled comments
-        ref: "Comment", // Reference to the Comment model
+        type: Schema.Types.ObjectId, 
+        ref: "Comment", 
       },
     ],
   },
@@ -251,7 +251,6 @@ const userSchema = new mongoose.Schema({
         type: Schema.Types.ObjectId,
         ref: "Post",
       },
-      // Store the option
       option: {
         type: String,
       },
