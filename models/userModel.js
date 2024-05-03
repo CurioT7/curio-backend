@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const { hashPassword } = require("../utils/passwords");
 const UserPreferences = require("./userPreferencesModel");
+const SendmailTransport = require("nodemailer/lib/sendmail-transport");
 
 const Schema = mongoose.Schema;
 
@@ -221,20 +222,20 @@ const userSchema = new mongoose.Schema({
   notificationSettings: {
     disabledSubreddits: [
       {
-        type: String, // Store the names of disabled subreddits
+        type: String, 
         ref: "Subreddit",
       },
     ],
     disabledPosts: [
       {
-        type: Schema.Types.ObjectId, // Store the IDs of disabled posts
-        ref: "Post", // Reference to the Post model
+        type: Schema.Types.ObjectId, 
+        ref: "Post", 
       },
     ],
     disabledComments: [
       {
-        type: Schema.Types.ObjectId, // Store the IDs of disabled comments
-        ref: "Comment", // Reference to the Comment model
+        type: Schema.Types.ObjectId, 
+        ref: "Comment", 
       },
     ],
   },
@@ -250,12 +251,32 @@ const userSchema = new mongoose.Schema({
         type: Schema.Types.ObjectId,
         ref: "Post",
       },
-      // Store the option
       option: {
         type: String,
       },
     },
   ],
+  sentPrivateMessages: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Message",
+    },
+  ],
+  receivedPrivateMessages: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Message",
+    },
+  ],
+  mentions: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Message",
+    },
+  ],
+  media: {
+    type: String,
+  },
 });
 
 /**

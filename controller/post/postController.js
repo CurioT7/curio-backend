@@ -24,15 +24,24 @@ const mongoose = require("mongoose");
 async function getPostComments(req, res) {
   try {
     const postId = decodeURIComponent(req.params.postId);
-
     const post = await Post.findById(postId).populate("originalPostId");
-
     if (!post) {
       return res
         .status(404)
         .json({ success: false, message: "Post not found." });
+      }
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const postComments = await Comment.find({ linkedPost: post._id });
+      const detailsArray = await getVoteStatusAndSubredditDetails(postComments,user);
+      const commentsWithDetails = postComments.map((comment, index) => {
+      return { ...comment.toObject(), details: detailsArray[index] };
+      });
+      return res.status(200).json(commentsWithDetails);
     }
-
     const postComments = await Comment.find({ linkedPost: post._id });
     return res.status(200).json({ success: true, comments: postComments });
   } catch (err) {
@@ -53,75 +62,78 @@ async function getPostComments(req, res) {
  */
 
 async function createComments(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const user = await User.findOne({ _id: decoded.userId });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
   try {
-    const { postId, content } = req.body;
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      const { postId, content } = req.body;
 
-    const post = await Post.findById(postId).populate("originalPostId");
+      const post = await Post.findById(postId).populate("originalPostId");
 
-    if (!post) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Post not found." });
-    }
+      if (!post) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Post not found." });
+      }
 
-    // Check if the post is locked
-    if (post.isLocked) {
-      return res
-        .status(403)
-        .json({
+      // Check if the post is locked
+      if (post.isLocked) {
+        return res.status(403).json({
           success: false,
           message: "Post is locked. Cannot add a comment.",
         });
+      }
+
+      // Check if comments are disabled for the subreddit
+      const disableComments =
+        user.notificationSettings.disabledPosts.includes(postId);
+      if (disableComments) {
+        // Create a notification for the post author with isDisabled set to true
+        const notification = new Notification({
+          title: "New Comment (Disabled)",
+          message: `${user.username} commented on your post "${post.title}", but comments are disabled for this post.`,
+          recipient: post.authorName,
+          type: "comment",
+          isDisabled: true,
+        });
+
+        await notification.save();
+      } else {
+        // Create a notification for the post author
+        const notification = new Notification({
+          title: "New Comment",
+          message: `${user.username} commented on your post "${post.title}".`,
+          recipient: post.authorName,
+          type: "comment",
+        });
+
+        await notification.save();
+      }
+
+      const comment = new Comment({
+        content,
+        authorName: user.username,
+        createdAt: new Date(),
+        upvotes: 0,
+        downvotes: 0,
+        linkedPost: postId,
+        linkedSubreddit: post.linkedSubreddit,
+        awards: 0,
+      });
+
+      await comment.save();
+      post.comments.push(comment._id);
+      await post.save();
+
+      return res.status(201).json({ success: true, comment });
     }
-
-      // check if user is authorized to comment
-      // if (post.linkedSubreddit.privacyMode === "private") {
-      //   const isMember = post.linkedSubreddit.members.includes(user._id);
-      //   if (!isMember) {
-      //     return res.status(403).json({ success: false, message: "You are not authorized to comment on this post." });
-      //   }
-      // }
-
-    const comment = new Comment({
-      content,
-      authorName: user.username,
-      createdAt: new Date(),
-      upvotes: 0,
-      downvotes: 0,
-      linkedPost: postId,
-      linkedSubreddit: post.linkedSubreddit,
-      awards: 0,
-    });
-
-    await comment.save();
-    post.comments.push(comment._id);
-    await post.save();
-
-    // Create a notification for the post author
-    const notification = new Notification({
-      title: "New Comment",
-      message: `${user.username} commented on your post "${post.title}".`,
-      recipient: post.authorName, // Assuming `author` is the username of the post author
-    }); 
-  
-    await notification.save();
-    return res.status(201).json({ success: true, comment });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return res
       .status(500)
       .json({ success: false, message: "Internal server Error" });
   }
 }
+
 
 // Function to update(edit) comments for a post.
 /**

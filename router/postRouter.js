@@ -12,7 +12,7 @@ const postController = require("../controller/post/postController");
  * @returns {object} Express router instance.
  */
 
-router.get("/comments/:postId", postController.getPostComments);
+router.get("/comments/:postId", (req, res, next) => authenticate(req, res, next, true) , postController.getPostComments);
 
 
 /**
