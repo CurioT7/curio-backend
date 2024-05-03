@@ -134,8 +134,9 @@ router.get("/r/:subreddit/:postID/:type", ListingController.sortComments);
  * @param {function} middleware - The controller function to handle the GET request.
  * @returns {object} Express router instance.
  */
+
 router.get(
-  "/allpage/:query?/:type/:timeframe?",
+  "/allpage/:type/:timeframe?",
   (req, res, next) => {
     authenticate(req, res, next, true);
   },

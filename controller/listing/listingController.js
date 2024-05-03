@@ -757,7 +757,7 @@ async function guestHomePage(req, res) {
   try {
     const type = req.params.type;
     const timeFrame = req.params.timeframe;
-    let page = req.params.query?.page;
+    let page = req.query?.page;
     page = page ? parseInt(page) : 1;
     const limit = 10; // Allow 10 items per page
     const skip = (page - 1) * limit;
