@@ -71,7 +71,7 @@ async function compose(req, res) {
     }
 
     const sentMessage = new Message({
-      sender,
+      sender: senderSubreddit ? null : sender,
       type: "message",
       senderSubreddit: senderSubreddit && senderSubreddit,
       recipientSubreddit: subreddit && subreddit,
