@@ -104,21 +104,7 @@ async function getMessages(messagesId) {
       .populate({ path: "sender", select: "username" })
       .populate({ path: "recipient", select: "username" });
 
-    return messages.map((message) => {
-      return {
-        id: message._id,
-        sender: message.sender ? message.sender.username : null, // Check if sender is defined
-        recipient: message.recipient ? message.recipient.username : null, // Check if recipient is defined
-        subject: message.subject,
-        message: message.message,
-        timestamp: message.timestamp,
-        isRead: message.isRead,
-        isSent: message.isSent,
-        postId: message.postId && message.postId,
-        linkedSubreddit: message.linkedSubreddit && message.linkedSubreddit,
-        isPrivate: message.isPrivate,
-      };
-    });
+    return messages;
   } catch (error) {
     console.error("Error while fetching messages:", error);
     throw error; // Rethrow the error for further handling
