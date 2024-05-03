@@ -111,6 +111,7 @@ async function getMessages(messagesId) {
       .populate({ path: "sender", select: "username" })
       .populate({ path: "recipient", select: "username" })
       .populate({ path: "senderSubreddit", select: "name" })
+      .populate({ path: "linkedSubreddit", select: "name" })
       .sort({ timestamp: -1 });
 
     return messages;
