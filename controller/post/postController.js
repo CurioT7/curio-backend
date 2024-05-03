@@ -91,7 +91,6 @@ async function createComments(req, res) {
 
       //check if content contains a mention
       if (comment.content.includes("u/")) {
-        console.log("Ya alah");
         const mentionedUsers = comment.content.match(/u\/\w+/g);
         const mentionedUsersNames = mentionedUsers.map((user) =>
           user.slice(2).toString()
@@ -100,7 +99,6 @@ async function createComments(req, res) {
           username: { $in: mentionedUsersNames },
         });
         users.forEach(async (mentionedUser) => {
-          console.log(mentionedUser);
           const notification = new Notification({
             title: "Mention",
             message: `${user.username} mentioned you in a comment.`,
