@@ -620,7 +620,10 @@ async function searchHashtags(req, res) {
 
     const posts = await Post.find({
       content: { $in: [hashtag] },
+    });
 
+    const comments = await Comment.find({
+       content: { $in: [hashtag] },
     });
 
     if (posts.length === 0) {
@@ -638,6 +641,7 @@ async function searchHashtags(req, res) {
 
     res.status(200).json({
       posts,
+      comments,
     });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });

@@ -5,6 +5,7 @@ const Community = require("../../models/subredditModel");
 const brypt = require("bcrypt");
 const { verifyToken } = require("../../utils/tokens");
 const Notification = require("../../models/notificationModel");
+const { getFilesFromS3 } = require("../../utils/s3-bucket");
 
 require("dotenv").config();
 
@@ -137,16 +138,7 @@ async function addFriend(username, friendUsername) {
         },
       }
     );
-
-    // Create a notification for the friend
-    const notification = new Notification({
-      title: "New Follower",
-      message: `${username} started following you.`,
-      recipient: friendUsername,
-    });
-
-    // Save the notification to the database
-    await notification.save();
+     
 
     return {
       status: true,
@@ -225,15 +217,10 @@ async function addUserToSubbreddit(user, communityName) {
  * @returns {object} res
  */
 async function friendRequest(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
   const friendname = req.body.friendUsername;
 
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({
@@ -261,7 +248,31 @@ async function friendRequest(req, res) {
     }
 
     await addFriend(user.username, friendname);
+ const disabledSubreddit =
+   user.notificationSettings.disabledSubreddits.includes(user.subreddit);
+ if (disabledSubreddit) {
+   // Create a notification for the friend with isDisabled set to true
+   const notification = new Notification({
+     title: "New Follower (Disabled)",
+     message: `${user.username} started following you. Notifications are disabled for the subreddit "${friendname.subreddit}".`,
+     recipient: friendname,
+     type: "Friend Request",
+     isDisabled: true,
+   });
 
+   // Save the notification to the database
+   await notification.save();
+ }
+ // Create a notification for the friend
+ const notification = new Notification({
+   title: "New Follower",
+   message: `${user.username} started following you.`,
+   recipient: friendname,
+   type: "Friend Request",
+ });
+
+ // Save the notification to the database
+ await notification.save();
     return res.status(200).json({
       status: "success",
       message: "Friend added successfully",
@@ -275,22 +286,16 @@ async function friendRequest(req, res) {
   }
 }
 
-
 /**
  * unfriend request to remove friendship or moderator_deInvite
  * @param {function} (req,res)
  * @returns {object} res
  */
 async function unFriendRequest(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
   const friendname = req.body.friendUsername;
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
 
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({
@@ -323,23 +328,19 @@ async function unFriendRequest(req, res) {
   }
 }
 
-
 /**
  * get user information
  * @param {function} (req,res)
  * @returns {object} res
  */
 async function getUserInfo(req, res) {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = await verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
   const { friendUsername } = req.params; // Extract friend's username from request parameters
-
+  let media = {};
+  if (friendUsername.media) {
+    media = await getFilesFromS3(friendUsername.media);
+  }
   try {
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -361,7 +362,7 @@ async function getUserInfo(req, res) {
       username: friend.username,
       bio: friend.bio,
       profilePicture: friend.profilePicture,
-      // Add more fields as needed
+      media: media,
     });
   } catch (error) {
     console.error(error);
@@ -382,13 +383,9 @@ async function getUserInfo(req, res) {
 async function unFollowSubreddit(req, res) {
   try {
     const { subreddit } = req.body;
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
 
-    const userExists = await User.findOne({ _id: decoded.userId });
+    const userExists = await User.findById(req.user.userId);
+
     if (!userExists) {
       return res.status(404).json({
         success: false,
@@ -430,7 +427,6 @@ async function unFollowSubreddit(req, res) {
   }
 }
 
-
 /**
  * follow a subreddit
  * @param {String} (username)
@@ -440,13 +436,9 @@ async function unFollowSubreddit(req, res) {
 async function followSubreddit(req, res) {
   try {
     const { subreddit } = req.body;
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
 
-    const userExists = await User.findOne({ _id: decoded.userId });
+    const userExists = await User.findById(req.user.userId);
+
     if (!userExists) {
       return res.status(404).json({
         success: false,
@@ -473,6 +465,22 @@ async function followSubreddit(req, res) {
       });
     }
 
+    // Check if notifications are disabled for the subreddit
+    const isDisabledSubreddit =
+      userExists.notificationSettings.disabledSubreddits.includes(subreddit);
+    if (isDisabledSubreddit) {
+      // Create a notification for the user with isDisabled set to true
+      const notification = new Notification({
+        title: "Subreddit Followed (Disabled)",
+        message: `You have followed the subreddit "${subreddit}", but notifications are disabled for this subreddit.`,
+        recipient: userExists.username,
+        type: "Subreddit Followed",
+        subredditName: subreddit,
+        isDisabled: true,
+      });
+      await notification.save();
+    }
+
     await followSubreddits(userExists.username, subreddit);
 
     // Notify the moderators of the subreddit
@@ -480,22 +488,41 @@ async function followSubreddit(req, res) {
       (moderator) => moderator.username
     );
     for (const moderator of moderators) {
-      const notification = new Notification({
-        title: "New Follower",
-        message: `${userExists.username} started following the subreddit "${subreddit}".`,
-        recipient: moderator,
-      });
-      await notification.save();
+      if (isDisabledSubreddit) {
+        // Create a notification for the user with isDisabled set to true
+        const notification = new Notification({
+          title: "Subreddit Followed (Disabled)",
+          message: `You have followed the subreddit "${subreddit}", but notifications are disabled for this subreddit.`,
+          recipient: userExists.username,
+          type: "Subreddit Followed",
+          subredditName: subreddit,
+          isDisabled: true,
+        });
+        await notification.save();
+      }
+      if (!isDisabledSubreddit) {
+
+        const notification = new Notification({
+          title: "New Follower",
+          message: `${userExists.username} started following the subreddit "${subreddit}".`,
+          recipient: moderator,
+          type: "Subreddit Follower",
+          subredditName: subreddit,
+        });
+        await notification.save();
+      }
     }
-
-    // Create a notification for the user
-    const userNotification = new Notification({
-      title: "Subreddit Followed",
-      message: `You have successfully followed the subreddit "${subreddit}".`,
-      recipient: userExists.username,
-    });
-    await userNotification.save();
-
+    if (!isDisabledSubreddit) {
+      // Create a notification for the user
+      const userNotification = new Notification({
+        title: "Subreddit Followed",
+        message: `You have successfully followed the subreddit "${subreddit}".`,
+        recipient: userExists.username,
+        type: "Subreddit Followed",
+        subredditName: subreddit,
+      });
+      await userNotification.save();
+    }
     return res.status(200).json({
       success: true,
       message: "Subreddit followed successfully",
@@ -508,6 +535,7 @@ async function followSubreddit(req, res) {
     });
   }
 }
+
 
 /**
  * Retrieves followers or followings of a user along with their profile pictures.

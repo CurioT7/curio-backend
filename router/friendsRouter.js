@@ -11,7 +11,7 @@ const { authenticate } = require("../middlewares/auth");
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-router.post("/friend", friendsController.followSubreddit);
+router.post("/friend", authenticate, friendsController.followSubreddit);
 
 /**
  * Route to unfollow a subreddit.
@@ -21,7 +21,7 @@ router.post("/friend", friendsController.followSubreddit);
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-router.post("/unfriend", friendsController.unFollowSubreddit);
+router.post("/unfriend", authenticate, friendsController.unFollowSubreddit);
 
 /**
  * Route to send a friend request.
@@ -31,7 +31,7 @@ router.post("/unfriend", friendsController.unFollowSubreddit);
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-router.post("/me/friends", friendsController.friendRequest);
+router.post("/me/friends", authenticate, friendsController.friendRequest);
 
 /**
  * Route to cancel a friend request.
@@ -41,7 +41,7 @@ router.post("/me/friends", friendsController.friendRequest);
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-router.patch("/me/friends", friendsController.unFriendRequest);
+router.patch("/me/friends", authenticate, friendsController.unFriendRequest);
 
 /**
  * Route to get user information.
@@ -51,7 +51,11 @@ router.patch("/me/friends", friendsController.unFriendRequest);
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-router.get("/me/friends/:friendUsername", friendsController.getUserInfo);
+router.get(
+  "/me/friends/:friendUsername",
+  authenticate,
+  friendsController.getUserInfo
+);
 
 /**
  * Route handler for retrieving followers or followings of a user along with their profile pictures.

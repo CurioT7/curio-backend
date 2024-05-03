@@ -14,7 +14,7 @@ const { auth } = require("google-auth-library");
  * @returns {object} Express router instance.
  */
 
-router.get("/comments/:postId", postController.getPostComments);
+router.get("/comments/:postId", (req, res, next) => authenticate(req, res, next, true) , postController.getPostComments);
 
 
 /**

@@ -5,6 +5,7 @@
  */
 
 const mongoose = require("mongoose");
+const { bool } = require("sharp");
 
 /**
  * Schema definition for user preferences.
@@ -177,6 +178,10 @@ const userPreferencesSchema = new mongoose.Schema({
     default: true,
   },
   posts: {
+    type: Boolean,
+    default: true,
+  },
+  subreddit: {
     type: Boolean,
     default: true,
   },
