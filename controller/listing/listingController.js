@@ -15,6 +15,7 @@ const { getVoteStatusAndSubredditDetails } = require("../../utils/posts.js");
  * @returns {Object} - The response object containing the random post.
  */
 
+
 async function randomPost(req, res) {
   // random post linked with the subreddit
   try {
@@ -33,39 +34,28 @@ async function randomPost(req, res) {
         .status(404)
         .json({ success: false, message: "No posts found in the subreddit" });
     }
-    //get random post using aggregate
-    let randomPost = await Post.aggregate([
-      { $match: { linkedSubreddit: subreddit._id } },
-      { $sample: { size: 1 } },
-    ]);
-
-    if (req.user) {
-      const user = await User.findOne({ _id: req.user.userId });
-      if (user.hiddenPosts.includes(randomPost[0]._id)) {
-        randomPost = await Post.aggregate([
-          { $match: { linkedSubreddit: subreddit._id } },
-          { $sample: { size: 1 } },
-        ]);
-      }
-    }
-
+    const randomPost = posts[Math.floor(Math.random() * posts.length)];
     //increase of the number of views
-    await Post.updateOne({ _id: randomPost[0]._id }, { $inc: { views: 1 } });
+    randomPost.views += 1;
+    await randomPost.save();
     const media = randomPost.media;
     let userVote = null;
     if (media) {
       randomPost.media = await getFilesFromS3(media);
     }
-    let detailsArray;
-    if (req.user) {
-      const user = await User.findOne({ _id: req.user.userId });
-      detailsArray = await getVoteStatusAndSubredditDetails(randomPost, user);
+    if (randomPost.type === "poll" && req.user) {
+      const user = await User.findById(req.user.userId);
+      randomPost.options.forEach((opt) => {
+        if (opt.voters.includes(user._id)) {
+          userVote = opt.name;
+        }
+      });
     }
 
     return res.status(200).json({
       success: true,
       post: randomPost,
-      detailsArray: detailsArray && detailsArray,
+      userVote: userVote && userVote,
     });
   } catch (err) {
     console.error("Error getting random post:", err);
@@ -896,11 +886,13 @@ async function guestHomePage(req, res) {
       const postsWithDetails = fetchedPosts.map((post, index) => {
         return { ...post, details: detailsArray[index] };
       });
-      return res.status(200).json({
-        success: true,
-        totalPosts: totalCount,
-        posts: postsWithDetails,
-      });
+      return res
+        .status(200)
+        .json({
+          success: true,
+          totalPosts: totalCount,
+          posts: postsWithDetails,
+        });
     } else {
       return res.status(200).json({
         success: true,

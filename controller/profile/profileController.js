@@ -322,4 +322,8 @@ module.exports = {
   getDownvotedContent,
   getAboutInformation,
   getOverviewInformation,
+  fetchPostsByUsername,
+  findUserByUsername,
+  handleServerError,
+  getVotedContent,
 };

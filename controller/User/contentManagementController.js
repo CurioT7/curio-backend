@@ -24,9 +24,14 @@ const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
  */
 
 async function hidePost(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const postId = req.body.postId;
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   try {
-    const postId = req.body.postId;
-    const user = await User.findOne({ _id: req.user.userId });
+    const user = await User.findOne({ _id: decoded.userId });
     if (!user) {
       return res
         .status(404)
@@ -43,9 +48,7 @@ async function hidePost(req, res) {
         .status(400)
         .json({ success: false, message: "Post already hidden" });
     }
-
     user.hiddenPosts.push(postId);
-
     await user.save();
     return res
       .status(200)
@@ -68,9 +71,14 @@ async function hidePost(req, res) {
  */
 
 async function unhidePost(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const postId = req.body.postId;
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   try {
-    const postId = req.body.postId;
-    const user = await User.findOne({ _id: req.user.userId });
+    const user = await User.findOne({ _id: decoded.userId });
     if (!user) {
       return res
         .status(404)
@@ -255,8 +263,13 @@ async function unsave(req, res) {
  */
 
 async function saved_categories(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   try {
-    const user = await User.findOne({ _id: req.user.userId });
+    const user = await User.findOne({ _id: decoded.userId });
     if (!user) {
       return res
         .status(404)
@@ -284,8 +297,13 @@ async function saved_categories(req, res) {
  * @async
  */
 async function hidden(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   try {
-    const user = await User.findOne({ _id: req.user.userId });
+    const user = await User.findOne({ _id: decoded.userId });
     if (!user) {
       return res
         .status(404)
@@ -418,7 +436,12 @@ async function submitPost(req, res, user, imageKey) {
 
 async function submit(req, res) {
   try {
-    const user = await User.findOne({ _id: req.user.userId });
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const user = await User.findOne({ _id: decoded.userId });
     if (!user) {
       return res
         .status(404)
@@ -510,7 +533,9 @@ async function shareCrossPost(user, crossPostData) {
  */
 
 async function sharePost(req, res) {
-  const user = await User.findOne({ _id: req.user.userId });
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  const user = await User.findOne({ _id: decoded.userId });
   if (!user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -698,9 +723,6 @@ async function getItemInfo(req, res) {
 
     if (objectType === "post") {
       item = await Post.findOne({ _id: objectID }).populate("originalPostId");
-      if (item.media) {
-        item.media = await getFilesFromS3(item.media);
-      }
     } else if (objectType === "comment") {
       item = await Comment.findOne({ _id: objectID });
     } else if (objectType === "subreddit") {

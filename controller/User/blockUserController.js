@@ -17,13 +17,17 @@ require("dotenv").config();
  */
 
 async function blockUser(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const usernameToBlock = req.body.usernameToBlock;
   try {
-    const usernameToBlock = req.body.usernameToBlock;
-    if (req.user) {
-      const user = await User.findOne({ _id: req.user.userId });
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
     const preferences = await UserPreferences.findOne({
       username: user.username,
     });
@@ -77,9 +81,9 @@ async function blockUser(req, res) {
       if (preferences){
         await preferences.save();
       }
+      console.log(preferences);
 
     res.json({ message: "User successfully blocked" });
-    }
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -94,13 +98,17 @@ async function blockUser(req, res) {
  * @param {Object} res - Express response object
  */
 async function unblockUser(req, res) {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const usernameToUnblock = req.body.usernameToUnblock;
   try {
-    if (req.user) {
-      const user = await User.findOne({ _id: req.user.userId });
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-    const usernameToUnblock = req.body.usernameToUnblock;
+    const user = await User.findOne({ _id: decoded.userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
     const preferences = await UserPreferences.findOne({
       username: user.username,
     })
@@ -138,7 +146,6 @@ async function unblockUser(req, res) {
     console.log(preferences);
 
     res.json({ message: "User successfully unblocked" });
-  }
   } catch (error) {
     return res.status(500).json({
       success: false,

@@ -9,9 +9,9 @@ const {
   hotPosts,
   mostComments,
   setSuggestedSort,
-  getUserPosts,
   sortComments,
   getTopComments,
+  getUserPosts,
   guestHomePage,
 } = require("../controller/listing/listingController");
 const moment = require("moment");
@@ -255,3 +255,75 @@ describe("sortComments", () => {
     });
   });
 });
+
+//getUserPosts
+    // Throws error when subreddit details not found.
+    it('should throw error when subreddit details not found', async () => {
+    
+      // Mock request and response objects
+      const req = {
+        user: {
+          userId: "user123"
+        },
+        params: {
+          type: "best"
+        },
+        query: {
+          page: 1
+        }
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+
+      // Mock database queries
+      User.findOne = jest.fn().mockResolvedValue({
+        subreddits: [
+          { subreddit: "subreddit1" }
+        ]
+      });
+      Subreddit.findOne = jest.fn().mockResolvedValue(null);
+
+      // Call the function
+      await getUserPosts(req, res);
+
+      // Assertions
+      expect(User.findOne).toHaveBeenCalledWith({ _id: "user123" });
+      expect(Subreddit.findOne).toHaveBeenCalledWith({ name: "subreddit1" });
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        message: "Internal server error"
+      });
+    });
+
+//guestHomePage
+    // Throws an error if an invalid type parameter is passed.
+    it('should throw an error if an invalid type parameter is passed', async () => {
+      const req = {
+        params: {
+          type: 'invalid'
+        },
+        query: {
+          page: 1
+        }
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+      await guestHomePage(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        message: 'Internal server error'
+      });
+    });
+
+    jest.mock("../utils/s3-bucket", () => ({
+      getFilesFromS3: jest.fn(),
+      getVoteStatusAndSubredditDetails: jest.fn(),
+    }));
+
+   

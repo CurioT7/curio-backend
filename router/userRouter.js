@@ -156,7 +156,7 @@ router.patch("/auth/resend_verification", userController.resendVerification);
  * @param {string} path - Express route path
  * @param {Function} middleware - Middleware function for route
  */
-router.post("/User/block",authenticate, userBlockController.blockUser);
+router.post("/User/block", userBlockController.blockUser);
 
 /**
  * Route to unblock a user.
@@ -167,7 +167,7 @@ router.post("/User/block",authenticate, userBlockController.blockUser);
  * @param {string} path - Express route path
  * @param {Function} middleware - Middleware function for route
  */
-router.post("/User/unblock",authenticate, userBlockController.unblockUser);
+router.post("/User/unblock", userBlockController.unblockUser);
 
 /**
  * Route to hide a post.
@@ -179,7 +179,7 @@ router.post("/User/unblock",authenticate, userBlockController.unblockUser);
  * @param {Function} middleware - Middleware function for route
  */
 
-router.post("/hide", authenticate, contentManagementController.hidePost);
+router.post("/hide", contentManagementController.hidePost);
 
 /**
  * Route to unhide a post.
@@ -191,7 +191,7 @@ router.post("/hide", authenticate, contentManagementController.hidePost);
  * @param {Function} middleware - Middleware function for route
  */
 
-router.post("/unhide", authenticate, contentManagementController.unhidePost);
+router.post("/unhide", contentManagementController.unhidePost);
 /**
  * Route to spoiler a post.
  * @name POST/User/spoil
@@ -251,7 +251,7 @@ router.post("/unsave", contentManagementController.unsave);
  * @param {Function} middleware - Middleware function for route
  */
 
-router.get("/saved_categories", authenticate, contentManagementController.saved_categories);
+router.get("/saved_categories", contentManagementController.saved_categories);
 
 /**
  * Route to get hidden posts.
@@ -263,7 +263,7 @@ router.get("/saved_categories", authenticate, contentManagementController.saved_
  * @param {Function} middleware - Middleware function for route
  */
 
-router.get("/hidden", authenticate, contentManagementController.hidden);
+router.get("/hidden", contentManagementController.hidden);
 
 /**
  * Route to submit a post.
@@ -277,7 +277,6 @@ router.get("/hidden", authenticate, contentManagementController.hidden);
 
 router.post(
   "/submit",
-  authenticate,
   upload.single("media"),
   contentManagementController.submit
 );
@@ -291,7 +290,7 @@ router.post(
  * @param {string} path - Express route path
  */
 
-router.post("/share", authenticate, contentManagementController.sharePost);
+router.post("/share", contentManagementController.sharePost);
 
 /**
  * Route to get a post link.
@@ -343,7 +342,7 @@ router.get(
  * @param {Object} res - Express response object.
  * @returns {Object} JSON response indicating success or failure.
  */
-router.post("/vote", authenticate, contentManagementController.castVote);
+router.post("/vote", authenticate ,contentManagementController.castVote);
 
 /**
  * Add a post to the user's browsing history.
@@ -376,11 +375,7 @@ router.get("/getHistory", authenticate, contentManagementController.getHistory);
  * @returns {Error}  401 - Unauthorized
  * @returns {Error}  500 - Internal server error
  */
-router.delete(
-  "/clear-history",
-  authenticate,
-  contentManagementController.clearHistory
-);
+router.delete("/clear-history", authenticate ,contentManagementController.clearHistory);
 
 /**
  * Retrieve the user's browsing history.
