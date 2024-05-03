@@ -7,16 +7,21 @@ async function compose(req, res) {
     const subject = req.body.subject;
     const message = req.body.message;
     let sender = await User.findById(req.user.userId);
+    let senderSubreddit;
     if (req.body.subreddit) {
-      sender = await Subreddit.findOne({ name: req.body.subreddit });
-      if (!sender) {
+      senderSubreddit = await Subreddit.findOne({ name: req.body.subreddit });
+      if (!senderSubreddit) {
         return res.status(400).json({
           success: false,
           message: "No subreddit found with that name",
         });
       }
       let user = await User.findById(req.user.userId);
-      if (!sender.moderators.some((mod) => mod.username === user.username)) {
+      if (
+        !senderSubreddit.moderators.some(
+          (mod) => mod.username === user.username
+        )
+      ) {
         return res.status(403).json({
           success: false,
           message: "You are not a moderator of this subreddit",
@@ -35,8 +40,9 @@ async function compose(req, res) {
       }
     }
     //recipient is subreddit
+    let subreddit;
     if (req.body.sendToSubreddit) {
-      const subreddit = await Subreddit.findOne({ name: req.body.recipient });
+      subreddit = await Subreddit.findOne({ name: req.body.recipient });
       if (!subreddit) {
         return res.status(400).json({
           success: false,
@@ -66,6 +72,9 @@ async function compose(req, res) {
 
     const sentMessage = new Message({
       sender,
+      type: "message",
+      senderSubreddit: senderSubreddit && senderSubreddit,
+      recipientSubreddit: subreddit && subreddit,
       recipient,
       subject,
       message,
@@ -82,8 +91,15 @@ async function compose(req, res) {
       recipient.receivedPrivateMessages.push(sentMessage);
     }
 
+    await sentMessage.save();
+
+    if (subreddit) {
+      sentMessage.recipient = null;
+      await sentMessage.save();
+    }
+
     //save alll parallel
-    await Promise.all([sentMessage.save(), sender.save(), recipient.save()]);
+    await Promise.all([sender.save(), recipient.save(), subreddit.save()]);
 
     res.status(200).json({
       success: true,
@@ -102,21 +118,13 @@ async function getMessages(messagesId) {
     // Fetch messages with sender and recipient populated
     const messages = await Message.find({ _id: { $in: messagesId } })
       .populate({ path: "sender", select: "username" })
-      .populate({ path: "recipient", select: "username" });
+      .populate({ path: "recipient", select: "username" })
+      .populate({ path: "recipientSubreddit", select: "name" })
+      .populate({ path: "senderSubreddit", select: "name" })
+      .populate({ path: "linkedSubreddit", select: "name" })
+      .sort({ timestamp: -1 });
 
-    return messages.map((message) => {
-      return {
-        id: message._id,
-        sender: message.sender ? message.sender.username : null, // Check if sender is defined
-        recipient: message.recipient ? message.recipient.username : null, // Check if recipient is defined
-        subject: message.subject,
-        message: message.message,
-        timestamp: message.timestamp,
-        isRead: message.isRead,
-        isSent: message.isSent,
-        isPrivate: message.isPrivate,
-      };
-    });
+    return messages;
   } catch (error) {
     console.error("Error while fetching messages:", error);
     throw error; // Rethrow the error for further handling
@@ -154,8 +162,23 @@ async function inbox(req, res) {
     }
 
     messages = await getMessages(messages);
-    messages.sort((a, b) => b.timestamp - a.timestamp);
 
+    res.status(200).json({
+      success: true,
+      messages,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+async function getSent(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const messages = await getMessages(user.sentPrivateMessages);
     res.status(200).json({
       success: true,
       messages,
@@ -171,4 +194,5 @@ async function inbox(req, res) {
 module.exports = {
   compose,
   inbox,
+  getSent,
 };

@@ -1,6 +1,7 @@
 const Post = require("../../models/postModel");
 const User = require("../../models/userModel");
 const Comment = require("../../models/commentModel");
+const Message = require("../../models/messageModel");
 const {
   generateToken,
   verifyToken,
@@ -9,7 +10,6 @@ const {
 require("dotenv").config();
 const Notification = require("../../models/notificationModel");
 const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
-
 
 // Function to retrieve all comments for a post.
 /**
@@ -29,16 +29,19 @@ async function getPostComments(req, res) {
       return res
         .status(404)
         .json({ success: false, message: "Post not found." });
-      }
+    }
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
       const postComments = await Comment.find({ linkedPost: post._id });
-      const detailsArray = await getVoteStatusAndSubredditDetails(postComments,user);
+      const detailsArray = await getVoteStatusAndSubredditDetails(
+        postComments,
+        user
+      );
       const commentsWithDetails = postComments.map((comment, index) => {
-      return { ...comment.toObject(), details: detailsArray[index] };
+        return { ...comment.toObject(), details: detailsArray[index] };
       });
       return res.status(200).json(commentsWithDetails);
     }
@@ -83,32 +86,6 @@ async function createComments(req, res) {
         });
       }
 
-      // Check if comments are disabled for the subreddit
-      const disableComments =
-        user.notificationSettings.disabledPosts.includes(postId);
-      if (disableComments) {
-        // Create a notification for the post author with isDisabled set to true
-        const notification = new Notification({
-          title: "New Comment (Disabled)",
-          message: `${user.username} commented on your post "${post.title}", but comments are disabled for this post.`,
-          recipient: post.authorName,
-          type: "comment",
-          isDisabled: true,
-        });
-
-        await notification.save();
-      } else {
-        // Create a notification for the post author
-        const notification = new Notification({
-          title: "New Comment",
-          message: `${user.username} commented on your post "${post.title}".`,
-          recipient: post.authorName,
-          type: "comment",
-        });
-
-        await notification.save();
-      }
-
       const comment = new Comment({
         content,
         authorName: user.username,
@@ -124,6 +101,50 @@ async function createComments(req, res) {
       post.comments.push(comment._id);
       await post.save();
 
+      //check if content contains a mention
+      if (comment.content.includes("u/")) {
+        const mentionedUsers = comment.content.match(/u\/\w+/g);
+        const mentionedUsersNames = mentionedUsers.map((user) =>
+          user.slice(2).toString()
+        );
+        const users = await User.find({
+          username: { $in: mentionedUsersNames },
+        });
+        users.forEach(async (mentionedUser) => {
+          const notification = new Notification({
+            title: "Mention",
+            message: `${user.username} mentioned you in a comment.`,
+            recipient: mentionedUser.username,
+          });
+          const message = new Message({
+            sender: user,
+            recipient: mentionedUser,
+            type: "userMention",
+            message: `${user.username} mentioned you in a comment: ${comment.content}`,
+            createdAt: new Date(),
+            isPrivate: true,
+            isSent: true,
+            postId: post._id,
+            linkedSubreddit: post.linkedSubreddit,
+          });
+          mentionedUser.mentions.push(message._id);
+          //save
+          await Promise.all([
+            notification.save(),
+            message.save(),
+            mentionedUser.save(),
+          ]);
+        });
+      }
+
+      // Create a notification for the post author
+      const notification = new Notification({
+        title: "New Comment",
+        message: `${user.username} commented on your post "${post.title}".`,
+        recipient: post.authorName, // Assuming `author` is the username of the post author
+      });
+
+      await notification.save();
       return res.status(201).json({ success: true, comment });
     }
   } catch (err) {
@@ -133,7 +154,6 @@ async function createComments(req, res) {
       .json({ success: false, message: "Internal server Error" });
   }
 }
-
 
 // Function to update(edit) comments for a post.
 /**
@@ -146,23 +166,28 @@ async function createComments(req, res) {
 async function updatePostComments(req, res) {
   try {
     if (req.user) {
-    const user = await User.findOne({ _id: req.user.userId });
-    const {commentId, content }  = req.body;
-    const comment = await Comment.findById(commentId);
+      const user = await User.findOne({ _id: req.user.userId });
+      const { commentId, content } = req.body;
+      const comment = await Comment.findById(commentId);
 
-    if (!comment) {
-      return res.status(404).json({ success: false,  message: "comment not found" });
+      if (!comment) {
+        return res
+          .status(404)
+          .json({ success: false, message: "comment not found" });
+      }
+
+      // check if user is authorized to edit comment
+      if (comment.authorName !== user.username) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to edit this comment.",
+        });
+      }
+
+      comment.content = content;
+      await comment.save();
+      return res.status(200).json({ success: true, comment });
     }
-
-    // check if user is authorized to edit comment
-    if (comment.authorName !== user.username) {
-      return res.status(403).json({ success: false, message: "You are not authorized to edit this comment." });
-    }
-
-    comment.content = content;
-    await comment.save();
-    return res.status(200).json({ success: true, comment });
-  }
   } catch (err) {
     console.log(err);
     return res
@@ -184,29 +209,36 @@ async function deleteComments(req, res) {
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-    const commentId = decodeURIComponent(req.params.commentId);
-    const comment = await Comment.findById(commentId);
+      const commentId = decodeURIComponent(req.params.commentId);
+      const comment = await Comment.findById(commentId);
 
-    if (!comment) {
-      return res.status(404).json({ success: false,  message: "comment not found" });
+      if (!comment) {
+        return res
+          .status(404)
+          .json({ success: false, message: "comment not found" });
+      }
+
+      // Check if the user is the author of the comment
+      const isAuthor = comment.authorName === user.username;
+
+      if (!isAuthor) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to delete this comment.",
+        });
+      }
+
+      await Comment.deleteOne({ _id: commentId });
+
+      await Post.updateOne(
+        { _id: comment.linkedPost },
+        { $pull: { comments: commentId } }
+      );
+
+      return res
+        .status(200)
+        .json({ success: true, message: "comment deleted successfully" });
     }
-
-    // Check if the user is the author of the comment
-    const isAuthor = comment.authorName === user.username;
-
-    if (!isAuthor) {
-      return res.status(403).json({ success: false, message: "You are not authorized to delete this comment." });
-    }
-
-    await Comment.deleteOne({ _id: commentId });
-
-    await Post.updateOne(
-      { _id: comment.linkedPost },
-      { $pull: { comments: commentId } }
-    );
-
-    return res.status(200).json({ success: true, message: "comment deleted successfully" });
-  }
   } catch (err) {
     console.log(err);
     return res
@@ -224,28 +256,36 @@ async function deleteComments(req, res) {
  * @returns {object} - Express response object
  */
 
-async function deletePost (req, res) {
+async function deletePost(req, res) {
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-    const postId = req.params.postId;
-    const post = await Post.findById(postId).populate("originalPostId");
-    if (!post) {
-      return res.status(404).json({ success: false, message: "Post not found." });
-    } 
-    // Check if the user is the author of the post
-    const isAuthor = post.authorName === user.username;
-    if (!isAuthor) {
-        return res.status(403).json({ success: false, message: "You are not authorized to delete this post." });
-    }
+      const postId = req.params.postId;
+      const post = await Post.findById(postId).populate("originalPostId");
+      if (!post) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Post not found." });
+      }
+      // Check if the user is the author of the post
+      const isAuthor = post.authorName === user.username;
+      if (!isAuthor) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to delete this post.",
+        });
+      }
 
-    await post.deleteOne();
-    return res.status(200).json({ success: true, message: "Post deleted successfully." });
-  }
-  }
-  catch (err) {
+      await post.deleteOne();
+      return res
+        .status(200)
+        .json({ success: true, message: "Post deleted successfully." });
+    }
+  } catch (err) {
     console.log(err);
-    return res.status(500).json({ success: false, message: "Internal server error." });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
   }
 }
 
@@ -261,25 +301,32 @@ async function deletePost (req, res) {
 async function editPostContent(req, res) {
   try {
     if (req.user) {
-    const user = await User.findOne({ _id: req.user.userId });
-    const { postId, content } = req.body;
-    const post = await Post.findById(postId).populate("originalPostId");
-    if (!post) {
-      return res.status(404).json({ success: false, message: "Post not found." });
-    }
-    // check if user is authorized to edit post
-    if (post.authorName !== user.username) {
-      return res.status(403).json({ success: false, message: "You are not authorized to edit this post." });
-    }
+      const user = await User.findOne({ _id: req.user.userId });
+      const { postId, content } = req.body;
+      const post = await Post.findById(postId).populate("originalPostId");
+      if (!post) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Post not found." });
+      }
+      // check if user is authorized to edit post
+      if (post.authorName !== user.username) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to edit this post.",
+        });
+      }
 
-    post.content = content;
-    await post.save();
+      post.content = content;
+      await post.save();
 
-    return res.status(200).json({ success: true, post });
-  }
+      return res.status(200).json({ success: true, post });
+    }
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ success: false, message: "Internal server error." });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
   }
 }
 
@@ -296,20 +343,24 @@ async function editPostContent(req, res) {
 async function markPostNSFW(req, res) {
   try {
     if (req.user) {
-    const user = await User.findOne({ _id: req.user.userId });
-    const { postId } = req.body;
-    const post = await Post.findById(postId).populate("originalPostId");
-    if (!post) {
-      return res.status(404).json({ success: false, message: "Post not found." });
+      const user = await User.findOne({ _id: req.user.userId });
+      const { postId } = req.body;
+      const post = await Post.findById(postId).populate("originalPostId");
+      if (!post) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Post not found." });
+      }
+
+      post.isNSFW = true;
+      await post.save();
+      return res.status(200).json({ success: true, post });
     }
-    
-    post.isNSFW = true;
-    await post.save();
-    return res.status(200).json({ success: true, post });
-  }
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ success: false, message: "Internal server error." });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
   }
 }
 
@@ -326,29 +377,32 @@ async function unmarkPostNSFW(req, res) {
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-    const { postId } = req.body;
-    const post = await Post.findById(postId).populate("originalPostId");
-    if (!post) {
-      return res.status(404).json({ success: false, message: "Post not found." });
+      const { postId } = req.body;
+      const post = await Post.findById(postId).populate("originalPostId");
+      if (!post) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Post not found." });
+      }
+      post.isNSFW = false;
+      await post.save();
+      return res.status(200).json({ success: true, post });
     }
-    post.isNSFW = false;
-    await post.save();
-    return res.status(200).json({ success: true, post });
-  }
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ success: false, message: "Internal server error." });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
   }
 }
 
-
 module.exports = {
-   getPostComments,  
-   updatePostComments, 
-   createComments,
-   deleteComments, 
-   deletePost, 
-   editPostContent, 
-   markPostNSFW, 
-   unmarkPostNSFW
-  };
+  getPostComments,
+  updatePostComments,
+  createComments,
+  deleteComments,
+  deletePost,
+  editPostContent,
+  markPostNSFW,
+  unmarkPostNSFW,
+};
