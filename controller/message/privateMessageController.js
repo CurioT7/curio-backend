@@ -7,16 +7,21 @@ async function compose(req, res) {
     const subject = req.body.subject;
     const message = req.body.message;
     let sender = await User.findById(req.user.userId);
+    let senderSubreddit;
     if (req.body.subreddit) {
-      sender = await Subreddit.findOne({ name: req.body.subreddit });
-      if (!sender) {
+      senderSubreddit = await Subreddit.findOne({ name: req.body.subreddit });
+      if (!senderSubreddit) {
         return res.status(400).json({
           success: false,
           message: "No subreddit found with that name",
         });
       }
       let user = await User.findById(req.user.userId);
-      if (!sender.moderators.some((mod) => mod.username === user.username)) {
+      if (
+        !senderSubreddit.moderators.some(
+          (mod) => mod.username === user.username
+        )
+      ) {
         return res.status(403).json({
           success: false,
           message: "You are not a moderator of this subreddit",
@@ -66,6 +71,8 @@ async function compose(req, res) {
 
     const sentMessage = new Message({
       sender,
+      type: "message",
+      senderSubreddit: senderSubreddit && senderSubreddit,
       recipient,
       subject,
       message,
@@ -102,7 +109,9 @@ async function getMessages(messagesId) {
     // Fetch messages with sender and recipient populated
     const messages = await Message.find({ _id: { $in: messagesId } })
       .populate({ path: "sender", select: "username" })
-      .populate({ path: "recipient", select: "username" });
+      .populate({ path: "recipient", select: "username" })
+      .populate({ path: "senderSubreddit", select: "name" })
+      .sort({ timestamp: -1 });
 
     return messages;
   } catch (error) {
@@ -133,7 +142,6 @@ async function inbox(req, res) {
         break;
       case "usernameMentions":
         messages = user.mentions;
-        console.log(messages);
         break;
       default:
         return res.status(400).json({
@@ -143,8 +151,23 @@ async function inbox(req, res) {
     }
 
     messages = await getMessages(messages);
-    messages.sort((a, b) => b.timestamp - a.timestamp);
 
+    res.status(200).json({
+      success: true,
+      messages,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+async function getSent(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const messages = await getMessages(user.sentPrivateMessages);
     res.status(200).json({
       success: true,
       messages,
@@ -160,4 +183,5 @@ async function inbox(req, res) {
 module.exports = {
   compose,
   inbox,
+  getSent,
 };

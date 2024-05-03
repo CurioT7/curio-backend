@@ -20,6 +20,10 @@ const messageSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Subreddit",
   },
+  senderSubreddit: {
+    type: Schema.Types.ObjectId,
+    ref: "Subreddit",
+  },
   type: {
     type: String,
     enum: ["message", "userMention"],
