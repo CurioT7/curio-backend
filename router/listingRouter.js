@@ -113,7 +113,7 @@ router.post("/r/:subreddit/suggestedSort", ListingController.setSuggestedSort);
  * @returns {object} Express router instance.
 */
 router.get(
-  "/homepage/:query/:type/:timeframe?",
+  "/homepage/:type/:timeframe?",
   authenticate,
   ListingController.getUserPosts
 );
