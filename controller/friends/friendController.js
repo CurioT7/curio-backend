@@ -449,7 +449,7 @@ async function followSubreddit(req, res) {
     const subredditExists = await Community.findOne({ name: subreddit });
     if (!subredditExists) {
       return res.status(404).json({
-        success: "false",
+        success: false,
         message: "Subreddit not found",
       });
     }
@@ -468,6 +468,7 @@ async function followSubreddit(req, res) {
     // Check if notifications are disabled for the subreddit
     const isDisabledSubreddit =
       userExists.notificationSettings.disabledSubreddits.includes(subreddit);
+
     if (isDisabledSubreddit) {
       // Create a notification for the user with isDisabled set to true
       const notification = new Notification({
@@ -479,50 +480,53 @@ async function followSubreddit(req, res) {
         isDisabled: true,
       });
       await notification.save();
-    }
 
-    await followSubreddits(userExists.username, subreddit);
-
-    // Notify the moderators of the subreddit
-    const moderators = subredditExists.moderators.map(
-      (moderator) => moderator.username
-    );
-    for (const moderator of moderators) {
-      if (isDisabledSubreddit) {
-        // Create a notification for the user with isDisabled set to true
-        const notification = new Notification({
-          title: "Subreddit Followed (Disabled)",
-          message: `You have followed the subreddit "${subreddit}", but notifications are disabled for this subreddit.`,
-          recipient: userExists.username,
-          type: "Subreddit Followed",
-          subredditName: subreddit,
-          isDisabled: true,
-        });
-        await notification.save();
-      }
-      if (!isDisabledSubreddit) {
-
-        const notification = new Notification({
-          title: "New Follower",
-          message: `${userExists.username} started following the subreddit "${subreddit}".`,
+      // Notify the moderators of the subreddit with isDisabled set to true
+      const moderators = subredditExists.moderators.map(
+        (moderator) => moderator.username
+      );
+      for (const moderator of moderators) {
+        const moderatorNotification = new Notification({
+          title: "New Follower (Disabled)",
+          message: `${userExists.username} started following the subreddit "${subreddit}". Notifications are disabled for this subreddit.`,
           recipient: moderator,
           type: "Subreddit Follower",
           subredditName: subreddit,
+          isDisabled: true,
         });
-        await notification.save();
+        await moderatorNotification.save();
       }
-    }
-    if (!isDisabledSubreddit) {
-      // Create a notification for the user
+    } else {
+      // Create a notification for the user with isDisabled set to false
       const userNotification = new Notification({
         title: "Subreddit Followed",
         message: `You have successfully followed the subreddit "${subreddit}".`,
         recipient: userExists.username,
         type: "Subreddit Followed",
         subredditName: subreddit,
+        isDisabled: false,
       });
       await userNotification.save();
+
+      // Notify the moderators of the subreddit with isDisabled set to false
+      const moderators = subredditExists.moderators.map(
+        (moderator) => moderator.username
+      );
+      for (const moderator of moderators) {
+        const moderatorNotification = new Notification({
+          title: "New Follower",
+          message: `${userExists.username} started following the subreddit "${subreddit}".`,
+          recipient: moderator,
+          type: "Subreddit Follower",
+          subredditName: subreddit,
+          isDisabled: false,
+        });
+        await moderatorNotification.save();
+      }
     }
+
+    await followSubreddits(userExists.username, subreddit);
+
     return res.status(200).json({
       success: true,
       message: "Subreddit followed successfully",
@@ -535,6 +539,8 @@ async function followSubreddit(req, res) {
     });
   }
 }
+
+
 
 
 /**

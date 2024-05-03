@@ -83,32 +83,25 @@ async function createComments(req, res) {
         });
       }
 
-      // Check if comments are disabled for the subreddit
-      const disableComments =
+      const isPostDisabled =
         user.notificationSettings.disabledPosts.includes(postId);
-      if (disableComments) {
-        // Create a notification for the post author with isDisabled set to true
-        const notification = new Notification({
-          title: "New Comment (Disabled)",
-          message: `${user.username} commented on your post "${post.title}", but comments are disabled for this post.`,
-          recipient: post.authorName,
-          type: "comment",
-          isDisabled: true,
-        });
 
-        await notification.save();
-      } else {
-        // Create a notification for the post author
-        const notification = new Notification({
-          title: "New Comment",
-          message: `${user.username} commented on your post "${post.title}".`,
-          recipient: post.authorName,
-          type: "comment",
-        });
+      // Determine if the comment notification should be disabled
+      const isCommentDisabled =
+        isPostDisabled ||
+        user.notificationSettings.disabledComments.includes(postId);
 
-        await notification.save();
-      }
+      // Create notification
+      const notification = new Notification({
+        title: isPostDisabled ? "New Comment (Disabled)" : "New Comment",
+        message: `${user.username} commented on your post "${post.title}".`,
+        recipient: post.authorName,
+        type: "comment",
+        isDisabled: isPostDisabled,
+      });
+      await notification.save();
 
+      // Create comment
       const comment = new Comment({
         content,
         authorName: user.username,
