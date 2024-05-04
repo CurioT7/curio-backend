@@ -46,4 +46,9 @@ router.patch(
   authenticate,
   subredditsController.removeModeration
 );
+router.post(
+  "/acceptmoderation/:subreddit",
+  authenticate,
+  subredditsController.acceptInvitation
+);
 module.exports = router;

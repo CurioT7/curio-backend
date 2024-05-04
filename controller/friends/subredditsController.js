@@ -7,7 +7,7 @@ const { addUserToSubbreddit } = require("./friendController");
 const { verifyToken } = require("../../utils/tokens");
 const Notification = require("../../models/notificationModel");
 const { getFilesFromS3 } = require("../../utils/s3-bucket");
-
+const Invitation = require("../../models/invitationModel");
 /**
  * Check whether subreddit is available or not
  * @param {string} subreddit
@@ -124,7 +124,6 @@ async function createSubreddit(data, user) {
  */
 async function newSubreddit(req, res) {
   try {
-   
     const user = await await User.findById(req.user.userId);
 
     if (!user) {
@@ -177,13 +176,13 @@ async function getSubredditInfo(req, res) {
         .status(404)
         .json({ success: false, message: "Subreddit not found" });
     }
-  let media = {};
-  if (subreddit.media) {
-    media = await getFilesFromS3(subreddit.media);
-  }
+    let media = {};
+    if (subreddit.media) {
+      media = await getFilesFromS3(subreddit.media);
+    }
     return res.status(200).json({
       success: true,
-      subreddit: { ...subreddit.toObject(), media: media }, 
+      subreddit: { ...subreddit.toObject(), media: media },
     });
   } catch (error) {
     console.error("Error fetching subreddit:", error);
@@ -201,8 +200,8 @@ async function getSubredditInfo(req, res) {
  */
 async function getTopCommunities(req, res) {
   const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
-  const limit = 10; // Allow 10 items per page 
-  const sortBy = "members"; // Default sorting by members 
+  const limit = 10; // Allow 10 items per page
+  const sortBy = "members"; // Default sorting by members
 
   try {
     const skip = (page - 1) * limit;
@@ -211,11 +210,11 @@ async function getTopCommunities(req, res) {
       {
         $project: {
           name: 1,
-          category:1,
+          category: 1,
           members: { $size: "$members" }, // Count the number of members for each community
         },
       },
-      { $sort: { [sortBy]: -1 } }, 
+      { $sort: { [sortBy]: -1 } },
       { $skip: skip },
       { $limit: limit },
     ]);
@@ -225,7 +224,11 @@ async function getTopCommunities(req, res) {
     console.error("Error fetching communities:", error);
     res
       .status(500)
-      .json({ success: false,message: "Internal server error", error:error.message});
+      .json({
+        success: false,
+        message: "Internal server error",
+        error: error.message,
+      });
   }
 }
 /**
@@ -255,39 +258,38 @@ async function createModeration(req, res) {
     }
 
     if (!subreddit) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Subreddit not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Subreddit not found",
+      });
     }
 
     if (!role) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Role not provided" });
+      return res.status(400).json({
+        success: false,
+        message: "Role not provided",
+      });
     }
 
     // Check if the user is the creator of the subreddit
     const isCreator = subreddit.moderators.some(
       (mod) => mod.username === user.username && mod.role === "creator"
     );
+
     if (!isCreator) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Only the creator of the subreddit can add moderators",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Only the creator of the subreddit can add moderators",
+      });
     }
 
     // Check if the user to be added as moderator exists
     const moderatorUser = await User.findOne({ username: moderationName });
     if (!moderatorUser) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "User to be added as moderator not found",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "User to be added as moderator not found",
+      });
     }
 
     // Check if the user is already a moderator of the subreddit
@@ -295,12 +297,10 @@ async function createModeration(req, res) {
       (mod) => mod.username === moderationName
     );
     if (isAlreadyModerator) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "User is already a moderator of the subreddit",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "User is already a moderator of the subreddit",
+      });
     }
 
     // Check if the user is a member of the subreddit
@@ -308,55 +308,39 @@ async function createModeration(req, res) {
       (member) => member.username === moderationName
     );
     if (!isMember) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "User is not a member of the subreddit",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "User is not a member of the subreddit",
+      });
     }
 
-    // Add the user as a moderator to the subreddit
-    subreddit.moderators.push({ username: moderationName, role: role });
-    await subreddit.save();
+    // Send an invitation to the user to become a moderator
+    const invitation = new Invitation({
+      sender: user.username,
+      recipient: moderationName,
+      subreddit: subreddit.name,
+      role: role,
+    });
+    await invitation.save();
 
-    // Update the user's moderator role for the subreddit
-    await User.findOneAndUpdate(
-      { username: moderationName },
-      {
-        $addToSet: {
-          moderators: {
-            subreddit: subreddit.name,
-            role: role,
-          },
-        },
-      }
-    );
+    // Create a notification for the moderator with the invitation
+    const notification = new Notification({
+      title: "Moderation Invitation",
+      message: `${user.username} invites you to become a moderator for "${subreddit.name}".`,
+      recipient: moderationName,
+      subreddits: subreddit.name,
+      type: "Invitation",
+      invitationId: invitation._id,
+    });
 
-   
-  const disabledSubreddit =
-    moderatorUser.notificationSettings?.disabledSubreddits.includes(
-      subreddit.name
-    );
- console.log(disabledSubreddit);
- console.log(user.notificationSettings.disabledSubreddits);
-  const notification = new Notification({
-    title: disabledSubreddit ? "Moderation (Disabled)" : "Moderation",
-    message: `${user.username} made you a moderator for "${subreddit.name}". ${
-      disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
-    }`,
-    recipient: moderationName,
-    subreddits: subreddit.name,
-    type: "subreddit",
-    isDisabled: disabledSubreddit,
-  });
-
+    // Save the notification to the database
     await notification.save();
-    
+
     return res.status(200).json({
       success: true,
-      message: "Moderator added successfully",
+      message: "Moderator invitation sent successfully",
       moderator: { username: moderationName, role: role },
+      invitationId: invitation._id,
     });
   } catch (error) {
     console.error(error);
@@ -367,6 +351,80 @@ async function createModeration(req, res) {
     });
   }
 }
+
+async function acceptInvitation(req, res) {
+  try {
+    const invitationId = req.body.invitationId;
+    const user = await User.findById(req.user.userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const invitation = await Invitation.findById(invitationId);
+
+    if (!invitation) {
+      return res.status(404).json({
+        success: false,
+        message: "Invitation not found",
+      });
+    }
+
+    // Ensure the invitation is for the current user
+    if (invitation.recipient !== user.username) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to accept this invitation",
+      });
+    }
+
+    // Add the user as a moderator to the subreddit
+    const subreddit = await Community.findOne({ name: invitation.subreddit });
+    subreddit.moderators.push({
+      username: user.username,
+      role: invitation.role,
+    });
+    await subreddit.save();
+
+    // Update the user's moderator role for the subreddit
+    await User.findOneAndUpdate(
+      { username: user.username },
+      {
+        $addToSet: {
+          moderators: {
+            subreddit: subreddit.name,
+            role: invitation.role,
+          },
+          subreddits: {
+            subreddit: subreddit.name,
+            role: invitation.role,
+          },
+        },
+      }
+    );
+
+    // Delete the invitation
+    await Invitation.findByIdAndDelete(invitationId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Invitation accepted successfully",
+      subreddit: subreddit.name,
+      role: invitation.role,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+}
+
 async function removeModeration(req, res) {
   try {
     const user = await User.findById(req.user.userId);
@@ -384,12 +442,14 @@ async function removeModeration(req, res) {
         success: false,
         message: "Subreddit not found",
       });
-    if(!role)
+    if (!role)
       return res.status(400).json({
         success: false,
         message: "Role not provided",
       });
-    const isCreator = subreddit.moderators.some((mod) => mod.username === user.username && mod.role === "creator");
+    const isCreator = subreddit.moderators.some(
+      (mod) => mod.username === user.username && mod.role === "creator"
+    );
     if (!isCreator)
       return res.status(403).json({
         success: false,
@@ -401,7 +461,9 @@ async function removeModeration(req, res) {
         success: false,
         message: "User to be removed as moderator not found",
       });
-    const isModerator = subreddit.moderators.some((mod) => mod.username === moderationName);
+    const isModerator = subreddit.moderators.some(
+      (mod) => mod.username === moderationName
+    );
     if (!isModerator)
       return res.status(400).json({
         success: false,
@@ -412,7 +474,9 @@ async function removeModeration(req, res) {
         success: false,
         message: "Cannot remove creator role",
       });
-    subreddit.moderators = subreddit.moderators.filter((mod) => mod.username !== moderationName);
+    subreddit.moderators = subreddit.moderators.filter(
+      (mod) => mod.username !== moderationName
+    );
     await subreddit.save();
     await User.findOneAndUpdate(
       { username: moderationName },
@@ -420,6 +484,16 @@ async function removeModeration(req, res) {
         $pull: {
           moderators: {
             subreddit: subreddit.name,
+          },
+          subreddits: {
+            subreddit: subreddit.name,
+            role: role,
+          },
+          $push: {
+            subreddits: {
+              subreddit: subreddit.name,
+              role: "member",
+            },
           },
         },
       }
@@ -435,10 +509,8 @@ async function removeModeration(req, res) {
       message: "Internal server error",
       error: error.message,
     });
+  }
 }
-}
-
-
 
 module.exports = {
   newSubreddit,
@@ -448,4 +520,5 @@ module.exports = {
   getTopCommunities,
   createModeration,
   removeModeration,
+  acceptInvitation,
 };
