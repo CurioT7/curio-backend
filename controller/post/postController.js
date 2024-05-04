@@ -86,6 +86,10 @@ async function createComments(req, res) {
         });
       }
 
+      // Find the author of the post
+      const postAuthor = await User.findOne({ username: post.authorName });
+
+      // Proceed to create the comment
       const comment = new Comment({
         content,
         authorName: user.username,
@@ -100,8 +104,26 @@ async function createComments(req, res) {
       await comment.save();
       post.comments.push(comment._id);
       await post.save();
+      // Check if the post is disabled for the author
+      const isPostDisabled =
+        postAuthor.notificationSettings.disabledPosts.includes(postId);
 
-      //check if content contains a mention
+      console.log(isPostDisabled);
+      console.log(postAuthor.notificationSettings.disabledPosts);
+      // Create a notification based on whether the post is disabled for the author
+      const notification = new Notification({
+        title: isPostDisabled ? "Comment on Disabled Post" : "New Comment",
+        message: isPostDisabled
+          ? `${user.username} commented on your disabled post "${post.title}".`
+          : `${user.username} commented on your post "${post.title}".`,
+        recipient: post.authorName,
+        type: isPostDisabled ? "Comment" : "Comment",
+        commentId: comment._id,
+        isDisabled: isPostDisabled,
+      });
+
+      await notification.save();
+      // Check for mentions in the comment content
       if (comment.content.includes("u/")) {
         const mentionedUsers = comment.content.match(/u\/\w+/g);
         const mentionedUsersNames = mentionedUsers.map((user) =>
@@ -111,11 +133,11 @@ async function createComments(req, res) {
           username: { $in: mentionedUsersNames },
         });
         users.forEach(async (mentionedUser) => {
-          const notification = new Notification({
+          const mentionNotification = new Notification({
             title: "Mention",
             message: `${user.username} mentioned you in a comment.`,
             recipient: mentionedUser.username,
-            type:"CommentMention"
+            type: "CommentMention",
           });
           const message = new Message({
             sender: user,
@@ -129,24 +151,14 @@ async function createComments(req, res) {
             linkedSubreddit: post.linkedSubreddit,
           });
           mentionedUser.mentions.push(message._id);
-          //save
           await Promise.all([
-            notification.save(),
+            mentionNotification.save(),
             message.save(),
             mentionedUser.save(),
           ]);
         });
       }
 
-      // Create a notification for the post author
-      const notification = new Notification({
-        title: "New Comment",
-        message: `${user.username} commented on your post "${post.title}".`,
-        recipient: post.authorName, // Assuming `author` is the username of the post author
-        type: "Comment",
-      });
-
-      await notification.save();
       return res.status(201).json({ success: true, comment });
     }
   } catch (err) {
