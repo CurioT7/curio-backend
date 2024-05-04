@@ -777,15 +777,12 @@ async function castVote(req, res) {
           disabledNotifications.disabledComments.includes(itemID));
       const author = await User.findOne({ username: item.authorName });
 
-      // Check if the postId or commentId exists in the notificationSettings
+      // Check if the postId or commentId exists in the notificationSettings of the author
       const isPostDisabled =
         author.notificationSettings.disabledPosts.includes(itemID);
       const isCommentDisabled =
         author.notificationSettings.disabledComments.includes(itemID);
-      console.log(isPostDisabled);
-      console.log(isCommentDisabled);
-      console.log(user.notificationSettings.disabledPosts);
-      console.log(user.notificationSettings.disabledComments);
+
       if (direction === 0) {
         // Find the existing vote in upvotes
         const existingUpvoteIndex = user.upvotes.findIndex(
@@ -846,12 +843,16 @@ async function castVote(req, res) {
         item.downvotes += 1;
         user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
       }
+
+      // Now, we'll adjust the notification based on whether the post/comment is disabled for the author
       if (isPostDisabled || isCommentDisabled) {
         // Send notification
         const notification = new Notification({
           title: "Notification",
-          message: `Notifications are disabled for this ${itemName}.`,
-          recipient: user.username, // or item.authorName
+          message: `Notifications are disabled for this ${
+            itemName === "post" ? "post" : "comment"
+          }.`,
+          recipient: author.username, // Send to the author, not the user who cast the vote
           postId: itemName === "post" ? itemID : undefined,
           commentId: itemName === "comment" ? itemID : undefined,
           isDisabled: true,
@@ -859,8 +860,10 @@ async function castVote(req, res) {
         });
         await notification.save();
       }
+
       // Notify the author
-      if (!isDisabled) {
+      if (!isPostDisabled || !isCommentDisabled) {
+        console.log(isDisabled);
         const notification = new Notification({
           title: "New Vote",
           message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
@@ -875,6 +878,7 @@ async function castVote(req, res) {
 
         await notification.save();
       }
+
       await Promise.all([item.save(), user.save()]);
       return res
         .status(200)
@@ -887,6 +891,7 @@ async function castVote(req, res) {
       .json({ success: false, message: "Internal server error", error: error });
   }
 }
+
 
 /**
  * Add a post to the user's browsing history.
