@@ -499,6 +499,9 @@ async function followSubreddit(req, res) {
         moderatorUser.notificationSettings.disabledSubreddits.includes(
           subreddit
         );
+      console.log("isModeratorDisabledSubreddit", isModeratorDisabledSubreddit);
+      console.log("subreddit", subreddit);
+      console.log(moderatorUser.notificationSettings.disabledSubreddits);
 
       const notification = new Notification({
         title: isModeratorDisabledSubreddit
