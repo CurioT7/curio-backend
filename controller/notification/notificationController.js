@@ -414,6 +414,10 @@ async function enableNotificationsForUser(req, res) {
       if (subredditName) {
         const index =
           user.notificationSettings.disabledSubreddits.indexOf(subredditName);
+         await Notification.updateMany(
+           { subredditName: subredditName },
+           { $set: { isDisabled: false } }
+         );
         if (index !== -1) {
           user.notificationSettings.disabledSubreddits.splice(index, 1);
         }
