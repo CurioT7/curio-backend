@@ -333,6 +333,26 @@ async function createModeration(req, res) {
       }
     );
 
+   
+  const disabledSubreddit =
+    moderatorUser.notificationSettings?.disabledSubreddits.includes(
+      subreddit.name
+    );
+ console.log(disabledSubreddit);
+ console.log(user.notificationSettings.disabledSubreddits);
+  const notification = new Notification({
+    title: disabledSubreddit ? "Moderation (Disabled)" : "Moderation",
+    message: `${user.username} made you a moderator for "${subreddit.name}". ${
+      disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
+    }`,
+    recipient: moderationName,
+    subreddits: subreddit.name,
+    type: "subreddit",
+    isDisabled: disabledSubreddit,
+  });
+
+    await notification.save();
+    
     return res.status(200).json({
       success: true,
       message: "Moderator added successfully",
