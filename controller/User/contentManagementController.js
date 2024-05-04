@@ -844,7 +844,6 @@ async function castVote(req, res) {
         user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
       }
 
-      // Now, we'll adjust the notification based on whether the post/comment is disabled for the author
       if (isPostDisabled || isCommentDisabled) {
         // Send notification
         const notification = new Notification({
@@ -859,25 +858,23 @@ async function castVote(req, res) {
           type: itemName,
         });
         await notification.save();
-      }
-
-      // Notify the author
-      if (!isPostDisabled || !isCommentDisabled) {
-        console.log(isDisabled);
+      } else {
+        // Send notification if disabledNotifications do not include this post/comment ID
         const notification = new Notification({
           title: "New Vote",
           message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
             direction === 1 ? "upvoted" : "downvoted"
           } by ${user.username}.`,
-          recipient: item.authorName,
+          recipient: author.username,
           postId: itemName === "post" ? itemID : undefined,
           commentId: itemName === "comment" ? itemID : undefined,
-          isDisabled: isDisabled,
+          isDisabled: false, 
           type: itemName,
         });
 
         await notification.save();
       }
+   
 
       await Promise.all([item.save(), user.save()]);
       return res
