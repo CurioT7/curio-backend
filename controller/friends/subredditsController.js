@@ -347,6 +347,76 @@ async function createModeration(req, res) {
     });
   }
 }
+async function removeModeration(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const decodedURI = decodeURIComponent(req.params.subreddit);
+    const subreddit = await Community.findOne({ name: decodedURI });
+    const moderationName = req.body.moderationName;
+    const role = req.body.role;
+    if (!user)
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    if (!subreddit)
+      return res.status(404).json({
+        success: false,
+        message: "Subreddit not found",
+      });
+    if(!role)
+      return res.status(400).json({
+        success: false,
+        message: "Role not provided",
+      });
+    const isCreator = subreddit.moderators.some((mod) => mod.username === user.username && mod.role === "creator");
+    if (!isCreator)
+      return res.status(403).json({
+        success: false,
+        message: "Only the creator of the subreddit can remove moderators",
+      });
+    const moderatorUser = await User.findOne({ username: moderationName });
+    if (!moderatorUser)
+      return res.status(404).json({
+        success: false,
+        message: "User to be removed as moderator not found",
+      });
+    const isModerator = subreddit.moderators.some((mod) => mod.username === moderationName);
+    if (!isModerator)
+      return res.status(400).json({
+        success: false,
+        message: "User is not a moderator of the subreddit",
+      });
+    if (role === "creator")
+      return res.status(400).json({
+        success: false,
+        message: "Cannot remove creator role",
+      });
+    subreddit.moderators = subreddit.moderators.filter((mod) => mod.username !== moderationName);
+    await subreddit.save();
+    await User.findOneAndUpdate(
+      { username: moderationName },
+      {
+        $pull: {
+          moderators: {
+            subreddit: subreddit.name,
+          },
+        },
+      }
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Moderator removed successfully",
+      moderator: { username: moderationName },
+    });
+  } catch {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+}
+}
 
 
 
@@ -357,4 +427,5 @@ module.exports = {
   getSubredditInfo,
   getTopCommunities,
   createModeration,
+  removeModeration,
 };
