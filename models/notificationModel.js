@@ -62,7 +62,6 @@ const notificationSchema = new Schema({
   },
   type: {
     type: String,
-    required: true,
   },
   subredditName: {
     type: String,
