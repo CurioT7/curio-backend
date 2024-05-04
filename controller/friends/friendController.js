@@ -491,8 +491,7 @@ async function followSubreddit(req, res) {
     for (const moderator of moderators) {
       const moderatorUser = await User.findOne({ username: moderator });
       if (!moderatorUser) {
-        // Handle case where moderator user is not found
-        continue; // Skip to the next iteration
+        continue; 
       }
 
       const isModeratorDisabledSubreddit =

@@ -7,6 +7,7 @@ const brypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Subreddit = require("../../models/subredditModel");
 const UserPreferences = require("../../models/userPreferencesModel");
+const Comment = require("../../models/commentModel");
 
 /**
  * Filters out hidden notifications for a given user.

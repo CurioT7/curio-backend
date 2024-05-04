@@ -115,6 +115,7 @@ async function createComments(req, res) {
             title: "Mention",
             message: `${user.username} mentioned you in a comment.`,
             recipient: mentionedUser.username,
+            type:"CommentMention"
           });
           const message = new Message({
             sender: user,
@@ -142,6 +143,7 @@ async function createComments(req, res) {
         title: "New Comment",
         message: `${user.username} commented on your post "${post.title}".`,
         recipient: post.authorName, // Assuming `author` is the username of the post author
+        type: "Comment",
       });
 
       await notification.save();

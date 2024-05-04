@@ -775,13 +775,17 @@ async function castVote(req, res) {
           disabledNotifications.disabledPosts.includes(itemID)) ||
         (itemName === "comment" &&
           disabledNotifications.disabledComments.includes(itemID));
+      const author = await User.findOne({ username: item.authorName });
 
       // Check if the postId or commentId exists in the notificationSettings
       const isPostDisabled =
-        user.notificationSettings.disabledPosts.includes(itemID);
+        author.notificationSettings.disabledPosts.includes(itemID);
       const isCommentDisabled =
-        user.notificationSettings.disabledComments.includes(itemID);
-
+        author.notificationSettings.disabledComments.includes(itemID);
+      console.log(isPostDisabled);
+      console.log(isCommentDisabled);
+      console.log(user.notificationSettings.disabledPosts);
+      console.log(user.notificationSettings.disabledComments);
       if (direction === 0) {
         // Find the existing vote in upvotes
         const existingUpvoteIndex = user.upvotes.findIndex(
