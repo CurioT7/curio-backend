@@ -7,6 +7,7 @@ const brypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Subreddit = require("../../models/subredditModel");
 const UserPreferences = require("../../models/userPreferencesModel");
+const Comment = require("../../models/commentModel");
 
 /**
  * Filters out hidden notifications for a given user.
@@ -413,6 +414,10 @@ async function enableNotificationsForUser(req, res) {
       if (subredditName) {
         const index =
           user.notificationSettings.disabledSubreddits.indexOf(subredditName);
+         await Notification.updateMany(
+           { subredditName: subredditName },
+           { $set: { isDisabled: false } }
+         );
         if (index !== -1) {
           user.notificationSettings.disabledSubreddits.splice(index, 1);
         }

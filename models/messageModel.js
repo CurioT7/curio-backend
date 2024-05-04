@@ -5,12 +5,30 @@ const messageSchema = new Schema({
   sender: {
     type: Schema.Types.ObjectId,
     ref: "User",
-    required: true,
   },
   recipient: {
     type: Schema.Types.ObjectId,
     ref: "User",
-    required: true,
+  },
+  recipientSubreddit: {
+    type: Schema.Types.ObjectId,
+    ref: "Subreddit",
+  },
+  postId: {
+    type: Schema.Types.ObjectId,
+    ref: "Post",
+  },
+  linkedSubreddit: {
+    type: Schema.Types.ObjectId,
+    ref: "Subreddit",
+  },
+  senderSubreddit: {
+    type: Schema.Types.ObjectId,
+    ref: "Subreddit",
+  },
+  type: {
+    type: String,
+    enum: ["message", "userMention"],
   },
   subject: {
     type: String,

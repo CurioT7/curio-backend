@@ -409,9 +409,10 @@ async function getUserPosts(req, res) {
       const user = await User.findOne({ _id: req.user.userId });
       let totalCount;
 
-        const type = req.params.type;
-        const timeFrame = req.params.timeframe;
-        const { page } = req.params.query;
+      const type = req.params.type;
+      const timeFrame = req.params.timeframe;
+      let page = req.query?.page;
+      page = page ? parseInt(page) : 1;
       const limit = 10; // Allow 20 items per page
       const skip = (page - 1) * limit;
 
@@ -530,10 +531,9 @@ async function getUserPosts(req, res) {
         }
       };
 
-   
-const subredditPosts = await Promise.all(user.subreddits.map(fetchPosts));
+      const subredditPosts = await Promise.all(user.subreddits.map(fetchPosts));
 
-const flattenedPosts = subredditPosts.flat();
+      const flattenedPosts = subredditPosts.flat();
 
       let fetchedPosts = flattenedPosts;
       if (timeFrame) {
@@ -571,7 +571,7 @@ const flattenedPosts = subredditPosts.flat();
             return res.status(400).json({ message: "Invalid time frame" });
         }
       }
- 
+
       // Get vote status and subreddit details for each post
       const detailsArray = await getVoteStatusAndSubredditDetails(
         flattenedPosts.map(({ post }) => post), // Extracting only the post from each flattened post object
@@ -602,7 +602,6 @@ const flattenedPosts = subredditPosts.flat();
     res.status(500).json({ message: error.message });
   }
 }
-
 
 /**
  * Sort comments for a post within a subreddit based on the specified type.
@@ -758,7 +757,8 @@ async function guestHomePage(req, res) {
   try {
     const type = req.params.type;
     const timeFrame = req.params.timeframe;
-    const { page } = req.params.query;
+    let page = req.query?.page;
+    page = page ? parseInt(page) : 1;
     const limit = 10; // Allow 10 items per page
     const skip = (page - 1) * limit;
 
