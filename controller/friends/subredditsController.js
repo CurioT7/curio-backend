@@ -323,19 +323,7 @@ async function createModeration(req, res) {
     });
     await invitation.save();
 
-    // Create a notification for the moderator with the invitation
-    const notification = new Notification({
-      title: "Moderation Invitation",
-      message: `${user.username} invites you to become a moderator for "${subreddit.name}".`,
-      recipient: moderationName,
-      subreddits: subreddit.name,
-      type: "Invitation",
-      invitationId: invitation._id,
-    });
-
-    // Save the notification to the database
-    await notification.save();
-
+  
     return res.status(200).json({
       success: true,
       message: "Moderator invitation sent successfully",
@@ -408,6 +396,32 @@ async function acceptInvitation(req, res) {
 
     // Delete the invitation
     await Invitation.findByIdAndDelete(invitationId);
+
+    const disabledSubreddit =
+      user.notificationSettings.disabledSubreddits.includes(
+        subreddit.name
+      );
+    console.log(disabledSubreddit);
+    console.log(user.notificationSettings.disabledSubreddits);
+    // Create a notification for the moderator with isDisabled set based on whether notifications are disabled
+    const notification = new Notification({
+      title: disabledSubreddit ? "Moderation (Disabled)" : "Moderation",
+      message: `${user.username} made you a moderator for "${
+        subreddit.name
+      }". ${
+        disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
+      }`,
+      recipient: moderationName,
+      subreddits: subreddit.name,
+      type: "Moderation",
+      isDisabled: disabledSubreddit,
+    });
+
+    // Save the notification to the database
+    await notification.save();
+
+    // Save the notification to the database
+    await notification.save();
 
     return res.status(200).json({
       success: true,
