@@ -256,7 +256,7 @@ async function friendRequest(req, res) {
      title: "New Follower (Disabled)",
      message: `${user.username} started following you. Notifications are disabled for the subreddit "${friendname.subreddit}".`,
      recipient: friendname,
-     type: "Friend Request",
+     type: "Friend",
      isDisabled: true,
    });
 
@@ -268,7 +268,7 @@ async function friendRequest(req, res) {
    title: "New Follower",
    message: `${user.username} started following you.`,
    recipient: friendname,
-   type: "Friend Request",
+   type: "Friend",
  });
 
  // Save the notification to the database
@@ -475,7 +475,7 @@ async function followSubreddit(req, res) {
         title: "Subreddit Followed (Disabled)",
         message: `You have followed the subreddit "${subreddit}", but notifications are disabled for this subreddit.`,
         recipient: user.username,
-        type: "Subreddit Followed",
+        type: "subreddit",
         subredditName: subreddit,
         isDisabled: true,
       });
@@ -510,7 +510,7 @@ async function followSubreddit(req, res) {
           ? `You have followed the subreddit "${subreddit}", but notifications are disabled for this subreddit.`
           : `${user.username} started following the subreddit "${subreddit}".`,
         recipient: moderator,
-        type: "Subreddit Follower",
+        type: "subreddit",
         subredditName: subreddit,
         isDisabled: isModeratorDisabledSubreddit,
       });
@@ -523,7 +523,7 @@ async function followSubreddit(req, res) {
         title: "Subreddit Followed",
         message: `You have successfully followed the subreddit "${subreddit}".`,
         recipient: user.username,
-        type: "Subreddit Followed",
+        type: "subreddit",
         subredditName: subreddit,
       });
       await userNotification.save();
