@@ -130,6 +130,8 @@ async function getAllNotificationsForUser(req, res) {
             "You haven't joined any communities yet. Consider joining " +
             randomSubreddit[0].name,
           recipient: user.username,
+          type: "subreddit",
+          subredditName: randomSubreddit[0].name,
         });
         await notification.save();
       }
