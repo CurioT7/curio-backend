@@ -410,9 +410,6 @@ async function getUserPosts(req, res) {
         if (!subredditDetails) {
           throw new Error("Subreddit details not found");
         }
-        totalCount = await Post.countDocuments({
-          linkedSubreddit: subredditDetails._id,
-        });
 
         switch (type) {
           case "best":
@@ -447,7 +444,7 @@ async function getUserPosts(req, res) {
 
           case "random":
             // Fetch random posts
-            return Post.find({ linkedSubreddit: subredditDetails._id })
+             return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
               .skip(skip)
               .limit(limit)
@@ -458,9 +455,7 @@ async function getUserPosts(req, res) {
                     post.media = await getFilesFromS3(post.media);
                   }
                 }
-                const randomIndex = Math.floor(Math.random() * posts.length);
-                const randomPost = posts[randomIndex];
-                return [{ post: randomPost }];
+                return posts.map((randomPost) => ({ post: randomPost }));
               });
 
           case "new":
@@ -531,6 +526,7 @@ async function getUserPosts(req, res) {
       const subredditPosts = await Promise.all(user.subreddits.map(fetchPosts));
 
       const flattenedPosts = subredditPosts.flat();
+      totalCount = await Post.countDocuments(flattenedPosts);
 
       let fetchedPosts = flattenedPosts;
       if (timeFrame) {
@@ -587,9 +583,7 @@ async function getUserPosts(req, res) {
       );
 
       res.status(200).json({
-        totalCount,
-        currentPage: page,
-        totalPages: Math.ceil(totalCount / limit),
+        totalPosts: totalCount,
         posts: postsWithDetails,
       });
     } else {
