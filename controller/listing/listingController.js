@@ -103,10 +103,8 @@ async function getTopPosts(req, res) {
     }
 
     if (topPosts.length > 0) {
-      // Increment views of the first post if top posts exist
       await Post.updateOne({ _id: topPosts[0]._id }, { $inc: { views: 1 } });
 
-      // If user is authenticated, get vote status and subreddit details
       let detailsArray;
       if (req.user) {
         const user = await User.findOne({ _id: req.user.userId });
@@ -115,18 +113,10 @@ async function getTopPosts(req, res) {
 
       return res.status(200).json({
         success: true,
-        posts: detailsArray
-          ? posts.map((post, index) => ({
-              ...post,
-              details: detailsArray[index],
-            }))
-          : posts,
+        topPosts,
+        detailsArray: detailsArray && detailsArray,
       });
-    } else {
-      return res
-        .status(404)
-        .json({ success: false, message: "No top posts found" });
-    }
+    } 
   } catch (error) {
     return res
       .status(400)
@@ -193,10 +183,10 @@ async function hotPosts(req, res) {
     const posts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
       views: -1,
     });
-    const media = Posts.map((post) => post.media);
+    const media = posts.map((post) => post.media);
     if (media) {
       for (let i = 0; i < media.length; i++) {
-        Posts[i].media = await getFilesFromS3(media[i]);
+        posts[i].media = await getFilesFromS3(media[i]);
       }
     }
     const postIds = posts.map((post) => post._id);
@@ -285,7 +275,7 @@ async function getTopPostsbytime(req, res) {
       createdAt: { $gte: timeThreshold },
     }).sort({ upvotes: -1 });
 
-    const media = topPosts.map((post) => post.media);
+        const media = topPosts.map((post) => post.media);
     if (media) {
       for (let i = 0; i < media.length; i++) {
         topPosts[i].media = await getFilesFromS3(media[i]);
@@ -293,7 +283,8 @@ async function getTopPostsbytime(req, res) {
     }
 
     if (topPosts.length > 0) {
-      await Post.updateOne({ _id: topPosts[0]._id }, { $inc: { views: 1 } });
+      const postIds = topPosts.map((post) => post._id);
+      await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
       let detailsArray;
       if (req.user) {
@@ -303,12 +294,8 @@ async function getTopPostsbytime(req, res) {
 
       return res.status(200).json({
         success: true,
-        posts: detailsArray
-          ? topPosts.map((post, index) => ({
-              ...post,
-              details: detailsArray[index],
-            }))
-          : topPosts,
+        topPosts,
+        detailsArray: detailsArray && detailsArray,
       });
     } else {
       return res.status(404).json({
