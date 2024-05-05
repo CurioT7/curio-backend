@@ -78,8 +78,6 @@ async function compose(req, res) {
       recipient,
       subject,
       message,
-      isPrivate: true,
-      isSent: true,
     });
 
     sender.sentPrivateMessages.push(sentMessage);
@@ -122,14 +120,14 @@ async function inbox(req, res) {
       case "all":
         messages = await Message.find({
           recipient: user,
-          isPrivate: true,
+          e,
         }).sort({ timestamp: -1 });
         break;
       case "unread":
         messages = await Message.find({
           recipient: user,
           isRead: false,
-          isPrivate: true,
+          e,
         }).sort({ timestamp: -1 });
         break;
       case "messages":
@@ -137,6 +135,7 @@ async function inbox(req, res) {
           recipient: user,
           type: "message",
         }).sort({ timestamp: -1 });
+        break;
       case "postReply":
         messages = await Message.find({
           recipient: user,
@@ -183,7 +182,6 @@ async function getSent(req, res) {
     const user = await User.findById(req.user.userId);
     const messages = await Message.find({
       sender: user,
-      isSent: true,
     })
       .populate({ path: "sender", select: "username" })
       .populate({ path: "recipient", select: "username" })

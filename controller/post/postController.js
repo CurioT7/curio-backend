@@ -145,8 +145,6 @@ async function createComments(req, res) {
             type: "userMention",
             message: comment.content,
             createdAt: new Date(),
-            isPrivate: true,
-            isSent: true,
             postId: post._id,
             linkedSubreddit: post.linkedSubreddit,
           });
@@ -165,7 +163,6 @@ async function createComments(req, res) {
         type: "postReply",
         message: comment.content,
         createdAt: new Date(),
-        isPrivate: true,
       });
       postAuthor.receivedPrivateMessages.push(replyMessage._id);
 

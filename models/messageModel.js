@@ -45,14 +45,6 @@ const messageSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  isSent: {
-    type: Boolean,
-    default: false,
-  },
-  isPrivate: {
-    type: Boolean,
-    default: false,
-  },
 });
 
 const Message = mongoose.model("Message", messageSchema);
