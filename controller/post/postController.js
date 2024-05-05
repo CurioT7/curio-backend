@@ -162,6 +162,9 @@ async function createComments(req, res) {
       const replyMessage = new Message({
         sender: user,
         recipient: postAuthor,
+        linkedSubreddit: post.linkedSubreddit,
+        postId: post._id,
+        commentId: comment._id,
         type: "postReply",
         message: comment.content,
         createdAt: new Date(),

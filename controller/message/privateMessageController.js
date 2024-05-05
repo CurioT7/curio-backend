@@ -120,14 +120,12 @@ async function inbox(req, res) {
       case "all":
         messages = await Message.find({
           recipient: user,
-          e,
         }).sort({ timestamp: -1 });
         break;
       case "unread":
         messages = await Message.find({
           recipient: user,
           isRead: false,
-          e,
         }).sort({ timestamp: -1 });
         break;
       case "messages":
