@@ -98,6 +98,7 @@ async function getAllNotificationsForUser(req, res) {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
 
+      //find notifications by recipient name
         const notifications = await Notification.aggregate([
           {
             $match: {
@@ -107,7 +108,7 @@ async function getAllNotificationsForUser(req, res) {
           // Sort notifications by most recent
           {
             $sort: {
-              timestamp: -1, 
+              timestamp: -1, // Sort in descending order based on the timestamp field
             },
           },
         ]);
