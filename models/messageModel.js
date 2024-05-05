@@ -29,7 +29,7 @@ const messageSchema = new Schema({
   },
   type: {
     type: String,
-    enum: ["message", "userMention"],
+    enum: ["message", "userMention", "postReply"],
   },
   subject: {
     type: String,

@@ -137,14 +137,30 @@ async function createComments(req, res) {
         });
       }
 
+      const postAuthor = await User.findOne({ username: post.authorName });
+      const replyMessage = new Message({
+        sender: user,
+        recipient: postAuthor,
+        type: "postReply",
+        message: comment.content,
+        createdAt: new Date(),
+        isPrivate: true,
+      });
+      postAuthor.receivedPrivateMessages.push(replyMessage._id);
+
       // Create a notification for the post author
       const notification = new Notification({
         title: "New Comment",
+        type: "comment",
         message: `${user.username} commented on your post "${post.title}".`,
         recipient: post.authorName, // Assuming `author` is the username of the post author
       });
 
-      await notification.save();
+      await Promise.all([
+        replyMessage.save(),
+        postAuthor.save(),
+        notification.save(),
+      ]);
       return res.status(201).json({ success: true, comment });
     }
   } catch (err) {
