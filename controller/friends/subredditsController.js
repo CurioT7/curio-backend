@@ -731,6 +731,66 @@ async function unMuteUser(req, res) {
   }
 }
 
+async function leaveModerator(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const decodedURI = decodeURIComponent(req.params.subreddit);
+    const subreddit = await Community.findOne({ name: decodedURI });
+    if (!user)
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    if (!subreddit)
+      return res.status(404).json({
+        success: false,
+        message: "Subreddit not found",
+      });
+    const isModerator = subreddit.moderators.some(
+      (mod) => mod.username === user.username
+    );
+    if (!isModerator)
+      return res.status(403).json({
+        success: false,
+        message: "Only moderators can leave moderation",
+      });
+    subreddit.moderators = subreddit.moderators.filter(
+      (mod) => mod.username !== user.username
+    );
+    await subreddit.save();
+    await User.findOneAndUpdate(
+      { username: user.username },
+      {
+        $pull: {
+          moderators: {
+            subreddit: subreddit.name,
+          },
+          subreddits: {
+            subreddit: subreddit.name,
+            role: role,
+          },
+          $push: {
+            subreddits: {
+              subreddit: subreddit.name,
+              role: "member",
+            },
+          },
+        },
+      }
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Moderator left successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   newSubreddit,
   availableSubreddit,
@@ -744,5 +804,6 @@ module.exports = {
   getModeratorsQueue,
   declineInvitation,
   muteUser,
-  unMuteUser
+  unMuteUser,
+  leaveModerator,
 };
