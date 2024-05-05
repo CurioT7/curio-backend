@@ -277,6 +277,11 @@ const userSchema = new mongoose.Schema({
   media: {
     type: String,
   },
+  access: {
+    type: String,
+    enum: ["user", "admin"],
+    default: "user",
+  },
 });
 
 /**
