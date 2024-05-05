@@ -249,12 +249,12 @@ async function friendRequest(req, res) {
 
     await addFriend(user.username, friendname);
  const disabledSubreddit =
-   user.notificationSettings.disabledSubreddits.includes(user.subreddit);
+   user.notificationSettings.disabledSubreddits.includes(user.subreddits);
  if (disabledSubreddit) {
    // Create a notification for the friend with isDisabled set to true
    const notification = new Notification({
      title: "New Follower (Disabled)",
-     message: `${user.username} started following you. Notifications are disabled for the subreddit "${friendname.subreddit}".`,
+     message: `${user.username} started following you. Notifications are disabled for the subreddit "${friendname.subreddits}".`,
      recipient: friendname,
      type: "Friend",
      isDisabled: true,
