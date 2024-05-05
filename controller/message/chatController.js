@@ -114,6 +114,12 @@ async function manageChatRequest(req, res) {
   try {
     const user = await User.findById(req.user.userId);
     const chat = await Chat.findById(req.body.chatId);
+    if (!chat) {
+      return res.status(400).json({
+        success: false,
+        message: "Chat not found",
+      });
+    }
     const recipient = await User.findById(chat.participants[1]);
     if (!chat.isPendingRequest) {
       return res.status(400).json({
@@ -135,7 +141,12 @@ async function manageChatRequest(req, res) {
       recipient.pendingChatRequests = recipient.pendingChatRequests.filter(
         (request) => request.chat.toString() !== chat._id.toString()
       );
-      await Promise.all([recipient.save(), chat.remove()]);
+      //ignore chat
+      user.pendingChatRequests = user.pendingChatRequests.filter(
+        (request) => request.chat.toString() !== chat._id.toString()
+      );
+
+      await Promise.all([recipient.save(), chat.save()]);
       return res.status(200).json({
         success: true,
         message: "Chat request declined",
