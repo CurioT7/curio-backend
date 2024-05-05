@@ -143,7 +143,7 @@ async function createComments(req, res) {
             sender: user,
             recipient: mentionedUser,
             type: "userMention",
-            message: `${user.username} mentioned you in a comment: ${comment.content}`,
+            message: comment.content,
             createdAt: new Date(),
             isPrivate: true,
             isSent: true,

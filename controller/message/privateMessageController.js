@@ -157,29 +157,14 @@ async function inbox(req, res) {
     }
 
     //populate messages
-    messages = await Message.populate(
-      messages,
-      {
-        path: "sender",
-        select: "username",
-      },
-      // {
-      //   path: "recipient",
-      //   select: "username",
-      // },
-      {
-        path: "recipientSubreddit",
-        select: "name",
-      },
-      {
-        path: "senderSubreddit",
-        select: "name",
-      },
-      {
-        path: "linkedSubreddit",
-        select: "name",
-      }
-    );
+    messages = await Message.populate(messages, [
+      { path: "sender", select: "username" },
+      { path: "recipient", select: "username" },
+      { path: "recipientSubreddit", select: "name" },
+      { path: "senderSubreddit", select: "name" },
+      { path: "linkedSubreddit", select: "name" },
+      { path: "postId", select: "title" },
+    ]);
 
     res.status(200).json({
       success: true,
