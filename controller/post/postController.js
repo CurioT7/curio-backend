@@ -159,6 +159,17 @@ async function createComments(req, res) {
         });
       }
 
+      const replyMessage = new Message({
+        sender: user,
+        recipient: postAuthor,
+        type: "postReply",
+        message: comment.content,
+        createdAt: new Date(),
+        isPrivate: true,
+      });
+      postAuthor.receivedPrivateMessages.push(replyMessage._id);
+
+      await Promise.all([replyMessage.save(), postAuthor.save()]);
       return res.status(201).json({ success: true, comment });
     }
   } catch (err) {

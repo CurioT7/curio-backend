@@ -113,24 +113,6 @@ async function compose(req, res) {
   }
 }
 
-async function getMessages(messagesId) {
-  try {
-    // Fetch messages with sender and recipient populated
-    const messages = await Message.find({ _id: { $in: messagesId } })
-      .populate({ path: "sender", select: "username" })
-      .populate({ path: "recipient", select: "username" })
-      .populate({ path: "recipientSubreddit", select: "name" })
-      .populate({ path: "senderSubreddit", select: "name" })
-      .populate({ path: "linkedSubreddit", select: "name" })
-      .sort({ timestamp: -1 });
-
-    return messages;
-  } catch (error) {
-    console.error("Error while fetching messages:", error);
-    throw error; // Rethrow the error for further handling
-  }
-}
-
 async function inbox(req, res) {
   try {
     const type = req.params.type;
@@ -138,21 +120,34 @@ async function inbox(req, res) {
     let messages = [];
     switch (type) {
       case "all":
-        messages = [...user.receivedPrivateMessages, ...user.mentions];
+        messages = await Message.find({
+          recipient: user,
+          isPrivate: true,
+        }).sort({ timestamp: -1 });
         break;
       case "unread":
-        messages = user.receivedPrivateMessages.filter(
-          (message) => !message.isRead
-        );
+        messages = await Message.find({
+          recipient: user,
+          isRead: false,
+          isPrivate: true,
+        }).sort({ timestamp: -1 });
         break;
       case "messages":
-        messages = [
-          ...user.receivedPrivateMessages,
-          ...user.sentPrivateMessages,
-        ];
+        messages = await Message.find({
+          recipient: user,
+          type: "message",
+        }).sort({ timestamp: -1 });
+      case "postReply":
+        messages = await Message.find({
+          recipient: user,
+          type: "postReply",
+        }).sort({ timestamp: -1 });
         break;
       case "usernameMentions":
-        messages = user.mentions;
+        messages = await Message.find({
+          recipient: user,
+          type: "userMention",
+        }).sort({ timestamp: -1 });
         break;
       default:
         return res.status(400).json({
@@ -161,7 +156,30 @@ async function inbox(req, res) {
         });
     }
 
-    messages = await getMessages(messages);
+    //populate messages
+    messages = await Message.populate(
+      messages,
+      {
+        path: "sender",
+        select: "username",
+      },
+      // {
+      //   path: "recipient",
+      //   select: "username",
+      // },
+      {
+        path: "recipientSubreddit",
+        select: "name",
+      },
+      {
+        path: "senderSubreddit",
+        select: "name",
+      },
+      {
+        path: "linkedSubreddit",
+        select: "name",
+      }
+    );
 
     res.status(200).json({
       success: true,
@@ -178,7 +196,17 @@ async function inbox(req, res) {
 async function getSent(req, res) {
   try {
     const user = await User.findById(req.user.userId);
-    const messages = await getMessages(user.sentPrivateMessages);
+    const messages = await Message.find({
+      sender: user,
+      isSent: true,
+    })
+      .populate({ path: "sender", select: "username" })
+      .populate({ path: "recipient", select: "username" })
+      .populate({ path: "recipientSubreddit", select: "name" })
+      .populate({ path: "senderSubreddit", select: "name" })
+      .populate({ path: "linkedSubreddit", select: "name" })
+      .sort({ timestamp: -1 });
+
     res.status(200).json({
       success: true,
       messages,
