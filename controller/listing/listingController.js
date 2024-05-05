@@ -419,20 +419,30 @@ async function getUserPosts(req, res) {
             // Fetch best posts
             return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
-              .sort({ upvotes: -1 })
               .skip(skip)
               .limit(limit)
               .then(async (posts) => {
-                // Retrieve media files for each post
                 for (const post of posts) {
                   if (post.media) {
                     post.media = await getFilesFromS3(post.media);
                   }
                 }
-                return posts.map((post) => ({
-                  subreddit: subreddit.name,
-                  post,
-                }));
+                // Sort posts based on the proportion of upvotes to downvotes
+                const sortedPosts = posts.sort((a, b) => {
+                  const karmaA = a.upvotes - a.downvotes;
+                  const karmaB = b.upvotes - b.downvotes;
+
+                  // Calculate the proportion of upvotes to downvotes for each post
+                  const proportionA =
+                    karmaA > 0 ? karmaA / (karmaA + a.downvotes) : 0;
+                  const proportionB =
+                    karmaB > 0 ? karmaB / (karmaB + b.downvotes) : 0;
+
+                  // Sort posts based on the proportion of upvotes to downvotes
+                  return proportionB - proportionA;
+                });
+
+                return sortedPosts.map((post) => ({ post }));
               });
 
           case "random":
@@ -753,19 +763,32 @@ async function guestHomePage(req, res) {
       switch (type) {
         case "best":
           // Fetch best posts
-          return Post.find()
+          return Post.find({ linkedSubreddit: subredditDetails._id })
             .populate("originalPostId")
-            .sort({ upvotes: -1, views: -1, comments: -1 })
             .skip(skip)
             .limit(limit)
             .then(async (posts) => {
-              // Retrieve media files for each post
               for (const post of posts) {
                 if (post.media) {
                   post.media = await getFilesFromS3(post.media);
                 }
               }
-              return posts.map((post) => ({ post }));
+              // Sort posts based on the proportion of upvotes to downvotes
+              const sortedPosts = posts.sort((a, b) => {
+                const karmaA = a.upvotes - a.downvotes;
+                const karmaB = b.upvotes - b.downvotes;
+
+                // Calculate the proportion of upvotes to downvotes for each post
+                const proportionA =
+                  karmaA > 0 ? karmaA / (karmaA + a.downvotes) : 0;
+                const proportionB =
+                  karmaB > 0 ? karmaB / (karmaB + b.downvotes) : 0;
+
+                // Sort posts based on the proportion of upvotes to downvotes
+                return proportionB - proportionA;
+              });
+
+              return sortedPosts.map((post) => ({ post }));
             });
         case "random":
           // Fetch random posts
