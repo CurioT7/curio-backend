@@ -759,6 +759,7 @@ async function guestHomePage(req, res) {
           // Fetch best posts
           return Post.find()
             .populate("originalPostId")
+            .populate({ path: "linkedSubreddit", select: "name" })
             .skip(skip)
             .limit(limit)
             .then(async (posts) => {
@@ -787,6 +788,7 @@ async function guestHomePage(req, res) {
         case "random":
           // Fetch random posts
           return Post.find()
+            .populate({ path: "linkedSubreddit", select: "name" })
             .populate("originalPostId")
             .skip(skip)
             .limit(limit)
@@ -802,6 +804,7 @@ async function guestHomePage(req, res) {
         case "top":
           // Fetch top posts
           return Post.find()
+            .populate({ path: "linkedSubreddit", select: "name" })
             .populate("originalPostId")
             .sort({ upvotes: -1 })
             .skip(skip)
@@ -818,6 +821,7 @@ async function guestHomePage(req, res) {
         case "new":
           // Fetch new posts
           return Post.find()
+            .populate({ path: "linkedSubreddit", select: "name" })
             .populate("originalPostId")
             .sort({ createdAt: -1 })
             .skip(skip)
@@ -834,6 +838,7 @@ async function guestHomePage(req, res) {
         case "hot":
           // Fetch hot posts
           return Post.find()
+            .populate({ path: "linkedSubreddit", select: "name" })
             .populate("originalPostId")
             .sort({ views: -1 })
             .skip(skip)
