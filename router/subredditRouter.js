@@ -110,4 +110,24 @@ router.get(
   subredditsController.getModeratorsQueue
 );
 
+/**
+ * Route to mute a user in a subreddit.
+ * @name POST /subreddit/muteUser/:subreddit
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware
+ */
+router.post("/muteUser/:subreddit", authenticate, subredditsController.muteUser);
+
+/**
+ * Route to unmute a user in a subreddit.
+ * @name PATCH /subreddit/unmuteUser/:subreddit
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware
+ */
+router.patch("/unmuteUser/:subreddit", authenticate, subredditsController.unMuteUser);
+
 module.exports = router;

@@ -174,6 +174,14 @@ const subredditSchema = new Schema({
       ref: "Message",
     },
   ],
+  mutedUsers: [
+    {
+      username: {
+        type: String,
+        ref: "User",
+      },
+    },
+  ],
 });
 /**
  * Creates a model for the Subreddit schema.

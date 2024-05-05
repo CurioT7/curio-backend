@@ -626,6 +626,106 @@ async function declineInvitation(req, res) {
     });
   }
 }
+
+async function muteUser(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const decodedURI = decodeURIComponent(req.params.subreddit);
+    const subreddit = await Community.findOne({ name: decodedURI });
+    const mutedUser = req.body.mutedUser;
+    if (!user)
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    if (!subreddit)
+      return res.status(404).json({
+        success: false,
+        message: "Subreddit not found",
+      });
+    const isModerator = subreddit.moderators.some(
+      (mod) => mod.username === user.username
+    );
+    if (!isModerator)
+      return res.status(403).json({
+        success: false,
+        message: "Only moderators can mute users",
+      });
+    const muted = subreddit.mutedUsers.some(
+      (muted) => muted.username === mutedUser
+    );
+    if (muted)
+      return res.status(400).json({
+        success: false,
+        message: "User is already muted",
+      });
+    subreddit.mutedUsers.push({ username: mutedUser });
+    await subreddit.save();
+    return res.status(200).json({
+      success: true,
+      message: "User muted successfully",
+      mutedUser: mutedUser,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+
+}
+
+async function unMuteUser(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const decodedURI = decodeURIComponent(req.params.subreddit);
+    const subreddit = await Community.findOne({ name: decodedURI });
+    const mutedUser = req.body.mutedUser;
+    if (!user)
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    if (!subreddit
+    )
+      return res.status(404).json({
+        success: false,
+        message: "Subreddit not found",
+      });
+    const isModerator = subreddit.moderators.some(
+      (mod) => mod.username === user.username
+    );
+    if (!isModerator)
+      return res.status(403).json({
+        success: false,
+        message: "Only moderators can unmute users",
+      });
+    const muted = subreddit.mutedUsers.some(
+      (muted) => muted.username === mutedUser
+    );
+    if (!muted)
+      return res.status(400).json({
+        success: false,
+        message: "User is not muted",
+      });
+    subreddit.mutedUsers = subreddit.mutedUsers.filter(
+      (muted) => muted.username !== mutedUser
+    );
+    await subreddit.save();
+    return res.status(200).json({
+      success: true,
+      message: "User unmuted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   newSubreddit,
   availableSubreddit,
@@ -638,4 +738,6 @@ module.exports = {
   getModerators,
   getModeratorsQueue,
   declineInvitation,
+  muteUser,
+  unMuteUser
 };
