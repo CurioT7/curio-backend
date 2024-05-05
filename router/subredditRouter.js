@@ -95,7 +95,7 @@ router.post("/declinemoderation/:subreddit", authenticate, subredditsController.
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-router.get("/getModerators/:subreddit:", subredditsController.getModerators);
+router.get("/getModerators/:subreddit", subredditsController.getModerators);
 
 /**
  * Route to get the moderation queue of a subreddit.

@@ -525,19 +525,15 @@ async function removeModeration(req, res) {
       error: error.message,
     });
   }
-}
-async function getModerators(req, res) {
-  
+}async function getModerators(req, res) {
   try {
-    const decodedURL = decodeURLComponent(req.params.subreddit);
+    const decodedURL = decodeURIComponent(req.params.subreddit); 
     const subreddit = await Community.findOne({ name: decodedURL });
-    if (!subreddit)
-    {
-      return res.status(404)
-        .json({
-          success: false,
-        message:"Subreddit is not found"
-        })
+    if (!subreddit) {
+      return res.status(404).json({
+        success: false,
+        message: "Subreddit is not found",
+      });
     }
     const moderators = subreddit.moderators;
     return res.status(200).json({
@@ -545,12 +541,14 @@ async function getModerators(req, res) {
       moderators: moderators,
     });
   } catch (error) {
-    return res.statuse(500).json({
+    console.error(error); 
+    return res.status(500).json({
       success: false,
-      message:"Internal server error",
-    })
+      message: "Internal server error",
+    });
   }
 }
+
 async function getModeratorsQueue(req, res) {
   try {
     const user = await User.findById(req.user.userId);
@@ -654,6 +652,14 @@ async function muteUser(req, res) {
     const muted = subreddit.mutedUsers.some(
       (muted) => muted.username === mutedUser
     );
+    
+    if (subreddit.moderators.some((mod) => mod.username === mutedUser)) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot mute moderators",
+      });
+    }
+
     if (muted)
       return res.status(400).json({
         success: false,
