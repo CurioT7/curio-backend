@@ -757,7 +757,7 @@ async function guestHomePage(req, res) {
       switch (type) {
         case "best":
           // Fetch best posts
-          return Post.find({ linkedSubreddit: subredditDetails._id })
+          return Post.find()
             .populate("originalPostId")
             .skip(skip)
             .limit(limit)
