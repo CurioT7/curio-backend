@@ -130,4 +130,13 @@ router.post("/muteUser/:subreddit", authenticate, subredditsController.muteUser)
  */
 router.patch("/unmuteUser/:subreddit", authenticate, subredditsController.unMuteUser);
 
+/**
+ * Route to Leave a moderator from a subreddit.
+ * @name PATCH /subreddit/leaveModerator/:subreddit
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware
+ */
+router.patch("/leaveModerator/:subreddit", authenticate, subredditsController.leaveModerator);
 module.exports = router;
