@@ -168,6 +168,7 @@ async function createComments(req, res) {
         type: "postReply",
         message: comment.content,
         createdAt: new Date(),
+        commentNumber: post.comments.length,
       });
       postAuthor.receivedPrivateMessages.push(replyMessage._id);
 
