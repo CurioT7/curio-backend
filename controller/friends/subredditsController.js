@@ -328,7 +328,6 @@ async function createModeration(req, res) {
     return res.status(200).json({
       success: true,
       message: "Moderator invitation sent successfully",
-      moderator: { username: moderationName, role: role },
       invitationId: invitation._id,
     });
   } catch (error) {
