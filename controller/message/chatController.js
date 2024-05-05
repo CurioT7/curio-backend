@@ -2,6 +2,14 @@ const Chat = require("../../models/chatModel");
 const User = require("../../models/userModel");
 const { options } = require("../../router/messageRouter");
 
+/**
+ * Create a chat between two users
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ * @returns {Object} - Response object
+ * @async
+ */
+
 async function createChat(req, res) {
   try {
     const recipient = await User.findOne({ username: req.body.recipient });
@@ -53,6 +61,14 @@ async function createChat(req, res) {
   }
 }
 
+/**
+ * Get chat requests for the user
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ * @returns {Object} - Response object
+ * @async
+ * @returns {Object} - Response object
+ */
 async function getChatRequests(req, res) {
   try {
     //get request message and username only
@@ -82,6 +98,15 @@ async function getChatRequests(req, res) {
   }
 }
 
+/**
+ * Get chat by chatId
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ * @returns {Object} - Response object
+ * @async
+ * @returns {Object} - Response object
+ */
+
 async function getChat(req, res) {
   try {
     const chat = await Chat.findById(req.params.chatId)
@@ -109,6 +134,15 @@ async function getChat(req, res) {
     });
   }
 }
+
+/**
+ * Manage chat request (accept or decline)
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ * @returns {Object} - Response object
+ * @async
+ * @returns {Object} - Response object
+ */
 
 async function manageChatRequest(req, res) {
   try {
@@ -160,6 +194,15 @@ async function manageChatRequest(req, res) {
   }
 }
 
+/**
+ * Get chats overview based on filter (all, unread, pending, etc.)
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ * @returns {Object} - Response object
+ * @async
+ * @returns {Object} - Response object
+ */
+
 async function chatsOverview(req, res) {
   try {
     const filter = req.params.filter;
@@ -178,6 +221,7 @@ async function chatsOverview(req, res) {
             path: "messages",
             options: { sort: { timestamp: -1 } },
             select: "message sender timestamp",
+            match: { isPendingRequest: { $ne: true } },
             perDocumentLimit: 1,
             populate: {
               path: "sender",
