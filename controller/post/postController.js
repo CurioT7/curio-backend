@@ -147,6 +147,8 @@ async function createComments(req, res) {
             createdAt: new Date(),
             postId: post._id,
             linkedSubreddit: post.linkedSubreddit,
+            commentId: comment._id,
+            commentNumber: post.comments.length,
           });
           mentionedUser.mentions.push(message._id);
           await Promise.all([

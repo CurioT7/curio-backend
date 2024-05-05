@@ -222,20 +222,20 @@ const userSchema = new mongoose.Schema({
   notificationSettings: {
     disabledSubreddits: [
       {
-        type: String, 
+        type: String,
         ref: "Subreddit",
       },
     ],
     disabledPosts: [
       {
-        type: Schema.Types.ObjectId, 
-        ref: "Post", 
+        type: Schema.Types.ObjectId,
+        ref: "Post",
       },
     ],
     disabledComments: [
       {
-        type: Schema.Types.ObjectId, 
-        ref: "Comment", 
+        type: Schema.Types.ObjectId,
+        ref: "Comment",
       },
     ],
   },
@@ -277,6 +277,14 @@ const userSchema = new mongoose.Schema({
   media: {
     type: String,
   },
+  pendingChatRequests: [
+    {
+      chat: {
+        type: Schema.Types.ObjectId,
+        ref: "Chat",
+      },
+    },
+  ],
 });
 
 /**

@@ -23,6 +23,7 @@ const categoryRouter = require("./router/categoryRouter");
 const postRouter = require("./router/postRouter");
 const notificationRouter = require("./router/notificationRouter");
 const messageRouter = require("./router/messageRouter");
+const chatRouter = require("./router/chatRouter");
 
 const cors = require("cors");
 
@@ -83,6 +84,8 @@ app.use("/api", searchRouter);
 app.use("/api", postRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api", messageRouter);
+
+app.use("/api", chatRouter);
 
 const PORT = process.env.PORT;
 const server = app.listen(PORT, () => {

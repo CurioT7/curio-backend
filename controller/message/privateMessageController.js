@@ -158,7 +158,6 @@ async function inbox(req, res) {
     //populate messages
     messages = await Message.populate(messages, [
       { path: "sender", select: "username" },
-      { path: "recipient", select: "username" },
       { path: "recipientSubreddit", select: "name" },
       { path: "senderSubreddit", select: "name" },
       { path: "linkedSubreddit", select: "name" },
