@@ -7,6 +7,7 @@ const brypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Subreddit = require("../../models/subredditModel");
 const UserPreferences = require("../../models/userPreferencesModel");
+const Comment = require("../../models/commentModel");
 
 /**
  * Filters out hidden notifications for a given user.
@@ -97,7 +98,6 @@ async function getAllNotificationsForUser(req, res) {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
 
-      //find notifications by recipient name
         const notifications = await Notification.aggregate([
           {
             $match: {
@@ -107,7 +107,7 @@ async function getAllNotificationsForUser(req, res) {
           // Sort notifications by most recent
           {
             $sort: {
-              timestamp: -1, // Sort in descending order based on the timestamp field
+              timestamp: -1, 
             },
           },
         ]);
@@ -129,6 +129,8 @@ async function getAllNotificationsForUser(req, res) {
             "You haven't joined any communities yet. Consider joining " +
             randomSubreddit[0].name,
           recipient: user.username,
+          type: "subreddit",
+          subredditName: randomSubreddit[0].name,
         });
         await notification.save();
       }
@@ -413,6 +415,10 @@ async function enableNotificationsForUser(req, res) {
       if (subredditName) {
         const index =
           user.notificationSettings.disabledSubreddits.indexOf(subredditName);
+         await Notification.updateMany(
+           { subredditName: subredditName },
+           { $set: { isDisabled: false } }
+         );
         if (index !== -1) {
           user.notificationSettings.disabledSubreddits.splice(index, 1);
         }

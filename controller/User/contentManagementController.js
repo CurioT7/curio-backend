@@ -698,15 +698,14 @@ async function getItemInfo(req, res) {
 
     if (objectType === "post") {
       item = await Post.findOne({ _id: objectID }).populate("originalPostId");
-      if (item.media) {
-        item.media = await getFilesFromS3(item.media);
-      }
     } else if (objectType === "comment") {
       item = await Comment.findOne({ _id: objectID });
     } else if (objectType === "subreddit") {
       item = await Subreddit.findOne({ _id: objectID });
     }
-
+    if (item.media) {
+        item.media = await getFilesFromS3(item.media);
+      }
     if (!item) {
       return res
         .status(404)
@@ -775,12 +774,13 @@ async function castVote(req, res) {
           disabledNotifications.disabledPosts.includes(itemID)) ||
         (itemName === "comment" &&
           disabledNotifications.disabledComments.includes(itemID));
+      const author = await User.findOne({ username: item.authorName });
 
-      // Check if the postId or commentId exists in the notificationSettings
+      // Check if the postId or commentId exists in the notificationSettings of the author
       const isPostDisabled =
-        user.notificationSettings.disabledPosts.includes(itemID);
+        author.notificationSettings.disabledPosts.includes(itemID);
       const isCommentDisabled =
-        user.notificationSettings.disabledComments.includes(itemID);
+        author.notificationSettings.disabledComments.includes(itemID);
 
       if (direction === 0) {
         // Find the existing vote in upvotes
@@ -842,35 +842,39 @@ async function castVote(req, res) {
         item.downvotes += 1;
         user.downvotes.push({ itemId: itemID, itemType: itemName, direction });
       }
+
       if (isPostDisabled || isCommentDisabled) {
         // Send notification
         const notification = new Notification({
           title: "Notification",
-          message: `Notifications are disabled for this ${itemName}.`,
-          recipient: user.username, // or item.authorName
+          message: `Notifications are disabled for this ${
+            itemName === "post" ? "post" : "comment"
+          }.`,
+          recipient: author.username, // Send to the author, not the user who cast the vote
           postId: itemName === "post" ? itemID : undefined,
           commentId: itemName === "comment" ? itemID : undefined,
           isDisabled: true,
           type: itemName,
         });
         await notification.save();
-      }
-      // Notify the author
-      if (!isDisabled) {
+      } else {
+        // Send notification if disabledNotifications do not include this post/comment ID
         const notification = new Notification({
           title: "New Vote",
           message: `Your ${itemName === "post" ? "post" : "comment"} has been ${
             direction === 1 ? "upvoted" : "downvoted"
           } by ${user.username}.`,
-          recipient: item.authorName,
+          recipient: author.username,
           postId: itemName === "post" ? itemID : undefined,
           commentId: itemName === "comment" ? itemID : undefined,
-          isDisabled: isDisabled,
+          isDisabled: false, 
           type: itemName,
         });
 
         await notification.save();
       }
+   
+
       await Promise.all([item.save(), user.save()]);
       return res
         .status(200)
@@ -883,6 +887,7 @@ async function castVote(req, res) {
       .json({ success: false, message: "Internal server error", error: error });
   }
 }
+
 
 /**
  * Add a post to the user's browsing history.

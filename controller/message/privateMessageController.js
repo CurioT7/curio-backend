@@ -71,7 +71,7 @@ async function compose(req, res) {
     }
 
     const sentMessage = new Message({
-      sender,
+      sender: senderSubreddit ? null : sender,
       type: "message",
       senderSubreddit: senderSubreddit && senderSubreddit,
       recipientSubreddit: subreddit && subreddit,
@@ -95,11 +95,11 @@ async function compose(req, res) {
 
     if (subreddit) {
       sentMessage.recipient = null;
-      await sentMessage.save();
+      await Promise.all([subreddit.save(), sentMessage.save()]);
     }
 
     //save alll parallel
-    await Promise.all([sender.save(), recipient.save(), subreddit.save()]);
+    await Promise.all([sender.save(), recipient.save()]);
 
     res.status(200).json({
       success: true,

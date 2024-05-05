@@ -37,4 +37,18 @@ router.get("/r/:subreddit", subredditsController.getSubredditInfo);
  */
 router.get("/best/communities", subredditsController.getTopCommunities);
 
+router.post(
+  "/moderationInvite/:subreddit",
+  authenticate, subredditsController.createModeration
+);
+router.patch(
+  "/removemoderator/:subreddit",
+  authenticate,
+  subredditsController.removeModeration
+);
+router.post(
+  "/acceptmoderation/:subreddit",
+  authenticate,
+  subredditsController.acceptInvitation
+);
 module.exports = router;

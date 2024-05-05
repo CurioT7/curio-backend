@@ -249,14 +249,14 @@ async function friendRequest(req, res) {
 
     await addFriend(user.username, friendname);
  const disabledSubreddit =
-   user.notificationSettings.disabledSubreddits.includes(user.subreddit);
+   user.notificationSettings.disabledSubreddits.includes(user.subreddits);
  if (disabledSubreddit) {
    // Create a notification for the friend with isDisabled set to true
    const notification = new Notification({
      title: "New Follower (Disabled)",
-     message: `${user.username} started following you. Notifications are disabled for the subreddit "${friendname.subreddit}".`,
+     message: `${user.username} started following you. Notifications are disabled for the subreddit "${friendname.subreddits}".`,
      recipient: friendname,
-     type: "Friend Request",
+     type: "Friend",
      isDisabled: true,
    });
 
@@ -268,7 +268,7 @@ async function friendRequest(req, res) {
    title: "New Follower",
    message: `${user.username} started following you.`,
    recipient: friendname,
-   type: "Friend Request",
+   type: "Friend",
  });
 
  // Save the notification to the database
@@ -436,27 +436,27 @@ async function unFollowSubreddit(req, res) {
 async function followSubreddit(req, res) {
   try {
     const { subreddit } = req.body;
+    const userId = req.user.userId;
 
-    const userExists = await User.findById(req.user.userId);
+    const user = await User.findById(userId);
 
-    if (!userExists) {
+    if (!user) {
       return res.status(404).json({
         success: false,
-        message: "Username not found",
+        message: "User not found",
       });
     }
 
     const subredditExists = await Community.findOne({ name: subreddit });
     if (!subredditExists) {
       return res.status(404).json({
-        success: "false",
+        success: false,
         message: "Subreddit not found",
       });
     }
 
-    // Check if the user is already a member of the subreddit
     const isMember = subredditExists.members.some(
-      (member) => member.username === userExists.username
+      (member) => member.username === user.username
     );
     if (isMember) {
       return res.status(400).json({
@@ -467,62 +467,68 @@ async function followSubreddit(req, res) {
 
     // Check if notifications are disabled for the subreddit
     const isDisabledSubreddit =
-      userExists.notificationSettings.disabledSubreddits.includes(subreddit);
+      user.notificationSettings.disabledSubreddits.includes(subreddit);
+
     if (isDisabledSubreddit) {
       // Create a notification for the user with isDisabled set to true
-      const notification = new Notification({
+      const userNotification = new Notification({
         title: "Subreddit Followed (Disabled)",
         message: `You have followed the subreddit "${subreddit}", but notifications are disabled for this subreddit.`,
-        recipient: userExists.username,
-        type: "Subreddit Followed",
+        recipient: user.username,
+        type: "subreddit",
         subredditName: subreddit,
         isDisabled: true,
       });
-      await notification.save();
+      await userNotification.save();
     }
 
-    await followSubreddits(userExists.username, subreddit);
+    await followSubreddits(user.username, subreddit);
 
     // Notify the moderators of the subreddit
     const moderators = subredditExists.moderators.map(
       (moderator) => moderator.username
     );
     for (const moderator of moderators) {
-      if (isDisabledSubreddit) {
-        // Create a notification for the user with isDisabled set to true
-        const notification = new Notification({
-          title: "Subreddit Followed (Disabled)",
-          message: `You have followed the subreddit "${subreddit}", but notifications are disabled for this subreddit.`,
-          recipient: userExists.username,
-          type: "Subreddit Followed",
-          subredditName: subreddit,
-          isDisabled: true,
-        });
-        await notification.save();
+      const moderatorUser = await User.findOne({ username: moderator });
+      if (!moderatorUser) {
+        continue; 
       }
-      if (!isDisabledSubreddit) {
 
-        const notification = new Notification({
-          title: "New Follower",
-          message: `${userExists.username} started following the subreddit "${subreddit}".`,
-          recipient: moderator,
-          type: "Subreddit Follower",
-          subredditName: subreddit,
-        });
-        await notification.save();
-      }
+      const isModeratorDisabledSubreddit =
+        moderatorUser.notificationSettings.disabledSubreddits.includes(
+          subreddit
+        );
+      console.log("isModeratorDisabledSubreddit", isModeratorDisabledSubreddit);
+      console.log("subreddit", subreddit);
+      console.log(moderatorUser.notificationSettings.disabledSubreddits);
+
+      const notification = new Notification({
+        title: isModeratorDisabledSubreddit
+          ? "Subreddit Followed (Disabled)"
+          : "New Follower",
+        message: isModeratorDisabledSubreddit
+          ? `You have followed the subreddit "${subreddit}", but notifications are disabled for this subreddit.`
+          : `${user.username} started following the subreddit "${subreddit}".`,
+        recipient: moderator,
+        type: "subreddit",
+        subredditName: subreddit,
+        isDisabled: isModeratorDisabledSubreddit,
+      });
+      await notification.save();
     }
+
+    // Create a notification for the user if notifications are not disabled for the subreddit
     if (!isDisabledSubreddit) {
-      // Create a notification for the user
       const userNotification = new Notification({
         title: "Subreddit Followed",
         message: `You have successfully followed the subreddit "${subreddit}".`,
-        recipient: userExists.username,
-        type: "Subreddit Followed",
+        recipient: user.username,
+        type: "subreddit",
         subredditName: subreddit,
       });
       await userNotification.save();
     }
+
     return res.status(200).json({
       success: true,
       message: "Subreddit followed successfully",
@@ -535,6 +541,7 @@ async function followSubreddit(req, res) {
     });
   }
 }
+
 
 
 /**
