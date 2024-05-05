@@ -8,6 +8,7 @@ const { verifyToken } = require("../../utils/tokens");
 const Notification = require("../../models/notificationModel");
 const { getFilesFromS3 } = require("../../utils/s3-bucket");
 const Invitation = require("../../models/invitationModel");
+const Report = require("../../models/reportModel");
 /**
  * Check whether subreddit is available or not
  * @param {string} subreddit
@@ -525,7 +526,106 @@ async function removeModeration(req, res) {
     });
   }
 }
+async function getModerators(req, res) {
+  
+  try {
+    const decodedURL = decodeURLComponent(req.params.subreddit);
+    const subreddit = await Community.findOne({ name: decodedURL });
+    if (!subreddit)
+    {
+      return res.status(404)
+        .json({
+          success: false,
+        message:"Subreddit is not found"
+        })
+    }
+    const moderators = subreddit.moderators;
+    return res.status(200).json({
+      success: true,
+      moderators: moderators,
+    });
+  } catch (error) {
+    return res.statuse(500).json({
+      success: false,
+      message:"Internal server error",
+    })
+  }
+}
+async function getModeratorsQueue(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const decodedURI = decodeURIComponent(req.params.subreddit);
+    const subreddit = await Community.findOne({ name: decodedURI });
+    if (!user)
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    if (!subreddit)
+      return res.status(404).json({
+        success: false,
+        message: "Subreddit not found",
+      });
+    const isCreator = subreddit.moderators.some(
+      (mod) => mod.username === user.username && mod.role === "creator"
+    );
+    const isModerator = subreddit.moderators.some(
+      (mod)=>mod.username==user.username &&mod.role=="moderator"
+    )
+    if (!isCreator || !isModerator)
+      return res.status(403).json({
+        success: false,
+        message: "Only the creator or moderator of the subreddit can view the queue",
+      });
+    const reports = await Report.find({ linkedSubreddit: subreddit.name });
+    return res.status(200).json({
+      success: true,
+      reports: reports,
+    });
 
+  } catch (error)
+  {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+}
+
+async function declineInvitation(req, res) {
+  try {
+    const invitationId = req.body.invitationId;
+    const user = await User.findById(req.user.userId);
+    if (!user)
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    const invitation = await Invitation.findById(invitationId);
+    if (!invitation)
+      return res.status(404).json({
+        success: false,
+        message: "Invitation not found",
+      });
+    if (invitation.recipient !== user.username)
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to decline this invitation",
+      });
+    await Invitation.findByIdAndDelete(invitationId);
+    return res.status(200).json({
+      success: true,
+      message: "Invitation declined successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+}
 module.exports = {
   newSubreddit,
   availableSubreddit,
@@ -535,4 +635,7 @@ module.exports = {
   createModeration,
   removeModeration,
   acceptInvitation,
+  getModerators,
+  getModeratorsQueue,
+  declineInvitation,
 };

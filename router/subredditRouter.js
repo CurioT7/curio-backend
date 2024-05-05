@@ -37,18 +37,77 @@ router.get("/r/:subreddit", subredditsController.getSubredditInfo);
  */
 router.get("/best/communities", subredditsController.getTopCommunities);
 
+/**
+ * Route to Inivite a user to moderate a subreddit.
+ * @name POST /subreddit/moderationInvite/:subreddit
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
+ 
 router.post(
   "/moderationInvite/:subreddit",
   authenticate, subredditsController.createModeration
 );
+
+/**
+ * Route to remove a moderator from a subreddit.
+ * @name PATCH /subreddit/removemoderator/:subreddit
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
 router.patch(
   "/removemoderator/:subreddit",
   authenticate,
   subredditsController.removeModeration
 );
+
+/**
+ * Route to accept a moderation invitation.
+ * @name POST /subreddit/acceptmoderation/:subreddit
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
 router.post(
   "/acceptmoderation/:subreddit",
   authenticate,
   subredditsController.acceptInvitation
 );
+/**
+ * Route to decline a moderation invitation.
+ * @name POST /subreddit/declinemoderation/:subreddit
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
+router.post("/declinemoderation/:subreddit", authenticate, subredditsController.declineInvitation);
+/**
+ * Route to get the moderators of a subreddit.
+ * @name GET /subreddit/getModerators/:subreddit
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
+router.get("/getModerators/:subreddit:", subredditsController.getModerators);
+
+/**
+ * Route to get the moderation queue of a subreddit.
+ * @name GET /subreddit/getModerationQueue/:subreddit
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware
+ */
+router.get(
+  "/getModerationQueue/:subreddit",
+  subredditsController.getModeratorsQueue
+);
+
 module.exports = router;
