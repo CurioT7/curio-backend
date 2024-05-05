@@ -1,6 +1,6 @@
 const Chat = require("../../models/chatModel");
 const User = require("../../models/userModel");
-const { options } = require("../../router/messageRouter");
+const { getFilesFromS3 } = require("../../utils/s3-bucket");
 
 /**
  * Create a chat between two users
@@ -214,8 +214,10 @@ async function chatsOverview(req, res) {
           participants: user._id,
         })
           .populate({
+            //other participants
             path: "participants",
-            select: "username",
+            select: "username profilePicture",
+            match: { _id: { $ne: req.user.userId } },
           })
           .populate({
             path: "messages",
@@ -231,6 +233,21 @@ async function chatsOverview(req, res) {
         break;
       //TODO: add more filters
     }
+    //get media
+    if (chats.length > 0) {
+      for (let i = 0; i < chats.length; i++) {
+        const chat = chats[i];
+        //get media for each participant
+        for (let j = 0; j < chat.participants.length; j++) {
+          const participant = chat.participants[j];
+          if (participant.profilePicture) {
+            const media = await getFilesFromS3(participant.profilePicture);
+            participant.profilePicture = media;
+          }
+        }
+      }
+    }
+
     const requestNumber = user.pendingChatRequests.length;
     return res.status(200).json({
       success: true,
