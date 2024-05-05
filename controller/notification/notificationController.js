@@ -98,7 +98,6 @@ async function getAllNotificationsForUser(req, res) {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
 
-      //find notifications by recipient name
         const notifications = await Notification.aggregate([
           {
             $match: {
@@ -108,7 +107,7 @@ async function getAllNotificationsForUser(req, res) {
           // Sort notifications by most recent
           {
             $sort: {
-              timestamp: -1, // Sort in descending order based on the timestamp field
+              timestamp: -1, 
             },
           },
         ]);
@@ -130,6 +129,8 @@ async function getAllNotificationsForUser(req, res) {
             "You haven't joined any communities yet. Consider joining " +
             randomSubreddit[0].name,
           recipient: user.username,
+          type: "subreddit",
+          subredditName: randomSubreddit[0].name,
         });
         await notification.save();
       }
