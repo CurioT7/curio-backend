@@ -290,6 +290,17 @@ async function chatsOverview(req, res) {
             },
           },
           {
+            $lookup: {
+              from: "users",
+              localField: "messages.sender",
+              foreignField: "_id",
+              as: "sender",
+            },
+          },
+          {
+            $unwind: "$sender",
+          },
+          {
             $project: {
               messages: { $slice: ["$messages", -1] },
               participants: "$participants.username",
@@ -307,15 +318,16 @@ async function chatsOverview(req, res) {
                   },
                 },
               },
-              //participants media
+              // Participants media
               profilePicture: "$participants.profilePicture",
+              // Sender name
+              sender: "$sender.username",
             },
           },
           {
             $sort: { "messages.timestamp": -1 }, // Sort by the timestamp of the most recent message
           },
         ]);
-
         //get chat media
         let media;
         for (let i = 0; i < chats.length; i++) {
