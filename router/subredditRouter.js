@@ -53,4 +53,10 @@ router.post(
   subredditsController.acceptInvitation
 );
 
+router.patch(
+  "/bannerAndAvatar/:subreddit",
+  authenticate,
+  modToolsController.bannerAndAvatar
+);
+
 module.exports = router;

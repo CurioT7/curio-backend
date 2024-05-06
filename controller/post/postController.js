@@ -509,12 +509,9 @@ async function scheduledPost(req, res) {
 
       if (scheduledTime) {
         schedule.scheduleJob(scheduledTime.toJSDate(), async () => {
-          const postToPublish = await Post.findById(post._id);
-          if (postToPublish) {
-            postToPublish.isScheduled = false;
+          const postToPublish = await Post.findOneAndUpdate({ _id: post._id }, { isScheduled: false });
             await postToPublish.save();
             console.log(`Scheduled post "${postToPublish.title}" published at ${scheduledTime.toISO()}`);
-          }
         });
       }
      
