@@ -24,23 +24,16 @@ const chatSchema = new Schema({
         type: Date,
         default: Date.now,
       },
+      status: {
+        type: String,
+        enum: ["sent", "delivered", "read"],
+        default: "sent",
+      },
     },
   ],
   timestamp: {
     type: Date,
     default: Date.now,
-  },
-  isRead: {
-    type: Boolean,
-    default: false,
-  },
-  isSent: {
-    type: Boolean,
-    default: false,
-  },
-  isDelivered: {
-    type: Boolean,
-    default: false,
   },
   isGroupChat: {
     type: Boolean,

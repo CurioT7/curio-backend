@@ -1,7 +1,8 @@
 const { Server } = require("socket.io");
 const http = require("http");
 require("dotenv").config();
-const { app } = require("../app");
+const express = require("express");
+const app = express();
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -32,4 +33,4 @@ io.on("connection", (socket) => {
   });
 });
 
-module.exports = { io, getRecieverSocket };
+module.exports = { io, getRecieverSocket, server, app };

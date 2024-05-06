@@ -1,6 +1,7 @@
 const Chat = require("../../models/chatModel");
 const User = require("../../models/userModel");
 const { getFilesFromS3, sendFileToS3 } = require("../../utils/s3-bucket");
+const { getRecieverSocket } = require("../../utils/socket");
 
 /**
  * Create a chat between two users
@@ -55,6 +56,13 @@ async function createChat(req, res) {
       chat.isPendingRequest = true;
     }
     await Promise.all([chat.save(), recipient.save()]);
+
+    // Emit WebSocket event to notify the recipient about the new chat
+    const recipientSocket = getRecieverSocket(recipient._id);
+    if (recipientSocket) {
+      recipientSocket.emit("new-chat", { chatId: chat._id });
+    }
+
     return res.status(201).json({
       success: true,
       message: "Chat created successfully",
@@ -138,6 +146,8 @@ async function getChat(req, res) {
         chat.messages[i].media = media;
       }
     }
+
+    const user = await User.findById(req.user.userId);
     return res.status(200).json({
       success: true,
       chat,
@@ -293,6 +303,18 @@ async function sendMessage(req, res) {
       media: media && media,
     });
     await chat.save();
+
+    // Emit WebSocket event to notify the recipient about the new message
+    const recipient = chat.participants.find(
+      (participant) => participant.toString() !== req.user.userId
+    );
+    const recipientSocket = getRecieverSocket(recipient);
+    if (recipientSocket) {
+      recipientSocket.emit("new-message", { chatId: chat._id });
+      //change message to delivered
+      chat.messages[chat.messages.length - 1].isDelivered = true;
+      await chat.save();
+    }
     return res.status(201).json({
       success: true,
       message: "Message sent successfully",
