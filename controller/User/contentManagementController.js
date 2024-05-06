@@ -336,7 +336,10 @@ async function submitPost(req, res, user, imageKey) {
           .json({ success: false, message: "Subreddit not found" });
       }
       if (subreddit.privacyMode === "private") {
-        if (!subreddit.members.includes(user._id)) {
+        const isMember = subreddit.members.some(
+          (member) => member.username === user.username
+        );
+        if (!isMember) {
           return res.status(403).json({
             success: false,
             message: "User is not a member of this subreddit",
@@ -388,10 +391,7 @@ async function submitPost(req, res, user, imageKey) {
       isNSFW: req.body.isNSFW,
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
-      linkedSubreddit: subreddit && {
-        subreddit: subreddit._id,
-        name: subreddit.name,
-      },
+      linkedSubreddit: subreddit && subreddit,
       media: imageKey,
       sendReplies: req.body.sendReplies,
       options: req.body.options && optionsArray,
@@ -536,7 +536,10 @@ async function sharePost(req, res) {
         .json({ success: false, message: "Subreddit not found" });
     }
     if (subreddit.privacyMode === "private") {
-      if (!subreddit.members.includes(user._id)) {
+      const isMember = subreddit.members.some(
+        (member) => member.username === user.username
+      );
+      if (!isMember) {
         return res.status(403).json({
           success: false,
           message: "User is not a member of this subreddit",
