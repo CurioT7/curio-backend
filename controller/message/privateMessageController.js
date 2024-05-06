@@ -1,6 +1,7 @@
 const Message = require("../../models/messageModel");
 const User = require("../../models/userModel");
 const Subreddit = require("../../models/subredditModel");
+const Block = require("../../models/blockModel");
 
 async function compose(req, res) {
   try {
@@ -161,6 +162,14 @@ async function inbox(req, res) {
       { path: "linkedSubreddit", select: "name" },
       { path: "postId", select: "title" },
     ]);
+
+    //filter blocked users
+    messages = messages.filter((message) => {
+      return !Block.findOne({
+        blockedUser: user,
+        user: message.sender,
+      });
+    });
 
     res.status(200).json({
       success: true,
