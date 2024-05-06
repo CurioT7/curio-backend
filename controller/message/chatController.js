@@ -129,6 +129,13 @@ async function getChat(req, res) {
         path: "participants",
         select: "username",
       });
+    //get chat media
+    chat.messages.forEach(async (message) => {
+      if (message.media) {
+        const media = await getFilesFromS3(message.media);
+        message.media = media;
+      }
+    });
     return res.status(200).json({
       success: true,
       chat,
