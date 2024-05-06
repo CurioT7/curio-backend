@@ -64,7 +64,10 @@ async function getFilesFromS3(imageKey) {
       Bucket: bucketName,
       Key: imageKey,
     });
-    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    const url = await getSignedUrl(s3, command, {
+      //1 day
+      expiresIn: 60 * 60 * 24,
+    });
     return url;
   } catch (error) {
     console.log(error);
