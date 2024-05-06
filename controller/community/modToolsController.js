@@ -4,6 +4,17 @@ const User = require("../../models/userModel");
 const Post = require("../../models/postModel");
 const { getFilesFromS3, sendFileToS3 } = require("../../utils/s3-bucket");
 
+
+/**
+ * Function to update the banner or icon of a subreddit.
+ * @name bannerAndAvatar
+ * @function
+ * @memberof module:controller/community/modToolsController
+ * @param {import('express').Request} req - The request object.
+ * @param {import('express').Response} res - The response object.
+ */
+
+
 async function bannerAndAvatar(req, res) {
   try {
     if (req.user) {
