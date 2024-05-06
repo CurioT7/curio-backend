@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const subredditsController = require("../controller/friends/subredditsController");
 const { authenticate } = require("../middlewares/auth");    
+const { auth } = require("google-auth-library");
 /**
  * Route to create a new subreddit.
  * @name POST /subreddit/createSubreddit
@@ -106,7 +107,7 @@ router.get("/getModerators/:subreddit", subredditsController.getModerators);
  * @param {callback} middleware - Express middleware
  */
 router.get(
-  "/getModerationQueue/:subreddit",
+  "/getModerationQueue/:subreddit",authenticate,
   subredditsController.getModeratorsQueue
 );
 
