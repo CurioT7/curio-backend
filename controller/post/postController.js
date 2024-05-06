@@ -2,6 +2,7 @@ const Post = require("../../models/postModel");
 const User = require("../../models/userModel");
 const Comment = require("../../models/commentModel");
 const Message = require("../../models/messageModel");
+const Subreddit = require("../../models/subredditModel");
 const {
   generateToken,
   verifyToken,
@@ -88,7 +89,14 @@ async function createComments(req, res) {
 
       // Find the author of the post
       const postAuthor = await User.findOne({ username: post.authorName });
-
+      const linkedSubreddit = post.linkedSubreddit;
+      const mutedUser = await Subreddit.findOne({ name: linkedSubreddit, mutedUsers: user.username });
+      if (mutedUser) {
+        return res.status(403).json({
+          success: false,
+          message: "You are muted in this subreddit. Cannot add a comment.",
+        });
+      }
       // Proceed to create the comment
       const comment = new Comment({
         content,

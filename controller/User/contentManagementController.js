@@ -369,6 +369,17 @@ async function submitPost(req, res, user, imageKey) {
         .map((option) => ({ name: option, votes: 0 }));
     }
 
+    const mutedUser = await Subreddit.findOne({
+      name: req.body.subreddit,
+      "mutedUsers.username": user.username,
+    });
+
+    if (mutedUser) {
+      return res.status(403).json({
+        success: false,
+        message: "You are muted in this subreddit. Cannot submit a post.",
+      });
+    }
     const post = new Post({
       title: req.body.title,
       type: req.body.type,
