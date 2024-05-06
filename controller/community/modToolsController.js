@@ -12,6 +12,18 @@ async function bannerAndAvatar(req, res) {
         return res.status(404).json({ message: "User not found" });
       }
       const subredditName = decodeURIComponent(req.params.subreddit);
+      const subreddit = await Subreddit.findOne({ name: subredditName });
+      if (!subreddit) {
+        return res.status(404).json({ message: "Subreddit not found" });
+      }
+      const isModerator = subreddit.moderators.some(
+        (moderator) => moderator.username === user.username
+      );
+
+      if (!isModerator) {
+        return res.status(403).json({ message: "You are not authorized to update the banner or icon of this subreddit" });
+      }
+
 
       let imageKey;
       if (req.file) {
@@ -39,37 +51,37 @@ async function bannerAndAvatar(req, res) {
           subredditUpdateFields[field] = req.body[field];
         }
       });
-      const subreddit = await Subreddit.findOneAndUpdate(
+      const updatedSubreddit = await Subreddit.findOneAndUpdate(
         { name: subredditName },
         subredditUpdateFields,
         { new: true, upsert: true }
       );
-      if (!subreddit) {
+      if (!updatedSubreddit) {
         return res.status(404).json({ message: "Subreddit not found" });
       }
-      await subreddit.save();
+      await updatedSubreddit.save();
 
 
       let icon;
       let banner;
 
-      if (subreddit.icon) {
-        icon = await getFilesFromS3(subreddit.icon);
-        subreddit.icon = icon;
+      if (updatedSubreddit.icon) {
+        icon = await getFilesFromS3(updatedSubreddit.icon);
+        updatedSubreddit.icon = icon;
       }
-      if (subreddit.banner) {
-        banner = await getFilesFromS3(subreddit.banner);
-        subreddit.banner = banner;
+      if (updatedSubreddit.banner) {
+        banner = await getFilesFromS3(updatedSubreddit.banner);
+        updatedSubreddit.banner = banner;
       }
-      if (!subreddit.icon && req.body.icon === "Add") {
-        subreddit.icon = imageKey;
-      }
-
-      if (!subreddit.banner && req.body.banner === "Add") {
-        subreddit.banner = imageKey;
+      if (!updatedSubreddit.icon && req.body.icon === "Add") {
+        updatedSubreddit.icon = imageKey;
       }
 
-      res.json({ subreddit, message: " icon/banner updated successfully" });
+      if (!updatedSubreddit.banner && req.body.banner === "Add") {
+        updatedSubreddit.banner = imageKey;
+      }
+
+      res.json({ updatedSubreddit, message: " icon/banner updated successfully" });
     }
   } catch (err) {
     console.log(err);
