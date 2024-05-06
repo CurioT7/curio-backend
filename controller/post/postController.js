@@ -2,6 +2,7 @@ const Post = require("../../models/postModel");
 const User = require("../../models/userModel");
 const Comment = require("../../models/commentModel");
 const Message = require("../../models/messageModel");
+const Subreddit = require("../../models/subredditModel");
 const {
   generateToken,
   verifyToken,
@@ -85,11 +86,17 @@ async function createComments(req, res) {
           message: "Post is locked. Cannot add a comment.",
         });
       }
-
+      const subreddit = await Subreddit.findById(post.linkedSubreddit);
+      const mutedUsernames = subreddit.mutedUsers.map((user) => user.username);
+      if (mutedUsernames.includes(user.username)) {
+        return res.status(403).json({
+          success: false,
+          message: "User is muted in this subreddit. Cannot add a comment.",
+        });
+      }
       // Find the author of the post
       const postAuthor = await User.findOne({ username: post.authorName });
-
-      // Proceed to create the comment
+      // // Proceed to create the comment
       const comment = new Comment({
         content,
         authorName: user.username,
