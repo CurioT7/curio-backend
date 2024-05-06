@@ -27,7 +27,15 @@ const userReportSchema = new Schema({
   reportType: {
     type: String,
     required: true,
-    enum: ["username", "display name", "profile image", "banner image", "bio","post","comment"],
+    enum: [
+      "username",
+      "display name",
+      "profile image",
+      "banner image",
+      "bio",
+      "post",
+      "comment",
+    ],
   },
   itemID: {
     type: String,
@@ -36,13 +44,23 @@ const userReportSchema = new Schema({
   linkedSubreddit: {
     type: String,
     default: null,
+    ref: "Subreddit",
+  },
+  linkedItem: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: "linkedItemType", // Dynamically determine the referenced model
+    default: null,
+  },
+  linkedItemType: {
+    type: String,
+    enum: ["Post", "Comment", "User"],
   },
   reportReason: {
     type: String,
     required: true,
     enum: [
-      "rule break"
-,     "harassment",
+      "rule break",
+      "harassment",
       "threatening violence",
       "hate",
       "minor abuse or sexualization",
@@ -54,11 +72,19 @@ const userReportSchema = new Schema({
       "trademark violation",
       "self-harm or suicide",
       "spam",
-      "contributer program violation"
+      "contributer program violation",
     ],
   },
   reportDetails: {
     type: String,
+  },
+  isIgnored: {
+    type: Boolean,
+    default: false,
+  },
+  isViewed: {
+    type: Boolean,
+    default: false,
   },
 });
 
