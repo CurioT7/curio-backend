@@ -6,6 +6,7 @@ const {
   getChat,
   manageChatRequest,
   chatsOverview,
+  sendMessage,
 } = require("../controller/message/chatController");
 const { authenticate } = require("../middlewares/auth");
 
@@ -28,5 +29,12 @@ router.get("/chat/:chatId", authenticate, getChat);
 router.post("/chat/manage", authenticate, manageChatRequest);
 
 router.get("/chat/overview/:filter", authenticate, chatsOverview);
+
+router.post(
+  "/chat/send/:chatId",
+  authenticate,
+  upload.single("media"),
+  sendMessage
+);
 
 module.exports = router;

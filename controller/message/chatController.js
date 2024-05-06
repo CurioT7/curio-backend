@@ -31,8 +31,8 @@ async function createChat(req, res) {
     }
     let media;
 
-    if (req.body.media) {
-      media = await sendFileToS3(req.body.media);
+    if (req.file) {
+      media = await sendFileToS3(req.file);
     }
     const chat = new Chat({
       participants: [req.user.userId, recipient._id],
@@ -130,12 +130,13 @@ async function getChat(req, res) {
         select: "username",
       });
     //get chat media
-    chat.messages.forEach(async (message) => {
-      if (message.media) {
-        const media = await getFilesFromS3(message.media);
-        message.media = media;
+    let media;
+    for (let i = 0; i < chat.messages.length; i++) {
+      if (chat.messages[i].media) {
+        media = await getFilesFromS3(chat.messages[i].media);
+        chat.messages[i].media = media;
       }
-    });
+    }
     return res.status(200).json({
       success: true,
       chat,
@@ -275,10 +276,39 @@ async function chatsOverview(req, res) {
   }
 }
 
+async function sendMessage(req, res) {
+  try {
+    const chat = await Chat.findById(req.params.chatId);
+    if (!chat) {
+      return res.status(400).json({
+        success: false,
+        message: "Chat not found",
+      });
+    }
+    const media = req.file && (await sendFileToS3(req.file));
+    chat.messages.push({
+      sender: req.user.userId,
+      message: req.body.message && req.body.message,
+      media: media && media,
+    });
+    await chat.save();
+    return res.status(201).json({
+      success: true,
+      message: "Message sent successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
 module.exports = {
   createChat,
   getChatRequests,
   getChat,
   manageChatRequest,
   chatsOverview,
+  sendMessage,
 };
