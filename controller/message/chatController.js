@@ -118,7 +118,8 @@ async function getChat(req, res) {
     const chat = await Chat.findById(req.params.chatId)
       .populate({
         path: "messages",
-        options: { sort: { timestamp: 1 } },
+        //sort messages by most recent
+        options: { sort: { timestamp: -1 } },
         select: "message sender timestamp",
         populate: {
           path: "sender",
