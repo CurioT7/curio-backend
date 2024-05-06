@@ -9,6 +9,7 @@ const Notification = require("../../models/notificationModel");
 const { getFilesFromS3 } = require("../../utils/s3-bucket");
 const Invitation = require("../../models/invitationModel");
 const Report = require("../../models/reportModel");
+
 /**
  * Check whether subreddit is available or not
  * @param {string} subreddit
@@ -611,6 +612,25 @@ async function declineInvitation(req, res) {
         message: "You are not authorized to decline this invitation",
       });
     await Invitation.findByIdAndDelete(invitationId);
+    const moderator=await User.findOne({username:invitation.sender})
+    const disabledSubreddit =
+      moderator.notificationSettings.disabledSubreddits.includes(
+        invitation.subreddit
+      );
+    console.log(disabledSubreddit);
+    console.log(moderator.notificationSettings.disabledSubreddits);
+    const notification = new Notification({
+      title: disabledSubreddit ? "Moderation (Disabled)" : "Moderation",
+      message: `${user.username} declined your invitation to moderate "${invitation.subreddit}". ${
+        disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
+      }`,
+      recipient: invitation.sender,
+      subredditName: invitation.subreddit,
+      type: "subreddit",
+      isDisabled: disabledSubreddit,
+    });
+    await notification.save();
+
     return res.status(200).json({
       success: true,
       message: "Invitation declined successfully",
@@ -664,6 +684,24 @@ async function muteUser(req, res) {
         success: false,
         message: "User is already muted",
       });
+     const disabledSubreddit =
+      muted.notificationSettings.disabledSubreddits.includes(subreddit.name);
+    console.log(disabledSubreddit);
+    console.log(user.notificationSettings.disabledSubreddits);
+     const notification = new Notification({
+       title: disabledSubreddit ? "Muted (Disabled)" : "Muted",
+       message: `${user.username} muted you in "${subreddit.name}". ${
+         disabledSubreddit
+           ? "Notifications are disabled for the subreddit."
+           : ""
+       }`,
+       recipient: mutedUser,
+       subredditName: subreddit.name,
+       type: "subreddit",
+       isDisabled: disabledSubreddit,
+     });
+    await notification.save();
+    
     subreddit.mutedUsers.push({ username: mutedUser });
     await subreddit.save();
     return res.status(200).json({
@@ -671,6 +709,7 @@ async function muteUser(req, res) {
       message: "User muted successfully",
       mutedUser: mutedUser,
     });
+   
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -778,6 +817,20 @@ async function leaveModerator(req, res) {
         },
       }
     );
+    const disabledSubreddit = user.notificationSettings.disabledSubreddits.includes(subreddit.name);
+    console.log(disabledSubreddit);
+    console.log(user.notificationSettings.disabledSubreddits);
+    const notification = new Notification({
+      title: disabledSubreddit ? "Moderation (Disabled)" : "Moderation",
+      message: `${user.username} left moderation for "${subreddit.name}". ${
+        disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
+      }`,
+      recipient: subreddit.creator,
+      subredditName: subreddit.name,
+      type: "subreddit",
+      isDisabled: disabledSubreddit,
+    });
+    await notification.save();
     return res.status(200).json({
       success: true,
       message: "Moderator left successfully",
