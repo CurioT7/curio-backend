@@ -756,6 +756,26 @@ async function unMuteUser(req, res) {
         success: false,
         message: "User is not muted",
       });
+     const mutedUserSettings = await User.findOne({ username: mutedUser });
+     const disabledSubreddit =
+       mutedUserSettings &&
+       mutedUserSettings.notificationSettings.disabledSubreddits.includes(
+         subreddit.name
+       );
+
+     const notification = new Notification({
+       title: disabledSubreddit ? "Un-Muted (Disabled)" : "Un-Muted",
+       message: `${user.username} unmuted you in "${subreddit.name}". ${
+         disabledSubreddit
+           ? "Notifications are disabled for the subreddit."
+           : ""
+       }`,
+       recipient: mutedUser,
+       subredditName: subreddit.name,
+       type: "subreddit",
+       isDisabled: disabledSubreddit,
+     });
+     await notification.save();
     subreddit.mutedUsers = subreddit.mutedUsers.filter(
       (muted) => muted.username !== mutedUser
     );
@@ -809,7 +829,7 @@ async function leaveModerator(req, res) {
           },
           subreddits: {
             subreddit: subreddit.name,
-            role: role,
+            role: "moderator",
           },
           $push: {
             subreddits: {
@@ -820,20 +840,7 @@ async function leaveModerator(req, res) {
         },
       }
     );
-    const disabledSubreddit = user.notificationSettings.disabledSubreddits.includes(subreddit.name);
-    console.log(disabledSubreddit);
-    console.log(user.notificationSettings.disabledSubreddits);
-    const notification = new Notification({
-      title: disabledSubreddit ? "Moderation (Disabled)" : "Moderation",
-      message: `${user.username} left moderation for "${subreddit.name}". ${
-        disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
-      }`,
-      recipient: subreddit.creator,
-      subredditName: subreddit.name,
-      type: "subreddit",
-      isDisabled: disabledSubreddit,
-    });
-    await notification.save();
+  
     return res.status(200).json({
       success: true,
       message: "Moderator left successfully",
