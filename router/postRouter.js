@@ -101,4 +101,6 @@ router.post("/marknsfw",authenticate,postController.markPostNSFW);
  */
 router.post("/unmarknsfw",authenticate, postController.unmarkPostNSFW);
 
+router.post("/scheduledPost",authenticate, postController.scheduledPost);
+
 module.exports = router;

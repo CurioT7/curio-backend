@@ -153,7 +153,35 @@ const postSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  isScheduled: {
+    type: Boolean, 
+    default: false 
+    },
+  scheduledPublishDate:
+  {
+    type: Date,
+    default: null,
+  },
+  scheduledTimezone:
+  {
+    type: String,
+    default:'GMT+03:00',
+  },
+  repeatOption: {
+    type: String,
+    enum: ["does_not_repeat", "hourly", "daily", "weekly", "monthly", "custom"],
+    default: "does_not_repeat",
+  },
+  contestMode:{
+    type: Boolean,
+    default: false,
+  },
+  postAsAutoModerator:{
+    type: Boolean,
+    default: false,
+  },
 });
+
 // Define a virtual property to calculate karma
 postSchema.virtual("karma").get(function () {
   return this.upvotes - this.downvotes;

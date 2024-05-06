@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const subredditsController = require("../controller/friends/subredditsController");
+const modToolsController = require("../controller/community/modToolsController");
 const { authenticate } = require("../middlewares/auth");    
 /**
  * Route to create a new subreddit.
@@ -51,4 +52,5 @@ router.post(
   authenticate,
   subredditsController.acceptInvitation
 );
+
 module.exports = router;
