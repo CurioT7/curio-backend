@@ -29,7 +29,6 @@ async function compose(req, res) {
         });
       }
     }
-    //TODO handle if sent from subreddit
     let recipient;
     if (!req.body.sendToSubreddit) {
       recipient = await User.findOne({ username: req.body.recipient });
@@ -54,7 +53,6 @@ async function compose(req, res) {
       recipient = subreddit.moderators;
 
       if (recipient.length > 1) {
-        //TODO check if this works
         for (let i = 0; i < recipient.length; i++) {
           recipient[i] = await User.findOne({
             username: recipient[i].username,
@@ -81,6 +79,9 @@ async function compose(req, res) {
       message,
     });
 
+    const user = await User.findById(req.user.userId);
+    user.sentPrivateMessages.push(sentMessage);
+
     sender.sentPrivateMessages.push(sentMessage);
     if (recipient.length > 1) {
       for (let i = 0; i < recipient.length; i++) {
@@ -98,7 +99,7 @@ async function compose(req, res) {
     }
 
     //save alll parallel
-    await Promise.all([sender.save(), recipient.save()]);
+    await Promise.all([sender.save(), recipient.save(), user.save()]);
 
     res.status(200).json({
       success: true,
@@ -164,11 +165,27 @@ async function inbox(req, res) {
     ]);
 
     //filter blocked users
+    const blockedUsers = await Block.find({ user: user });
     messages = messages.filter((message) => {
-      return !Block.findOne({
-        blockedUser: user,
-        user: message.sender,
-      });
+      if (message.sender) {
+        return !blockedUsers.some(
+          (block) =>
+            block.blockedUser.toString() === message.sender._id.toString()
+        );
+      }
+      return true;
+    });
+
+    //if message is not found in user received messages or sent private message, remove it
+    messages = messages.filter((message) => {
+      return (
+        user.receivedPrivateMessages.some(
+          (m) => m._id.toString() === message._id.toString()
+        ) ||
+        user.sentPrivateMessages.some(
+          (m) => m._id.toString() === message._id.toString()
+        )
+      );
     });
 
     res.status(200).json({
@@ -208,8 +225,106 @@ async function getSent(req, res) {
   }
 }
 
+async function readAll(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    await Message.updateMany({ recipient: user }, { isRead: true });
+
+    res.status(200).json({
+      success: true,
+      message: "All messages read",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+async function unreadMessage(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const message = await Message.findById(req.params.id);
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: "Message not found",
+      });
+    }
+    message.isRead = false;
+    await message.save();
+    res.status(200).json({
+      success: true,
+      message: "Message unread",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+async function deleteMessage(req, res) {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+    const messageId = req.params.id;
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: "Message not found",
+      });
+    }
+
+    // Check if the message belongs to the current user
+    if (
+      message.recipient.toString() !== userId &&
+      message.sender.toString() !== userId
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to delete this message",
+      });
+    }
+
+    // Remove the message from the respective user's messages array
+    if (message.recipient.toString() === userId) {
+      user.receivedPrivateMessages = user.receivedPrivateMessages.filter(
+        (m) => m.toString() !== messageId
+      );
+    } else if (message.sender.toString() === userId) {
+      user.sentPrivateMessages = user.sentPrivateMessages.filter(
+        (m) => m.toString() !== messageId
+      );
+    }
+
+    // Save the user to persist the changes
+    await user.save();
+
+    // Delete the message from the database
+    await Message.findByIdAndDelete(messageId);
+
+    res.status(200).json({
+      success: true,
+      message: "Message deleted",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
 module.exports = {
   compose,
   inbox,
   getSent,
+  readAll,
+  unreadMessage,
+  deleteMessage,
 };
