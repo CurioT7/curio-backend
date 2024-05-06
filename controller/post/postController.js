@@ -86,18 +86,17 @@ async function createComments(req, res) {
           message: "Post is locked. Cannot add a comment.",
         });
       }
-
-      // Find the author of the post
-      const postAuthor = await User.findOne({ username: post.authorName });
-      const linkedSubreddit = post.linkedSubreddit;
-      const mutedUser = await Subreddit.findOne({ name: linkedSubreddit, mutedUsers: user.username });
-      if (mutedUser) {
+      const subreddit = await Subreddit.findById(post.linkedSubreddit);
+      const mutedUsernames = subreddit.mutedUsers.map((user) => user.username);
+      if (mutedUsernames.includes(user.username)) {
         return res.status(403).json({
           success: false,
-          message: "You are muted in this subreddit. Cannot add a comment.",
+          message: "User is muted in this subreddit. Cannot add a comment.",
         });
       }
-      // Proceed to create the comment
+      // Find the author of the post
+      const postAuthor = await User.findOne({ username: post.authorName });
+      // // Proceed to create the comment
       const comment = new Comment({
         content,
         authorName: user.username,
