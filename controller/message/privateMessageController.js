@@ -70,7 +70,7 @@ async function compose(req, res) {
     }
 
     const sentMessage = new Message({
-      sender: senderSubreddit ? null : sender,
+      sender: sender,
       type: "message",
       senderSubreddit: senderSubreddit && senderSubreddit,
       recipientSubreddit: subreddit && subreddit,
@@ -203,6 +203,7 @@ async function inbox(req, res) {
 async function getSent(req, res) {
   try {
     const user = await User.findById(req.user.userId);
+
     const messages = await Message.find({
       sender: user,
     })
