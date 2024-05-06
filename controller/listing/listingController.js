@@ -120,7 +120,7 @@ async function getTopPosts(req, res) {
         posts: detailsArray
           ? topPosts.map((post, index) => ({
               ...post,
-              details: detailsArray[index],
+              detailsArray: detailsArray[index],
             }))
           : topPosts,
       });
@@ -234,7 +234,21 @@ async function hotPosts(req, res) {
       const postIds = posts.map((post) => post._id);
       await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
-      return res.status(200).json({ success: true, posts });
+    let detailsArray;
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      detailsArray = await getVoteStatusAndSubredditDetails(posts, user);
+    }
+
+    return res.status(200).json({
+      success: true,
+      posts: detailsArray
+        ? posts.map((post, index) => ({
+            ...post.toObject(),
+            details: detailsArray[index],
+          }))
+        : posts,
+    });
     } else {
       return res
         .status(404)
@@ -247,7 +261,6 @@ async function hotPosts(req, res) {
     });
   }
 }
-
 
 /**
  * Get the posts with the most comments from a subreddit.
@@ -290,8 +303,21 @@ async function mostComments(req, res) {
         }
       }
 
-      return res.status(200).json({ success: true, posts });
-    } else {
+ let detailsArray;
+ if (req.user) {
+   const user = await User.findOne({ _id: req.user.userId });
+   detailsArray = await getVoteStatusAndSubredditDetails(posts, user);
+ }
+
+ return res.status(200).json({
+   success: true,
+   posts: detailsArray
+     ? posts.map((post, index) => ({
+         ...post.toObject(),
+         details: detailsArray[index],
+       }))
+     : posts,
+ });    } else {
       return res.status(404).json({
         success: false,
         message: "No posts found with most comments",

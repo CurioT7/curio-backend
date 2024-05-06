@@ -30,7 +30,13 @@ router.get(
  * @param {function} middleware - The controller function to handle the GET request.
  * @returns {object} Express router instance.
  */
-router.get("/r/:subreddit/new", ListingController.newPosts);
+router.get(
+  "/r/:subreddit/new",
+  (req, res, next) => {
+    authenticate(req, res, next, true);
+  },
+  ListingController.newPosts
+);
 
 /**
  * Route to handle GET requests for getting hot posts.
@@ -42,7 +48,13 @@ router.get("/r/:subreddit/new", ListingController.newPosts);
  * @returns {object} Express router instance.
  */
 
-router.get("/r/:subreddit/hot", ListingController.hotPosts);
+router.get(
+  "/r/:subreddit/hot",
+  (req, res, next) => {
+    authenticate(req, res, next, true);
+  },
+  ListingController.hotPosts
+);
 
 /**
  * Route to handle GET requests for getting most commented posts.
@@ -54,7 +66,13 @@ router.get("/r/:subreddit/hot", ListingController.hotPosts);
  * @returns {object} Express router instance.
  */
 
-router.get("/r/:subreddit/most_comments", ListingController.mostComments);
+router.get(
+  "/r/:subreddit/most_comments",
+  (req, res, next) => {
+    authenticate(req, res, next, true);
+  },
+  ListingController.mostComments
+);
 
 /**
  * Route to handle GET requests for getting the top posts in a subreddit.
@@ -66,7 +84,13 @@ router.get("/r/:subreddit/most_comments", ListingController.mostComments);
  * @returns {object} Express router instance
  */
 
-router.get("/r/:subreddit/top", ListingController.getTopPosts);
+router.get(
+  "/r/:subreddit/top",
+  (req, res, next) => {
+    authenticate(req, res, next, true);
+  },
+  ListingController.getTopPosts
+);
 
 /**
  * Route to handle GET requests for getting the top posts in a subreddit by time threshold.
@@ -80,6 +104,9 @@ router.get("/r/:subreddit/top", ListingController.getTopPosts);
 
 router.get(
   "/r/:subreddit/top/:timeThreshold",
+  (req, res, next) => {
+    authenticate(req, res, next, true);
+  },
   ListingController.getTopPostsbytime
 );
 // /**
