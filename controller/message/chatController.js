@@ -13,12 +13,12 @@ async function checkUsername(req, res) {
       });
     }
 
-    if (user.icon) {
-      const icon = await getFilesFromS3(user.icon);
+    if (user.profilePicture) {
+      const icon = await getFilesFromS3(user.profilePicture);
       return res.status(200).json({
         success: true,
         username: user.username,
-        icon: icon,
+        profilePicture: icon,
       });
     }
     return res.status(200).json({
