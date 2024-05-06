@@ -3,6 +3,36 @@ const User = require("../../models/userModel");
 const { getFilesFromS3, sendFileToS3 } = require("../../utils/s3-bucket");
 const { getRecieverSocket } = require("../../utils/socket");
 
+async function checkUsername(req, res) {
+  try {
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "No user found with that username",
+      });
+    }
+
+    if (user.icon) {
+      const icon = await getFilesFromS3(user.icon);
+      return res.status(200).json({
+        success: true,
+        username: user.username,
+        icon: icon,
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      username: user.username,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
 /**
  * Create a chat between two users
  * @param {Object} req - Request object
@@ -334,4 +364,5 @@ module.exports = {
   manageChatRequest,
   chatsOverview,
   sendMessage,
+  checkUsername,
 };

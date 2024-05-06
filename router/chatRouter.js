@@ -7,6 +7,7 @@ const {
   manageChatRequest,
   chatsOverview,
   sendMessage,
+  checkUsername,
 } = require("../controller/message/chatController");
 const { authenticate } = require("../middlewares/auth");
 
@@ -29,6 +30,8 @@ router.get("/chat/:chatId", authenticate, getChat);
 router.post("/chat/manage", authenticate, manageChatRequest);
 
 router.get("/chat/overview/:filter", authenticate, chatsOverview);
+
+router.get("/chat/checkUsername/:username", checkUsername);
 
 router.post(
   "/chat/send/:chatId",
