@@ -44,16 +44,16 @@ const userReportSchema = new Schema({
   linkedSubreddit: {
     type: String,
     default: null,
-    ref: "Subreddit"
+    ref: "Subreddit",
   },
   linkedItem: {
-  type: mongoose.Schema.Types.ObjectId,
-  refPath: 'linkedItemType', // Dynamically determine the referenced model
-  default: null,
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: "linkedItemType", // Dynamically determine the referenced model
+    default: null,
   },
-linkedItemType: {
-  type: String,
-  enum: ['Post', 'Comment', 'User'],
+  linkedItemType: {
+    type: String,
+    enum: ["Post", "Comment", "User"],
   },
   reportReason: {
     type: String,
@@ -77,6 +77,14 @@ linkedItemType: {
   },
   reportDetails: {
     type: String,
+  },
+  isIgnored: {
+    type: Boolean,
+    default: false,
+  },
+  isViewed: {
+    type: Boolean,
+    default: false,
   },
 });
 

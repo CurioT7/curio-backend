@@ -142,7 +142,25 @@ async function reportContent(req, res) {
 async function getAdminReports(req, res) {
   try {
     if (req.user) {
-      const reports = await UserReports.find().populate("linkedItem");
+      
+      const reports = await UserReports.find({isIgnored: false ,isViewed: false}).populate("linkedItem");
+      return res.status(200).json({ success: true, reports });
+    }
+  } catch (error) {
+    console.error("Error getting reports:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
+async function getAdminReportsHistory(req, res) {
+  try {
+    if (req.user) {
+      const reports = await UserReports.find({
+        isIgnored: true,
+        isViewed: true,
+      }).populate("linkedItem");
       return res.status(200).json({ success: true, reports });
     }
   } catch (error) {
@@ -180,9 +198,12 @@ async function getSubredditReportedContent(req, res, next) {
           .status(403)
           .json({ message: "Forbidden, you must be a moderator!" });
       }
+      
       const reportedItems = await UserReports.find({
         reportType: { $in: ["post", "comment"] },
         linkedSubreddit: subreddit._id,
+        isIgnored: false,
+        isViewed: false, 
       }).populate("linkedItem");
 
       if (reportedItems.length === 0) {
@@ -204,9 +225,100 @@ async function getSubredditReportedContent(req, res, next) {
   }
 }
 
+async function takeActionOnReport(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+
+      const { reportId, action } = req.body;
+
+      // Find the report by ID
+      const report = await UserReports.findById(reportId);
+      if (!report) {
+        return res.status(404).json({ message: "Report not found" });
+      }
+
+      // Perform action based on the request
+      switch (action) {
+        case "ignore":
+          if (report.isIgnored === true) {
+            return res.status(400).json({ message: "Report already ignored" });
+          } else {
+            report.isIgnored = true;
+            await report.save();
+            return res
+              .status(200)
+              .json({ message: "Item ignored successfully" });
+          }
+           
+        case "ban":
+          const reportedUser = await User.findOne({
+            username: report.reportedUsername,
+          });
+          if (report.linkedItemType !== "User") {
+            return res.status(400).json({ message: "You can only ban a user" });
+          } else if(reportedUser.username == user.username){
+            return res.status(400).json({ message: "You can't ban yourself'" });
+          }else if (reportedUser.isBanned === true) {
+            return res.status(200).json({ message: "User is already banned" });
+          } else {
+            reportedUser.isBanned = true;
+            report.isViewed = true;
+            await reportedUser.save();
+            return res
+              .status(200)
+              .json({ message: "User banned successfully" });
+          }
+        case "delete":
+          if (
+            !(
+              report.linkedItemType === "Post" ||
+              report.linkedItemType === "Comment"
+            )
+          ) {
+            return res
+              .status(400)
+              .json({ message: "You can only delete a post or a comment" });
+          } else {
+            let reportedContent;
+            if (report.linkedItemType === "Post") {
+              reportedContent = await Post.findById(report.linkedItem);
+              await Post.deleteOne({ _id: report.linkedItem });
+              // Remove the post from the corresponding subreddit schema
+              await Subreddit.findOneAndUpdate(
+                { _id: report.linkedSubreddit },
+                { $pull: { posts: report.linkedItem } },
+                { new: true }
+              );
+            } else {
+              reportedContent = await Comment.findById(report.linkedItem);
+              await Comment.deleteOne({ _id: report.linkedItem });
+            }
+            if (!reportedContent) {
+              return res.status(404).json({ message: "Item not found" });
+            }
+            report.isViewed = true;
+            return res
+              .status(200)
+              .json({ message: "Item deleted successfully" });
+          }
+        default:
+          return res.status(400).json({ message: "Invalid action" });
+      }
+    }
+  } catch (error) {
+    console.error("Error taking action on report:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
 module.exports = {
   reportUser,
   reportContent,
   getSubredditReportedContent,
   getAdminReports,
+  takeActionOnReport,
+  getAdminReportsHistory,
 };

@@ -60,4 +60,27 @@ router.get(
   reportController.getAdminReports
 );
 
+/**
+ * Route for retrieving reports viewed by admin.
+ *
+ * @param {Request} req - The Express Request object.
+ * @param {Response} res - The Express Response object.
+ * @param {NextFunction} next - The Express NextFunction middleware.
+ * @returns {void}
+ */
+router.get(
+  "/admin/viewed-reports",
+  authenticate,
+  isAdmin,
+  reportController.getAdminReportsHistory
+);
+
+
+router.post(
+  "/admin/action",
+  authenticate,
+  isAdmin,
+  reportController.takeActionOnReport
+);
+
 module.exports = router;
