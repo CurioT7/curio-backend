@@ -101,7 +101,7 @@ async function unhidePost(req, res) {
 async function spoilerPost(req, res) {
   const postId = req.body.idpost;
   try {
-    const user =  await User.findById(req.user.userId);
+    const user = await User.findById(req.user.userId);
     // Find the post by ID
     const post = await Post.findOne({ _id: postId, authorID: user });
     if (!post) {
@@ -124,10 +124,10 @@ async function spoilerPost(req, res) {
 }
 
 async function unspoilerPost(req, res) {
-  const postId = req.body.idpost; 
-  
+  const postId = req.body.idpost;
+
   try {
-   const user= await User.findById(req.user.userId);
+    const user = await User.findById(req.user.userId);
     // Find the post by ID
     const post = await Post.findOne({ _id: postId, authorID: user });
     if (!post) {
@@ -388,7 +388,10 @@ async function submitPost(req, res, user, imageKey) {
       isNSFW: req.body.isNSFW,
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
-      linkedSubreddit: subreddit && subreddit._id,
+      linkedSubreddit: subreddit && {
+        subreddit: subreddit._id,
+        name: subreddit.name,
+      },
       media: imageKey,
       sendReplies: req.body.sendReplies,
       options: req.body.options && optionsArray,
@@ -879,13 +882,12 @@ async function castVote(req, res) {
           recipient: author.username,
           postId: itemName === "post" ? itemID : undefined,
           commentId: itemName === "comment" ? itemID : undefined,
-          isDisabled: false, 
+          isDisabled: false,
           type: itemName,
         });
 
         await notification.save();
       }
-   
 
       await Promise.all([item.save(), user.save()]);
       return res
@@ -899,7 +901,6 @@ async function castVote(req, res) {
       .json({ success: false, message: "Internal server error", error: error });
   }
 }
-
 
 /**
  * Add a post to the user's browsing history.
