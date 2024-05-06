@@ -233,7 +233,21 @@ async function hotPosts(req, res) {
       const postIds = posts.map((post) => post._id);
       await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
-      return res.status(200).json({ success: true, posts });
+      let detailsArray;
+      if (req.user) {
+        const user = await User.findOne({ _id: req.user.userId });
+        detailsArray = await getVoteStatusAndSubredditDetails(posts, user);
+      }
+
+      return res.status(200).json({
+        success: true,
+        posts: detailsArray
+          ? posts.map((post, index) => ({
+              ...post.toObject(),
+              details: detailsArray[index],
+            }))
+          : posts,
+      });
     } else {
       return res
         .status(404)
@@ -246,7 +260,6 @@ async function hotPosts(req, res) {
     });
   }
 }
-
 
 /**
  * Get the posts with the most comments from a subreddit.
@@ -289,7 +302,21 @@ async function mostComments(req, res) {
         }
       }
 
-      return res.status(200).json({ success: true, posts });
+      let detailsArray;
+      if (req.user) {
+        const user = await User.findOne({ _id: req.user.userId });
+        detailsArray = await getVoteStatusAndSubredditDetails(posts, user);
+      }
+
+      return res.status(200).json({
+        success: true,
+        posts: detailsArray
+          ? posts.map((post, index) => ({
+              ...post.toObject(),
+              details: detailsArray[index],
+            }))
+          : posts,
+      });
     } else {
       return res.status(404).json({
         success: false,
@@ -515,7 +542,7 @@ async function getUserPosts(req, res) {
 
           case "random":
             // Fetch random posts
-             return Post.find({ linkedSubreddit: subredditDetails._id })
+            return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
               .skip(skip)
               .limit(limit)
