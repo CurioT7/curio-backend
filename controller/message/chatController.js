@@ -266,49 +266,72 @@ async function chatsOverview(req, res) {
     let chats;
     switch (filter) {
       case "all":
-        chats = await Chat.find({
-          participants: user._id,
-        })
-          .populate({
-            //other participants
-            path: "participants",
-            select: "username profilePicture",
-            match: { _id: { $ne: req.user.userId } },
-          })
-          .populate({
-            path: "messages",
-            options: { sort: { timestamp: -1 } },
-            select: "message sender timestamp",
-            match: { isPendingRequest: { $ne: true } },
-            perDocumentLimit: 1,
-            populate: {
-              path: "sender",
-              select: "username",
+        //get most recent message and participant name only for each chat using aggregate
+        chats = await Chat.aggregate([
+          {
+            $match: {
+              participants: { $in: [user._id] },
             },
-          });
-        break;
-      //TODO: add more filters
-    }
-    //get media
-    if (chats.length > 0) {
-      for (let i = 0; i < chats.length; i++) {
-        const chat = chats[i];
-        //get media for each participant
-        for (let j = 0; j < chat.participants.length; j++) {
-          const participant = chat.participants[j];
-          if (participant.profilePicture) {
-            const media = await getFilesFromS3(participant.profilePicture);
-            participant.profilePicture = media;
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "participants",
+              foreignField: "_id",
+              as: "participants",
+            },
+          },
+          {
+            $unwind: "$participants",
+          },
+          {
+            $match: {
+              "participants._id": { $ne: user._id },
+            },
+          },
+          {
+            $project: {
+              messages: { $slice: ["$messages", -1] },
+              participants: "$participants.username",
+              unReadMessagesNumber: {
+                $size: {
+                  $filter: {
+                    input: "$messages",
+                    as: "message",
+                    cond: {
+                      $and: [
+                        { $eq: ["$$message.sender", "$participants._id"] },
+                        { $eq: ["$$message.isDelivered", true] },
+                      ],
+                    },
+                  },
+                },
+              },
+              //participants media
+              profilePicture: "$participants.profilePicture",
+            },
+          },
+          {
+            $sort: { "messages.timestamp": -1 }, // Sort by the timestamp of the most recent message
+          },
+        ]);
+
+        //get chat media
+        let media;
+        for (let i = 0; i < chats.length; i++) {
+          if (chats[i].profilePicture) {
+            media = await getFilesFromS3(chats[i].profilePicture);
+            chats[i].profilePicture = media;
           }
         }
-      }
+
+        break;
+
+      //TODO: add more filters
     }
 
     const requestNumber = user.pendingChatRequests.length;
-    //sort messages in each chat by most recent
-    chats.forEach((chat) => {
-      chat.messages.sort((a, b) => b.timestamp - a.timestamp);
-    });
+
     return res.status(200).json({
       success: true,
       chats,
