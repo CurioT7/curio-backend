@@ -553,35 +553,43 @@ async function getModeratorsQueue(req, res) {
     const user = await User.findById(req.user.userId);
     const decodedURI = decodeURIComponent(req.params.subreddit);
     const subreddit = await Community.findOne({ name: decodedURI });
-    if (!user)
+
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
-    if (!subreddit)
+    }
+
+    if (!subreddit) {
       return res.status(404).json({
         success: false,
         message: "Subreddit not found",
       });
-    const isCreator = subreddit.moderators.some(
-      (mod) => mod.username === user.username && mod.role === "creator"
-    );
-    const isModerator = subreddit.moderators.some(
-      (mod)=>mod.username==user.username &&mod.role=="moderator"
-    )
-    if (!isCreator || !isModerator)
+    }
+
+    const isCreatorOrModerator = subreddit.moderators.some((mod) => {
+      return (
+        mod.username === user.username &&
+        (mod.role === "creator" || mod.role === "moderator")
+      );
+    });
+
+    if (!isCreatorOrModerator) {
       return res.status(403).json({
         success: false,
-        message: "Only the creator or moderator of the subreddit can view the queue",
+        message:
+          "Only the creator or moderator of the subreddit can view the queue",
       });
+    }
+
     const reports = await Report.find({ linkedSubreddit: subreddit.name });
+
     return res.status(200).json({
       success: true,
       reports: reports,
     });
-
-  } catch (error)
-  {
+  } catch (error) {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -589,6 +597,7 @@ async function getModeratorsQueue(req, res) {
     });
   }
 }
+
 
 async function declineInvitation(req, res) {
   try {
