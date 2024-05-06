@@ -305,11 +305,9 @@ async function chatsOverview(req, res) {
     }
 
     const requestNumber = user.pendingChatRequests.length;
-    //sort chats by most recent message
-    chats.sort((a, b) => {
-      const aTimestamp = a.messages.length > 0 ? a.messages[0].timestamp : 0;
-      const bTimestamp = b.messages.length > 0 ? b.messages[0].timestamp : 0;
-      return bTimestamp - aTimestamp;
+    //sort messages in each chat by most recent
+    chats.forEach((chat) => {
+      chat.messages.sort((a, b) => b.timestamp - a.timestamp);
     });
     return res.status(200).json({
       success: true,
