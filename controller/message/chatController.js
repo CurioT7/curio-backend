@@ -1,6 +1,6 @@
 const Chat = require("../../models/chatModel");
 const User = require("../../models/userModel");
-const { getFilesFromS3 } = require("../../utils/s3-bucket");
+const { getFilesFromS3, sendFileToS3 } = require("../../utils/s3-bucket");
 
 /**
  * Create a chat between two users
@@ -29,12 +29,18 @@ async function createChat(req, res) {
         message: "Chat already exists",
       });
     }
+    let media;
+
+    if (req.body.media) {
+      media = await sendFileToS3(req.body.media);
+    }
     const chat = new Chat({
       participants: [req.user.userId, recipient._id],
       messages: [
         {
           sender: req.user.userId,
-          message: req.body.message,
+          message: req.body.message && req.body.message,
+          media: media && media,
         },
       ],
     });

@@ -17,6 +17,9 @@ const chatSchema = new Schema({
       message: {
         type: String,
       },
+      media: {
+        type: String,
+      },
       timestamp: {
         type: Date,
         default: Date.now,
