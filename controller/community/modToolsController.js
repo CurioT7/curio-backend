@@ -11,7 +11,7 @@ async function bannerAndAvatar(req, res) {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      subredditName = decodeURIComponent(req.params.subreddit);
+      const subredditName = decodeURIComponent(req.params.subreddit);
 
       let imageKey;
       if (req.file) {
@@ -41,19 +41,24 @@ async function bannerAndAvatar(req, res) {
       });
       const subreddit = await Subreddit.findOneAndUpdate(
         { name: subredditName },
-          subredditUpdateFields,
-        { new: true, upsert: true}
+        subredditUpdateFields,
+        { new: true, upsert: true }
       );
       if (!subreddit) {
         return res.status(404).json({ message: "Subreddit not found" });
       }
+      await subreddit.save();
+
+
+      let icon;
+      let banner;
 
       if (subreddit.icon) {
-        const icon = await getFilesFromS3(subreddit.icon);
+        icon = await getFilesFromS3(subreddit.icon);
         subreddit.icon = icon;
       }
       if (subreddit.banner) {
-        const banner = await getFilesFromS3(subreddit.banner);
+        banner = await getFilesFromS3(subreddit.banner);
         subreddit.banner = banner;
       }
       if (!subreddit.icon && req.body.icon === "Add") {
@@ -63,7 +68,7 @@ async function bannerAndAvatar(req, res) {
       if (!subreddit.banner && req.body.banner === "Add") {
         subreddit.banner = imageKey;
       }
-      await subreddit.save();
+
       res.json({ subreddit, message: " icon/banner updated successfully" });
     }
   } catch (err) {

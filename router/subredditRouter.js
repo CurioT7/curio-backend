@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const subredditsController = require("../controller/friends/subredditsController");
 const modToolsController = require("../controller/community/modToolsController");
-const { authenticate } = require("../middlewares/auth");    
+const { authenticate } = require("../middlewares/auth");
+const { multer, upload, storage } = require("../utils/s3-bucket");
 /**
  * Route to create a new subreddit.
  * @name POST /subreddit/createSubreddit
@@ -40,7 +41,8 @@ router.get("/best/communities", subredditsController.getTopCommunities);
 
 router.post(
   "/moderationInvite/:subreddit",
-  authenticate, subredditsController.createModeration
+  authenticate,
+  subredditsController.createModeration
 );
 router.patch(
   "/removemoderator/:subreddit",
@@ -56,6 +58,7 @@ router.post(
 router.patch(
   "/bannerAndAvatar/:subreddit",
   authenticate,
+  upload.single("media"),
   modToolsController.bannerAndAvatar
 );
 
