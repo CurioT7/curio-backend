@@ -397,7 +397,6 @@ async function acceptInvitation(req, res) {
 
     // Delete the invitation
     await Invitation.findByIdAndDelete(invitationId);
-
     const disabledSubreddit =
       user.notificationSettings.disabledSubreddits.includes(
         subreddit.name
@@ -412,9 +411,9 @@ async function acceptInvitation(req, res) {
       }". ${
         disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
       }`,
-      recipient: moderationName,
+      recipient: user.username,
       subreddits: subreddit.name,
-      type: "Moderation",
+      type: "subreddit",
       isDisabled: disabledSubreddit,
     });
 
@@ -684,10 +683,14 @@ async function muteUser(req, res) {
         success: false,
         message: "User is already muted",
       });
+    
+    const mutedUserSettings = await User.findOne({ username: mutedUser });
      const disabledSubreddit =
-      muted.notificationSettings.disabledSubreddits.includes(subreddit.name);
-    console.log(disabledSubreddit);
-    console.log(user.notificationSettings.disabledSubreddits);
+       mutedUserSettings &&
+       mutedUserSettings.notificationSettings.disabledSubreddits.includes(
+         subreddit.name
+       );
+
      const notification = new Notification({
        title: disabledSubreddit ? "Muted (Disabled)" : "Muted",
        message: `${user.username} muted you in "${subreddit.name}". ${
@@ -700,7 +703,7 @@ async function muteUser(req, res) {
        type: "subreddit",
        isDisabled: disabledSubreddit,
      });
-    await notification.save();
+     await notification.save();
     
     subreddit.mutedUsers.push({ username: mutedUser });
     await subreddit.save();
