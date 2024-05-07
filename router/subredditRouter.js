@@ -215,4 +215,6 @@ router.post("/moderator/ban", authenticate, subredditsController.banUser);
 
 router.get("/about/unmoderated/:subreddit", authenticate, subredditsController.getUnmoderated);
 
+router.post("/moderator/editPermissions/:subreddit", authenticate, subredditsController.editPermissions);
+
 module.exports = router;
