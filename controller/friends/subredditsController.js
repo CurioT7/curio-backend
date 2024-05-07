@@ -864,258 +864,6 @@ async function leaveModerator(req, res) {
   }
 }
 
-/**
- * Bans a user from a subreddit.
- * @async
- * @function banUser
- * @param {Object} req - The HTTP request object.
- * @param {Object} res - The HTTP response object.
- * @returns {Promise<void>} A promise that resolves once the user is banned.
- * @throws {Error} If an error occurs during the ban process.
- */
-async function banUser(req, res) {
-  try {
-    if (req.user) {
-      const user = await User.findOne({ _id: req.user.userId });
-
-      const { subredditName, violation, modNote, userMessage, userToBan } = req.body;
-
-      // Validate input parameters
-      if (!subredditName || !violation || !userToBan) {
-        return res.status(400).json({ message: "Missing required parameters" });
-      }
-
-      // Find the user to be banned
-      const bannedUser = await User.findOne({ username: userToBan });
-      if (!bannedUser) {
-        return res.status(404).json({ message: "User to ban not found" });
-      }
-      
-      const isModerator = user.moderators.some(
-        (moderator) => moderator.subreddit === subredditName
-      );
-      if (!isModerator) {
-        return res
-          .status(403)
-          .json({ message: "Forbidden, you must be a moderator!" });
-      }
-
-   
-      const subreddit = await Community.findOne({ name: subredditName });
-      if (!subreddit) {
-        return res.status(404).json({ message: "Subreddit not found" });
-      }
-      
-      // Check if the banned user is a member of the subreddit
-      const isMember = subreddit.members.some(
-        (member) => member.username === userToBan
-      );
-      if (!isMember) {
-        return res
-          .status(400)
-          .json({ message: "User is not a member of the subreddit" });
-      }
-
-      // Check if the user is trying to ban themselves
-      if (userToBan === user.username) {
-        return res.status(400).json({ message: "You can't ban yourself" });
-      }
-
-      // Check if the user is already banned
-      if (subreddit.bannedUsers.some((user) => user.username === userToBan)) {
-        return res.status(400).json({ message: "User is already banned" });
-      }
-
-      // Add the banned username to the subreddit's bannedUsers array
-      subreddit.bannedUsers.push({ username: userToBan });
-      await subreddit.save();
-
-      // Create a new ban entry
-      const newBan = new ban({
-        bannedUsername: userToBan,
-        violation,
-        modNote,
-        userMessage,
-        bannedBy: "moderator",
-      });
-      await newBan.save();
-
-      return res.status(200).json({ message: "User banned successfully" });
-    }
-  } catch (error) {
-    console.error("Error banning user:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-}
-
-/**
- * Bans a user from a subreddit.
- * @async
- * @function banUser
- * @param {Object} req - The HTTP request object.
- * @param {Object} res - The HTTP response object.
- * @returns {Promise<void>} A promise that resolves once the user is banned.
- * @throws {Error} If an error occurs during the ban process.
- */
-async function banUser(req, res) {
-  try {
-    if (req.user) {
-      const user = await User.findOne({ _id: req.user.userId });
-
-      const { subredditName, violation, modNote, userMessage, userToBan } = req.body;
-
-      // Validate input parameters
-      if (!subredditName || !violation || !userToBan) {
-        return res.status(400).json({ message: "Missing required parameters" });
-      }
-
-      // Find the user to be banned
-      const bannedUser = await User.findOne({ username: userToBan });
-      if (!bannedUser) {
-        return res.status(404).json({ message: "User to ban not found" });
-      }
-      
-      const isModerator = user.moderators.some(
-        (moderator) => moderator.subreddit === subredditName
-      );
-      if (!isModerator) {
-        return res
-          .status(403)
-          .json({ message: "Forbidden, you must be a moderator!" });
-      }
-
-   
-      const subreddit = await Community.findOne({ name: subredditName });
-      if (!subreddit) {
-        return res.status(404).json({ message: "Subreddit not found" });
-      }
-      
-      // Check if the banned user is a member of the subreddit
-      const isMember = subreddit.members.some(
-        (member) => member.username === userToBan
-      );
-      if (!isMember) {
-        return res
-          .status(400)
-          .json({ message: "User is not a member of the subreddit" });
-      }
-
-      // Check if the user is trying to ban themselves
-      if (userToBan === user.username) {
-        return res.status(400).json({ message: "You can't ban yourself" });
-      }
-
-      // Check if the user is already banned
-      if (subreddit.bannedUsers.some((user) => user.username === userToBan)) {
-        return res.status(400).json({ message: "User is already banned" });
-      }
-
-      // Add the banned username to the subreddit's bannedUsers array
-      subreddit.bannedUsers.push({ username: userToBan });
-      await subreddit.save();
-
-      // Create a new ban entry
-      const newBan = new ban({
-        bannedUsername: userToBan,
-        violation,
-        modNote,
-        userMessage,
-        bannedBy: "moderator",
-      });
-      await newBan.save();
-
-      return res.status(200).json({ message: "User banned successfully" });
-    }
-  } catch (error) {
-    console.error("Error banning user:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-}
-
-/**
- * Bans a user from a subreddit.
- * @async
- * @function banUser
- * @param {Object} req - The HTTP request object.
- * @param {Object} res - The HTTP response object.
- * @returns {Promise<void>} A promise that resolves once the user is banned.
- * @throws {Error} If an error occurs during the ban process.
- */
-async function banUser(req, res) {
-  try {
-    if (req.user) {
-      const user = await User.findOne({ _id: req.user.userId });
-
-      const { subredditName, violation, modNote, userMessage, userToBan } = req.body;
-
-      // Validate input parameters
-      if (!subredditName || !violation || !userToBan) {
-        return res.status(400).json({ message: "Missing required parameters" });
-      }
-
-      // Find the user to be banned
-      const bannedUser = await User.findOne({ username: userToBan });
-      if (!bannedUser) {
-        return res.status(404).json({ message: "User to ban not found" });
-      }
-      
-      const isModerator = user.moderators.some(
-        (moderator) => moderator.subreddit === subredditName
-      );
-      if (!isModerator) {
-        return res
-          .status(403)
-          .json({ message: "Forbidden, you must be a moderator!" });
-      }
-
-   
-      const subreddit = await Community.findOne({ name: subredditName });
-      if (!subreddit) {
-        return res.status(404).json({ message: "Subreddit not found" });
-      }
-      
-      // Check if the banned user is a member of the subreddit
-      const isMember = subreddit.members.some(
-        (member) => member.username === userToBan
-      );
-      if (!isMember) {
-        return res
-          .status(400)
-          .json({ message: "User is not a member of the subreddit" });
-      }
-
-      // Check if the user is trying to ban themselves
-      if (userToBan === user.username) {
-        return res.status(400).json({ message: "You can't ban yourself" });
-      }
-
-      // Check if the user is already banned
-      if (subreddit.bannedUsers.some((user) => user.username === userToBan)) {
-        return res.status(400).json({ message: "User is already banned" });
-      }
-
-      // Add the banned username to the subreddit's bannedUsers array
-      subreddit.bannedUsers.push({ username: userToBan });
-      await subreddit.save();
-
-      // Create a new ban entry
-      const newBan = new ban({
-        bannedUsername: userToBan,
-        violation,
-        modNote,
-        userMessage,
-        bannedBy: "moderator",
-      });
-      await newBan.save();
-
-      return res.status(200).json({ message: "User banned successfully" });
-    }
-  } catch (error) {
-    console.error("Error banning user:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-}
-
 async function getMineModeration(req, res) {
   try {
     const user = await User.findById(req.user.userId);
@@ -1201,6 +949,172 @@ async function getSubredditModerator(req, res) {
     });
   }
 }
+
+/**
+ * Bans a user from a subreddit.
+ * @async
+ * @function banUser
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the user is banned.
+ * @throws {Error} If an error occurs during the ban process.
+ */
+async function banUser(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+
+      const { subredditName, violation, modNote, userMessage, userToBan } = req.body;
+
+      // Validate input parameters
+      if (!subredditName || !violation || !userToBan) {
+        return res.status(400).json({ message: "Missing required parameters" });
+      }
+
+      // Find the user to be banned
+      const bannedUser = await User.findOne({ username: userToBan });
+      if (!bannedUser) {
+        return res.status(404).json({ message: "User to ban not found" });
+      }
+      
+      const isModerator = user.moderators.some(
+        (moderator) => moderator.subreddit === subredditName
+      );
+      if (!isModerator) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden, you must be a moderator!" });
+      }
+
+   
+      const subreddit = await Community.findOne({ name: subredditName });
+      if (!subreddit) {
+        return res.status(404).json({ message: "Subreddit not found" });
+      }
+      
+      // Check if the banned user is a member of the subreddit
+      const isMember = subreddit.members.some(
+        (member) => member.username === userToBan
+      );
+      if (!isMember) {
+        return res
+          .status(400)
+          .json({ message: "User is not a member of the subreddit" });
+      }
+
+      // Check if the user is trying to ban themselves
+      if (userToBan === user.username) {
+        return res.status(400).json({ message: "You can't ban yourself" });
+      }
+
+      // Check if the user is already banned
+      if (subreddit.bannedUsers.some((user) => user.username === userToBan)) {
+        return res.status(400).json({ message: "User is already banned" });
+      }
+
+      // Add the banned username to the subreddit's bannedUsers array
+      subreddit.bannedUsers.push({ username: userToBan });
+      await subreddit.save();
+
+      // Create a new ban entry
+      const newBan = new ban({
+        bannedUsername: userToBan,
+        violation,
+        modNote,
+        userMessage,
+        bannedBy: "moderator",
+      });
+      await newBan.save();
+
+      return res.status(200).json({ message: "User banned successfully" });
+    }
+  } catch (error) {
+    console.error("Error banning user:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+/**
+ * Unban a user from a subreddit.
+ * 
+ * @param {object} req - The request object.
+ * @param {object} req.user - The user object from the request.
+ * @param {string} req.user.userId - The ID of the user performing the unban action.
+ * @param {object} req.body - The request body containing parameters.
+ * @param {string} req.body.subredditName - The name of the subreddit from which to unban the user.
+ * @param {string} req.body.bannedUser - The username of the user to unban.
+ * @param {object} res - The response object.
+ * @returns {object} - The response JSON object indicating success or failure.
+ * 
+ * @typedef {object} User
+ * @property {string} _id - The unique identifier of the user.
+ * @property {Array} moderators - Array of subreddit moderator objects.
+ * 
+ * @typedef {object} Community
+ * @property {string} name - The name of the subreddit.
+ * @property {Array} bannedUsers - Array of banned user objects.
+ * 
+ * @typedef {object} ban
+ * @property {string} bannedUsername - The username of the banned user.
+ * @property {string} violation - The reason for the ban.
+ * @property {string} modNote - Additional note from the moderator.
+ * @property {string} userMessage - Message sent to the banned user.
+ */
+async function unbanUser(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+
+      const { subredditName, bannedUser } = req.body;
+
+      // Validate input parameters
+      if (!subredditName || !bannedUser) {
+        return res.status(400).json({ message: "Missing required parameters" });
+      }
+
+      // Find the subreddit
+      const subreddit = await Community.findOne({ name: subredditName });
+      if (!subreddit) {
+        return res.status(404).json({ message: "Subreddit not found" });
+      }
+
+      // Check if the user has moderator privileges
+      const isModerator = user.moderators.some(
+        (moderator) => moderator.subreddit === subredditName
+      );
+      if (!isModerator) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden, you must be a moderator!" });
+      }
+
+      // Check if the user to unban is in the banned users list
+      const index = subreddit.bannedUsers.findIndex(
+        (user) => user.username === bannedUser
+      );
+      if (index === -1) {
+        return res.status(404).json({
+          message: "User to unban not found in the banned users list",
+        });
+      }
+
+      // Remove the user from the banned users list
+      subreddit.bannedUsers.splice(index, 1);
+      await subreddit.save();
+
+      // Remove the ban entry from the ban schema
+      await ban.deleteOne({ bannedUsername: bannedUser });
+
+      return res.status(200).json({ message: "User unbanned successfully" });
+    }
+  } catch (error) {
+    console.error("Error unbanning user:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
+
 module.exports = {
   newSubreddit,
   availableSubreddit,
@@ -1217,6 +1131,7 @@ module.exports = {
   unMuteUser,
   leaveModerator,
   banUser,
+  unbanUser,
   getMineModeration,
   getUserMuted,
   getSubredditModerator,
