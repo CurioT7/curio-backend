@@ -184,8 +184,29 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ["creator", "moderator"],
       },
+      manageUsers: {
+        type: Boolean,
+        default: false,
+      },
+      createLiveChats: {
+        type: Boolean,
+        default: false,
+      },
+      manageSettings: {
+        type: Boolean,
+        default: false,
+      },
+      managePostsAndComments: {
+        type: Boolean,
+        default: false,
+      },
+      everything: {
+        type: Boolean,
+        default: false,
+      },
     },
   ],
+   
   hiddenPosts: [
     {
       type: Schema.Types.ObjectId,
@@ -222,20 +243,20 @@ const userSchema = new mongoose.Schema({
   notificationSettings: {
     disabledSubreddits: [
       {
-        type: String, 
+        type: String,
         ref: "Subreddit",
       },
     ],
     disabledPosts: [
       {
-        type: Schema.Types.ObjectId, 
-        ref: "Post", 
+        type: Schema.Types.ObjectId,
+        ref: "Post",
       },
     ],
     disabledComments: [
       {
-        type: Schema.Types.ObjectId, 
-        ref: "Comment", 
+        type: Schema.Types.ObjectId,
+        ref: "Comment",
       },
     ],
   },
@@ -284,8 +305,8 @@ const userSchema = new mongoose.Schema({
   },
   isBanned: {
     type: Boolean,
-    default:false
-  }
+    default: false,
+  },
 });
 
 /**

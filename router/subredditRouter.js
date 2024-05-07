@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const subredditsController = require("../controller/friends/subredditsController");
-const { authenticate } = require("../middlewares/auth");    
+const modToolsController = require("../controller/community/modToolsController");
+const { authenticate } = require("../middlewares/auth");
+const { multer, upload, storage } = require("../utils/s3-bucket");
 const { auth } = require("google-auth-library");
 /**
  * Route to create a new subreddit.
@@ -11,6 +13,7 @@ const { auth } = require("google-auth-library");
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
+
 router.post(
   "/createSubreddit",
   authenticate,
@@ -39,27 +42,6 @@ router.get("/r/:subreddit", subredditsController.getSubredditInfo);
 router.get("/best/communities", subredditsController.getTopCommunities);
 
 /**
- * GET /moderatedSubreddits/:username - Get the list of moderated communities by a user.
- * 
- * This endpoint allows to retrieve the list of moderated communities by a user based on their username.
- * 
- * @name GET /moderatedSubreddits/:username
- * @function
- * @memberof module:subredditsRouter
- * @inner
- * 
- * @param {object} req - The request object.
- * @param {object} req.params - The URL parameters.
- * @param {string} req.params.username - The username of the user.
- * @param {object} res - The response object.
- * @returns {object} - The response JSON object containing the list of moderated communities.
- */
-router.get(
-  "/moderatedSubreddits/:username",
-  subredditsController.getModeratedCommunitiesByUsername
-);
-
-/**
  * Route to Inivite a user to moderate a subreddit.
  * @name POST /subreddit/moderationInvite/:subreddit
  * @function
@@ -67,9 +49,11 @@ router.get(
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
+ 
 router.post(
   "/moderationInvite/:subreddit",
-  authenticate, subredditsController.createModeration
+  authenticate,
+  subredditsController.createModeration
 );
 
 /**
@@ -80,6 +64,7 @@ router.post(
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
+
 router.patch(
   "/removemoderator/:subreddit",
   authenticate,
@@ -94,10 +79,27 @@ router.patch(
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
+
 router.post(
   "/acceptmoderation/:subreddit",
   authenticate,
   subredditsController.acceptInvitation
+);
+
+/**
+  * Route to update the banner or icon of a subreddit.
+  * @name PATCH /subreddit/bannerAndAvatar/:subreddit
+  * @function
+  * @memberof module:routes/subreddit
+  * @param {string} path - Express path
+  * @param {callback} middleware - Express middleware.
+*/
+
+router.patch(
+  "/bannerAndAvatar/:subreddit",
+  authenticate,
+  upload.single("media"),
+  modToolsController.bannerAndAvatar
 );
 
 /**
@@ -109,6 +111,7 @@ router.post(
  * @param {callback} middleware - Express middleware.
  */
 router.post("/declinemoderation/:subreddit", authenticate, subredditsController.declineInvitation);
+
 /**
  * Route to get the moderators of a subreddit.
  * @name GET /subreddit/getModerators/:subreddit
@@ -117,7 +120,23 @@ router.post("/declinemoderation/:subreddit", authenticate, subredditsController.
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
+
 router.get("/about/moderators/:subreddit", subredditsController.getModerators);
+
+/**
+ * Route to get the edited queues of a subreddit.
+ * @name GET /subreddit/editedQueues/:subreddit/:type/:sort
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
+router.get(
+  "/editedQueues/:subreddit/:type/:sort",
+  authenticate,
+  modToolsController.editedQueues
+);
+
 
 /**
  * Route to get the moderation queue of a subreddit.
@@ -187,47 +206,15 @@ router.get("/about/muted/:subreddit", authenticate, subredditsController.getUser
 /**
  * POST request to ban a user from a subreddit.
  * @async
- * @name POST /moderator/ban
- * @function 
+ * @function banUserRoute
  * @param {Object} req - The HTTP request object.
  * @param {Object} res - The HTTP response object.
  * @returns {Promise<void>} A promise that resolves once the user is banned.
  */
 router.post("/moderator/ban", authenticate, subredditsController.banUser);
 
-/**
- * POST request to unban a user from a subreddit.
- * @async
- * @name POST /moderator/unban
- * @function 
- * @param {Object} req - The HTTP request object.
- * @param {Object} res - The HTTP response object.
- * @returns {Promise<void>} A promise that resolves once the user is unbanned.
- */
-router.post("/moderator/unban", authenticate, subredditsController.unbanUser);
+router.get("/about/unmoderated/:subreddit", authenticate, subredditsController.getUnmoderated);
 
-/**
- * GET /r/:subredditName/about/banned - Get the list of banned users in a subreddit.
- * 
- * This endpoint allows moderators to retrieve the list of banned users in a subreddit.
- * 
- * @name GET /r/:subredditName/about/banned
- * @function
- * @memberof module:subredditsRouter
- * @inner
- * 
- * @param {object} req - The request object.
- * @param {object} req.user - The authenticated user object.
- * @param {string} req.user.userId - The ID of the user performing the request.
- * @param {object} req.params - The URL parameters.
- * @param {string} req.params.subredditName - The name of the subreddit.
- * @param {object} res - The response object.
- * @returns {object} - The response JSON object containing the list of banned users and their details.
- */
-router.get(
-  "/r/:subredditName/about/banned",
-  authenticate,
-  subredditsController.getBannedUsers
-);
+router.post("/moderator/editPermissions/:subreddit", authenticate, subredditsController.editPermissions);
 
 module.exports = router;
