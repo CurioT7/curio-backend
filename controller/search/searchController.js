@@ -264,21 +264,24 @@ async function searchCommentsOrPosts(req, res) {
             return res.status(400).json({ message: "Invalid time frame" });
         }
       } else {
+        let queryBuilder = Comment.find({
+          content: { $regex: query, $options: "i" },
+        })
+          .populate("linkedSubreddit", "name")
+          .populate(
+            "linkedPost",
+            "title upvotes comments createdAt authorName"
+          );
+
         switch (sortType) {
           case "relevance":
-            content = await Comment.find({
-              content: { $regex: query, $options: "i" },
-            });
+            content = await queryBuilder.exec();
             break;
           case "new":
-            content = await Comment.find({
-              content: { $regex: query, $options: "i" },
-            }).sort({ createdAt: -1 });
+            content = await queryBuilder.sort({ createdAt: -1 }).exec();
             break;
           case "top":
-            content = await Comment.find({
-              content: { $regex: query, $options: "i" },
-            }).sort({ upvotes: -1 });
+            content = await queryBuilder.sort({ upvotes: -1 }).exec();
             break;
           default:
             return res.status(400).json({ message: "Invalid sort parameter" });
@@ -613,17 +616,18 @@ async function searchHashtags(req, res) {
     const hashtag = decodeURIComponent(req.params.hashtag);
     console.log(`Hashtag parameter received: ${hashtag}`);
 
-    if (!hashtag || !hashtag.startsWith('#')) {
-      return res.status(400).json({ message: "Invalid search query. Must start with '#'" });
+    if (!hashtag || !hashtag.startsWith("#")) {
+      return res
+        .status(400)
+        .json({ message: "Invalid search query. Must start with '#'" });
     }
-
 
     const posts = await Post.find({
       content: { $in: [hashtag] },
     });
 
     const comments = await Comment.find({
-       content: { $in: [hashtag] },
+      content: { $in: [hashtag] },
     });
 
     if (posts.length === 0) {
@@ -633,7 +637,7 @@ async function searchHashtags(req, res) {
     }
 
     const postIds = posts.map((post) => post._id);
-    
+
     await Post.updateMany(
       { _id: { $in: postIds } },
       { $inc: { searchCount: 1 } }
@@ -647,7 +651,6 @@ async function searchHashtags(req, res) {
     res.status(500).json({ message: "Internal server error" });
   }
 }
-
 
 module.exports = {
   search,
