@@ -101,6 +101,16 @@ async function bannerAndAvatar(req, res) {
   }
 }
 
+/**
+ * Function to get the edited queues of a subreddit.
+ * @name editedQueues
+ * @function
+ * @memberof module:controller/community/modToolsController
+ * @param {import('express').Request} req - The request object.
+ * @param {import('express').Response} res - The response object.
+ * @returns {import('express').Response} The edited queues of a subreddit.
+*/
+
 async function editedQueues(req, res) {
   try {
     if (req.user) {

@@ -102,6 +102,14 @@ router.patch(
   modToolsController.bannerAndAvatar
 );
 
+/**
+ * Route to get the edited queues of a subreddit.
+ * @name GET /subreddit/editedQueues/:subreddit/:type/:sort
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
 
 router.get(
   "/editedQueues/:subreddit/:type/:sort",
