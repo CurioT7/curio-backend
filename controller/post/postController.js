@@ -89,11 +89,17 @@ async function createComments(req, res) {
           message: "Post is locked. Cannot add a comment.",
         });
       }
-
+      const subreddit = await Subreddit.findById(post.linkedSubreddit);
+      const mutedUsernames = subreddit.mutedUsers.map((user) => user.username);
+      if (mutedUsernames.includes(user.username)) {
+        return res.status(403).json({
+          success: false,
+          message: "User is muted in this subreddit. Cannot add a comment.",
+        });
+      }
       // Find the author of the post
       const postAuthor = await User.findOne({ username: post.authorName });
-
-      // Proceed to create the comment
+      // // Proceed to create the comment
       const comment = new Comment({
         content,
         authorName: user.username,
@@ -147,10 +153,8 @@ async function createComments(req, res) {
             sender: user,
             recipient: mentionedUser,
             type: "userMention",
-            message: `${user.username} mentioned you in a comment: ${comment.content}`,
+            message: comment.content,
             createdAt: new Date(),
-            isPrivate: true,
-            isSent: true,
             postId: post._id,
             linkedSubreddit: post.linkedSubreddit,
           });
@@ -163,6 +167,16 @@ async function createComments(req, res) {
         });
       }
 
+      const replyMessage = new Message({
+        sender: user,
+        recipient: postAuthor,
+        type: "postReply",
+        message: comment.content,
+        createdAt: new Date(),
+      });
+      postAuthor.receivedPrivateMessages.push(replyMessage._id);
+
+      await Promise.all([replyMessage.save(), postAuthor.save()]);
       return res.status(201).json({ success: true, comment });
     }
   } catch (err) {

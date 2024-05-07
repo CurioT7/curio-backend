@@ -8,13 +8,25 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 /**
- * Represents a user report.
- * @typedef {Object} UserReport
- * @property {string} reportedUsername - The username being reported.
- * @property {string} reportType - The type of report. Must be one of: "username", "profile image", "banner image", "bio".
- * @property {string} reportReason - The reason for the report. Must be one of the following: "harassment", "threatening violence", "hate", "minor abuse or sexualization", "sharing personal information", "non-consensual intimate media", "prohibited transaction", "impersonation", "copyright violation", "trademark violation", "self-harm or suicide", "spam".
+ * Mongoose schema for a user report.
+ * @typedef {Object} UserReportSchema
+ * @property {String} reporterUsername - The username of the user who reported the item.
+ * @property {String} reportedUsername - The username of the reported user.
+ * @property {String} reportType - The type of the reported item.
+ * @property {String} itemID - The ID of the reported item.
+ * @property {String} linkedSubreddit - The subreddit linked to the reported item (if applicable).
+ * @property {mongoose.Schema.Types.ObjectId} linkedItem - The ID of the linked item.
+ * @property {String} linkedItemType - The type of the linked item (Post, Comment, or User).
+ * @property {String} reportReason - The reason for the report.
+ * @property {String} reportDetails - Additional details provided in the report.
+ * @property {Boolean} isIgnored - Indicates whether the report has been ignored.
+ * @property {Boolean} isViewed - Indicates whether the report has been viewed.
  */
 
+/**
+ * Mongoose model for user reports.
+ * @type {UserReportModel}
+ */
 const userReportSchema = new Schema({
   reporterUsername: {
     type: String,
@@ -27,7 +39,15 @@ const userReportSchema = new Schema({
   reportType: {
     type: String,
     required: true,
-    enum: ["username", "display name", "profile image", "banner image", "bio","post","comment"],
+    enum: [
+      "username",
+      "display name",
+      "profile image",
+      "banner image",
+      "bio",
+      "post",
+      "comment",
+    ],
   },
   itemID: {
     type: String,
@@ -36,13 +56,23 @@ const userReportSchema = new Schema({
   linkedSubreddit: {
     type: String,
     default: null,
+    ref: "Subreddit",
+  },
+  linkedItem: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: "linkedItemType", 
+    default: null,
+  },
+  linkedItemType: {
+    type: String,
+    enum: ["Post", "Comment", "User"],
   },
   reportReason: {
     type: String,
     required: true,
     enum: [
-      "rule break"
-,     "harassment",
+      "rule break",
+      "harassment",
       "threatening violence",
       "hate",
       "minor abuse or sexualization",
@@ -54,11 +84,19 @@ const userReportSchema = new Schema({
       "trademark violation",
       "self-harm or suicide",
       "spam",
-      "contributer program violation"
+      "contributer program violation",
     ],
   },
   reportDetails: {
     type: String,
+  },
+  isIgnored: {
+    type: Boolean,
+    default: false,
+  },
+  isViewed: {
+    type: Boolean,
+    default: false,
   },
 });
 

@@ -28,7 +28,7 @@ const messageSchema = new Schema({
   },
   type: {
     type: String,
-    enum: ["message", "userMention"],
+    enum: ["message", "userMention", "postReply"],
   },
   subject: {
     type: String,
@@ -42,14 +42,6 @@ const messageSchema = new Schema({
     default: Date.now,
   },
   isRead: {
-    type: Boolean,
-    default: false,
-  },
-  isSent: {
-    type: Boolean,
-    default: false,
-  },
-  isPrivate: {
     type: Boolean,
     default: false,
   },
