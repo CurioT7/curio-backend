@@ -2,7 +2,6 @@
  * Mongoose schema for a ban entry.
  * @typedef {Object} BanSchema
  * @property {String} bannedUsername - The username of the banned user.
- * @property {String} linkedSubreddit - The name of the linked subreddit.
  * @property {String} violation - The reason for the ban.
  * @property {String} modNote - Additional notes from the moderator.
  * @property {String} userMessage - A message to be sent to the banned user.
@@ -20,11 +19,6 @@ const banSchema = new mongoose.Schema({
   bannedUsername: {
     type: String,
     ref: "User",
-  },
-  linkedSubreddit: {
-    type: String,
-    ref: "Subreddit",
-    default:null,
   },
   violation: {
     type: String,

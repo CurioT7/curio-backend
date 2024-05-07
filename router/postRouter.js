@@ -27,7 +27,7 @@ router.get("/comments/:postId", (req, res, next) => authenticate(req, res, next,
  * @returns {object} Express router instance.
  */
 
-router.patch("/updatecomments", postController.updatePostComments);
+router.patch("/updatecomments",authenticate, postController.updatePostComments);
 
 
 /**
@@ -100,5 +100,7 @@ router.post("/marknsfw",authenticate,postController.markPostNSFW);
  * @returns {object} Express router instance.
  */
 router.post("/unmarknsfw",authenticate, postController.unmarkPostNSFW);
+
+router.post("/scheduledPost",authenticate, postController.scheduledPost);
 
 module.exports = router;
