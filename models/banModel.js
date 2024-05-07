@@ -10,14 +10,6 @@
 
 /**
  * Mongoose model for bans.
- * @typedef {Object} BanModel
- * @property {Function} find - Finds bans based on the provided query.
- * @property {Function} findOne - Finds a single ban based on the provided query.
- * @property {Function} create - Creates a new ban entry.
- */
-
-/**
- * Mongoose model for bans.
  * @type {BanModel}
  */
 

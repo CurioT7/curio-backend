@@ -138,39 +138,6 @@ async function reportContent(req, res) {
   }
 }
 
-
-async function getAdminReports(req, res) {
-  try {
-    if (req.user) {
-      
-      const reports = await UserReports.find({isIgnored: false ,isViewed: false}).populate("linkedItem");
-      return res.status(200).json({ success: true, reports });
-    }
-  } catch (error) {
-    console.error("Error getting reports:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
-  }
-}
-
-async function getAdminReportsHistory(req, res) {
-  try {
-    if (req.user) {
-      const reports = await UserReports.find({
-        isIgnored: true,
-        isViewed: true,
-      }).populate("linkedItem");
-      return res.status(200).json({ success: true, reports });
-    }
-  } catch (error) {
-    console.error("Error getting reports:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
-  }
-}
-
 /**
  * Retrieves reported content for a certain subreddit and returns the whole post/comment.
  * @async
@@ -183,7 +150,7 @@ async function getSubredditReportedContent(req, res, next) {
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-
+//TODO if approved discard report
       const subredditName = decodeURIComponent(req.params.subreddit);
       const subreddit = await Subreddit.findOne({ name: subredditName });
       if (!subreddit) {
@@ -225,6 +192,14 @@ async function getSubredditReportedContent(req, res, next) {
   }
 }
 
+/**
+ * Takes action on a reported item by an admin.
+ * @async
+ * @function takeActionOnReport
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the action is taken on the report.
+ */
 async function takeActionOnReport(req, res) {
   try {
     if (req.user) {
@@ -252,6 +227,7 @@ async function takeActionOnReport(req, res) {
           }
            
         case "ban":
+          //TODO add ban to database and add more details
           const reportedUser = await User.findOne({
             username: report.reportedUsername,
           });
@@ -308,6 +284,56 @@ async function takeActionOnReport(req, res) {
     }
   } catch (error) {
     console.error("Error taking action on report:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+} 
+
+/**
+ * Retrieves admin reports that have not been ignored or viewed yet.
+ * @async
+ * @function getAdminReports
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves with the admin reports.
+ */
+async function getAdminReports(req, res) {
+  try {
+    if (req.user) {
+      const reports = await UserReports.find({
+        isIgnored: false,
+        isViewed: false,
+      }).populate("linkedItem");
+      return res.status(200).json({ success: true, reports });
+    }
+  } catch (error) {
+    console.error("Error getting reports:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
+/**
+ * Retrieves admin reports history, including ignored and viewed reports.
+ * @async
+ * @function getAdminReportsHistory
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves with the admin reports history.
+ */
+async function getAdminReportsHistory(req, res) {
+  try {
+    if (req.user) {
+      const reports = await UserReports.find({
+        isIgnored: true,
+        isViewed: true,
+      }).populate("linkedItem");
+      return res.status(200).json({ success: true, reports });
+    }
+  } catch (error) {
+    console.error("Error getting reports:", error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
