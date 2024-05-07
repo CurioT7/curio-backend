@@ -173,4 +173,6 @@ router.get("/about/muted/:subreddit", authenticate, subredditsController.getUser
  */
 router.post("/moderator/ban", authenticate, subredditsController.banUser);
 
+router.get("/about/unmoderated/:subreddit", authenticate, subredditsController.getUnmoderated);
+
 module.exports = router;
