@@ -6,30 +6,30 @@ const app = express();
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: {
-    origin: process.env.VITE_SERVER_HOST || "http://localhost:3000",
-    methods: ["GET", "POST"],
-  },
+  cors: process.env.VITE_FRONTEND_HOST,
 });
 
-const getRecieverSocket = (recieverId) => {
-  return io.sockets.sockets.get(recieverId);
+const getRecieverSocket = (username) => {
+  return io.sockets.sockets.get(username);
 };
 
 const userSocketMap = new Map();
 
 io.on("connection", (socket) => {
-  console.log("a user connected", socket.id);
-  const userId = socket.handshake.query.userId;
-  if (userId) {
-    userSocketMap.set(userId, socket.id);
+  //console.log("a user connected", socket.id);
+  const username = socket.handshake.query.username;
+  if (username) {
+    userSocketMap.set(username, socket.id);
+    console.log("userSocketMap", userSocketMap);
   }
 
-  io.emit("user-connected", Object.keys(userSocketMap));
+  // Emit the updated list of connected users to all clients
+  io.emit("user-connected", Array.from(userSocketMap.keys()));
+
   socket.on("disconnect", () => {
     console.log("user disconnected", socket.id);
-    userSocketMap.delete(userId);
-    io.emit("user-disconnected", userId);
+    userSocketMap.delete(username);
+    io.emit("user-disconnected", username);
   });
 });
 
