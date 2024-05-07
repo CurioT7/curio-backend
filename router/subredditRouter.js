@@ -185,4 +185,28 @@ router.post("/moderator/ban", authenticate, subredditsController.banUser);
  */
 router.post("/moderator/unban", authenticate, subredditsController.unbanUser);
 
+/**
+ * GET /r/:subredditName/about/banned - Get the list of banned users in a subreddit.
+ * 
+ * This endpoint allows moderators to retrieve the list of banned users in a subreddit.
+ * 
+ * @name GET /r/:subredditName/about/banned
+ * @function
+ * @memberof module:subredditsRouter
+ * @inner
+ * 
+ * @param {object} req - The request object.
+ * @param {object} req.user - The authenticated user object.
+ * @param {string} req.user.userId - The ID of the user performing the request.
+ * @param {object} req.params - The URL parameters.
+ * @param {string} req.params.subredditName - The name of the subreddit.
+ * @param {object} res - The response object.
+ * @returns {object} - The response JSON object containing the list of banned users and their details.
+ */
+router.get(
+  "/r/:subredditName/about/banned",
+  authenticate,
+  subredditsController.getBannedUsers
+);
+
 module.exports = router;

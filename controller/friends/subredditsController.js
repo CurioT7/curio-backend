@@ -1019,6 +1019,7 @@ async function banUser(req, res) {
       // Create a new ban entry
       const newBan = new ban({
         bannedUsername: userToBan,
+        linkedSubreddit: subredditName,
         violation,
         modNote,
         userMessage,
@@ -1113,6 +1114,71 @@ async function unbanUser(req, res) {
   }
 }
 
+/**
+ * Get the list of banned users in a subreddit.
+ * 
+ * This function retrieves the list of banned users in a subreddit.
+ * 
+ * @param {object} req - The request object.
+ * @param {object} req.params - The URL parameters.
+ * @param {string} req.params.subredditName - The name of the subreddit.
+ * @param {object} res - The response object.
+ * @returns {object} - The response JSON object containing the list of banned users.
+ * 
+ * @throws {404} - Not Found if the subreddit is not found.
+ * @throws {403} - Forbidden if the user does not have permission to view the banned users list.
+ * @throws {500} - Internal Server Error if an unexpected error occurs.
+ * 
+ * @memberof module:subredditsController
+ * @inner
+ */
+async function getBannedUsers(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      const { subredditName } = req.params;
+
+      // Find the subreddit
+      const subreddit = await Community.findOne({ name: subredditName });
+      if (!subreddit) {
+        return res.status(404).json({ message: "Subreddit not found" });
+      }
+
+      // Check if the user has moderator privileges
+      const isModerator = user.moderators.some(
+        (moderator) => moderator.subreddit === subredditName
+      );
+      if (!isModerator) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden, you must be a moderator!" });
+      }
+
+      const bannedUsers = [];
+
+      const banDetails = await ban.find({ linkedSubreddit: subredditName });
+      // Retrieve the list of banned users
+      for (const bannedUser of subreddit.bannedUsers) {
+        // Find user details by username
+        const userDetails = await User.findOne({
+          username: bannedUser.username,
+        });
+        if (userDetails.media) {
+          userDetails.media = await getFilesFromS3(userDetails.media);
+        }
+          bannedUsers.push({
+            banDetails: banDetails,
+            userDetails: userDetails,
+          });
+      }
+
+      return res.status(200).json({ bannedUsers });
+    }
+  } catch (error) {
+    console.error("Error retrieving banned users:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
 
 
 module.exports = {
@@ -1132,6 +1198,7 @@ module.exports = {
   leaveModerator,
   banUser,
   unbanUser,
+  getBannedUsers,
   getMineModeration,
   getUserMuted,
   getSubredditModerator,
