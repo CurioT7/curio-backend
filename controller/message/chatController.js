@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const Chat = require("../../models/chatModel");
 const User = require("../../models/userModel");
 const { getFilesFromS3, sendFileToS3 } = require("../../utils/s3-bucket");
@@ -154,27 +155,69 @@ async function getChatRequests(req, res) {
 
 async function getChat(req, res) {
   try {
-    const chat = await Chat.findById(req.params.chatId)
-      .populate({
-        path: "messages",
-        //sort messages by most recent
-        options: { sort: { timestamp: -1 } },
-        select: "message sender timestamp",
-        populate: {
-          path: "sender",
-          select: "username",
+    const chatId = new mongoose.Types.ObjectId(req.params.chatId);
+
+    const chat = await Chat.aggregate([
+      {
+        $match: {
+          _id: chatId,
         },
-      })
-      .populate({
-        path: "participants",
-        select: "username",
-      });
-    //get chat media
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "participants",
+          foreignField: "_id",
+          as: "participants",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "messages.sender",
+          foreignField: "_id",
+          as: "senders",
+        },
+      },
+      {
+        $project: {
+          messages: 1,
+          participants: { $arrayElemAt: ["$participants.username", 0] },
+          senders: {
+            $map: {
+              input: "$senders",
+              as: "sender",
+              in: {
+                username: "$$sender.username",
+              },
+            },
+          },
+        },
+      },
+      {
+        //sort messages by timestamp
+        $unwind: "$messages",
+      },
+      {
+        $sort: { "messages.timestamp": -1 },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          messages: { $push: "$messages" },
+          participants: { $first: "$participants" },
+          senders: { $first: "$senders" },
+        },
+      },
+    ]);
+    //get media sent in chat
     let media;
-    for (let i = 0; i < chat.messages.length; i++) {
-      if (chat.messages[i].media) {
-        media = await getFilesFromS3(chat.messages[i].media);
-        chat.messages[i].media = media;
+    //length of chat messages
+    const messagesLength = chat[0].messages.length;
+    for (let i = 0; i < messagesLength; i++) {
+      if (chat[0].messages[i].media) {
+        media = await getFilesFromS3(chat[0].messages[i].media);
+        chat[0].messages[i].media = media;
       }
     }
 
