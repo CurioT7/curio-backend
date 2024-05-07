@@ -444,7 +444,7 @@ async function getUserPosts(req, res) {
 
           case "random":
             // Fetch random posts
-             return Post.find({ linkedSubreddit: subredditDetails._id })
+            return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
               .skip(skip)
               .limit(limit)
@@ -526,7 +526,7 @@ async function getUserPosts(req, res) {
       const subredditPosts = await Promise.all(user.subreddits.map(fetchPosts));
 
       const flattenedPosts = subredditPosts.flat();
-      totalCount = await Post.countDocuments(flattenedPosts);
+       totalCount = await Post.countDocuments(flattenedPosts);
 
       let fetchedPosts = flattenedPosts;
       if (timeFrame) {
@@ -564,6 +564,9 @@ async function getUserPosts(req, res) {
             return res.status(400).json({ message: "Invalid time frame" });
         }
       }
+
+      // Apply pagination after time frame filtering
+      fetchedPosts = fetchedPosts.slice(skip, skip + limit);
 
       // Get vote status and subreddit details for each post
       const detailsArray = await getVoteStatusAndSubredditDetails(
@@ -752,7 +755,7 @@ async function guestHomePage(req, res) {
     page = page ? parseInt(page) : 1;
     const limit = 15; // Allow 15 items per page
     const skip = (page - 1) * limit;
-
+     
     const fetchPosts = async () => {
       switch (type) {
         case "best":
