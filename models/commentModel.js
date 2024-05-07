@@ -58,10 +58,6 @@ const commentSchema = new Schema({
     type: Number,
     default: 0,
   },
-  isEdited: {
-    type: Boolean,
-    default: false,
-  },
 });
 // Define a virtual property to calculate karma
 commentSchema.virtual("karma").get(function () {
