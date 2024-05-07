@@ -75,7 +75,14 @@ router.get(
   reportController.getAdminReportsHistory
 );
 
-
+/**
+ * POST request to take action on a reported item by an admin.
+ * @async
+ * @function takeActionOnReportRoute
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the action is taken on the report.
+ */
 router.post(
   "/admin/action",
   authenticate,

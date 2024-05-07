@@ -162,4 +162,15 @@ router.get("/mine/moderator", authenticate, subredditsController.getMineModerati
  */
 router.get("/about/muted/:subreddit", authenticate, subredditsController.getUserMuted);
 
+
+/**
+ * POST request to ban a user from a subreddit.
+ * @async
+ * @function banUserRoute
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the user is banned.
+ */
+router.post("/moderator/ban", authenticate, subredditsController.banUser);
+
 module.exports = router;
