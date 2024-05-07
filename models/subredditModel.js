@@ -155,26 +155,6 @@ const subredditSchema = new Schema({
         type: String,
         enum: ["creator", "moderator"],
       },
-       manageUsers: {
-        type: Boolean,
-        default: false,
-      },
-      createLiveChats: {
-        type: Boolean,
-        default: false,
-      },
-      manageSettings: {
-        type: Boolean,
-        default: false,
-      },
-      managePostsAndComments: {
-        type: Boolean,
-        default: false,
-      },
-      everything: {
-        type: Boolean,
-        default: false,
-      },
     },
   ],
   suggestedSort: {

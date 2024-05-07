@@ -1,9 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const subredditsController = require("../controller/friends/subredditsController");
-const modToolsController = require("../controller/community/modToolsController");
-const { authenticate } = require("../middlewares/auth");
-const { multer, upload, storage } = require("../utils/s3-bucket");
+const { authenticate } = require("../middlewares/auth");    
 const { auth } = require("google-auth-library");
 /**
  * Route to create a new subreddit.
@@ -13,7 +11,6 @@ const { auth } = require("google-auth-library");
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-
 router.post(
   "/createSubreddit",
   authenticate,
@@ -72,8 +69,7 @@ router.get(
  */
 router.post(
   "/moderationInvite/:subreddit",
-  authenticate,
-  subredditsController.createModeration
+  authenticate, subredditsController.createModeration
 );
 
 /**
@@ -84,7 +80,6 @@ router.post(
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-
 router.patch(
   "/removemoderator/:subreddit",
   authenticate,
@@ -99,27 +94,10 @@ router.patch(
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-
 router.post(
   "/acceptmoderation/:subreddit",
   authenticate,
   subredditsController.acceptInvitation
-);
-
-/**
-  * Route to update the banner or icon of a subreddit.
-  * @name PATCH /subreddit/bannerAndAvatar/:subreddit
-  * @function
-  * @memberof module:routes/subreddit
-  * @param {string} path - Express path
-  * @param {callback} middleware - Express middleware.
-*/
-
-router.patch(
-  "/bannerAndAvatar/:subreddit",
-  authenticate,
-  upload.single("media"),
-  modToolsController.bannerAndAvatar
 );
 
 /**
@@ -131,7 +109,6 @@ router.patch(
  * @param {callback} middleware - Express middleware.
  */
 router.post("/declinemoderation/:subreddit", authenticate, subredditsController.declineInvitation);
-
 /**
  * Route to get the moderators of a subreddit.
  * @name GET /subreddit/getModerators/:subreddit
@@ -140,23 +117,7 @@ router.post("/declinemoderation/:subreddit", authenticate, subredditsController.
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-
 router.get("/about/moderators/:subreddit", subredditsController.getModerators);
-
-/**
- * Route to get the edited queues of a subreddit.
- * @name GET /subreddit/editedQueues/:subreddit/:type/:sort
- * @function
- * @memberof module:routes/subreddit
- * @param {string} path - Express path
- * @param {callback} middleware - Express middleware.
- */
-router.get(
-  "/editedQueues/:subreddit/:type/:sort",
-  authenticate,
-  modToolsController.editedQueues
-);
-
 
 /**
  * Route to get the moderation queue of a subreddit.
@@ -268,7 +229,5 @@ router.get(
   authenticate,
   subredditsController.getBannedUsers
 );
-
-router.get("/about/unmoderated/:subreddit", authenticate, subredditsController.getUnmoderated);
 
 module.exports = router;
