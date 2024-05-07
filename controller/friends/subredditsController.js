@@ -127,7 +127,7 @@ async function createSubreddit(data, user) {
  */
 async function newSubreddit(req, res) {
   try {
-    const user = await await User.findById(req.user.userId);
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({
@@ -323,10 +323,14 @@ async function createModeration(req, res) {
       recipient: moderationName,
       subreddit: subreddit.name,
       role: role,
+      manageUsers: req.body.manageUsers,
+      createLiveChats: req.body.createLiveChats,
+      manageSettings: req.body.manageSettings,
+      managePostsAndComments: req.body.managePostsAndComments,
+      everything: req.body.everything,
     });
     await invitation.save();
 
-  
     return res.status(200).json({
       success: true,
       message: "Moderator invitation sent successfully",
@@ -376,6 +380,11 @@ async function acceptInvitation(req, res) {
     subreddit.moderators.push({
       username: user.username,
       role: invitation.role,
+      manageUsers: invitation.manageUsers,
+      createLiveChats: invitation.createLiveChats,
+      manageSettings: invitation.manageSettings,
+      managePostsAndComments: invitation.managePostsAndComments,
+      everything: invitation.everything,
     });
     await subreddit.save();
 
@@ -387,6 +396,11 @@ async function acceptInvitation(req, res) {
           moderators: {
             subreddit: subreddit.name,
             role: invitation.role,
+            manageUsers: invitation.manageUsers,
+            createLiveChats: invitation.createLiveChats,
+            manageSettings: invitation.manageSettings,
+            managePostsAndComments: invitation.managePostsAndComments,
+            everything: invitation.everything,
           },
           subreddits: {
             subreddit: subreddit.name,
@@ -872,12 +886,37 @@ async function getMineModeration(req, res) {
         success: false,
         message: "User not found",
       });
+
     const isModerator = await Community.find({
       moderators: { $elemMatch: { username: user.username } },
     });
+const subredditsWithPermissions = isModerator.map((subreddit) => {
+  const moderatorInfo = subreddit.moderators.find(
+    (moderator) => moderator.username === user.username
+  );
+
+  return {
+    name: subreddit.name,
+    role: moderatorInfo.role,
+    permissions: {
+      manageUsers: moderatorInfo ? moderatorInfo.manageUsers || false : false,
+      createLiveChats: moderatorInfo
+        ? moderatorInfo.createLiveChats || false
+        : false,
+      manageSettings: moderatorInfo
+        ? moderatorInfo.manageSettings || false
+        : false,
+      managePostsAndComments: moderatorInfo
+        ? moderatorInfo.managePostsAndComments || false
+        : false,
+      everything: moderatorInfo ? moderatorInfo.everything || false : false,
+    },
+  };
+});
+
     return res.status(200).json({
       success: true,
-      subreddits: isModerator,
+      subreddits: subredditsWithPermissions,
     });
   } catch (error) {
     return res.status(500).json({
@@ -887,6 +926,7 @@ async function getMineModeration(req, res) {
     });
   }
 }
+
 async function getUserMuted(req, res) {
   try {
     const user = await User.findById(req.user.userId);
