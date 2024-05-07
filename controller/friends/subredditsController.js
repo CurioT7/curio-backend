@@ -1124,6 +1124,71 @@ async function getUnmoderated(req, res) {
   }
 }
 
+async function editPermissions(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const decodedURI = decodeURIComponent(req.params.subreddit);
+    const subreddit = await Community.findOne({ name: decodedURI });
+   
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    if (!subreddit) {
+      return res.status(404).json({
+        success: false,
+        message: "Subreddit not found",
+      });
+    }
+     const isCreator = subreddit.moderators.some(
+       (mod) => mod.username === user.username && mod.role === "creator"
+    );
+    if (!isCreator) {
+      return res.status(403).json({
+        success: false,
+        message: "Only the creator of the subreddit can edit permissions",
+      });
+    }
+    const {
+      moderationName,
+      manageUsers,
+      createLiveChats,
+      manageSettings,
+      managePostsAndComments,
+      everything,
+    } = req.body;
+    const moderator = subreddit.moderators.find(
+      (mod) => mod.username === moderationName
+    );
+    if (!moderator) {
+      return res.status(404).json({
+        success: false,
+        message: "Moderator not found",
+      });
+    }
+    moderator.manageUsers = manageUsers;
+    moderator.createLiveChats = createLiveChats;
+    moderator.manageSettings = manageSettings;
+    moderator.managePostsAndComments = managePostsAndComments;
+    moderator.everything = everything;
+    await subreddit.save();
+    return res.status(200).json({
+      success: true,
+      message: "Permissions updated successfully",
+    });
+  
+  } catch (error)
+  {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+}
+
+}
 
 module.exports = {
   newSubreddit,
@@ -1145,4 +1210,5 @@ module.exports = {
   getUserMuted,
   getSubredditModerator,
   getUnmoderated,
+  editPermissions,
 };
