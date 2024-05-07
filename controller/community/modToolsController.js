@@ -2,6 +2,7 @@ require("dotenv").config();
 const Subreddit = require("../../models/subredditModel");
 const User = require("../../models/userModel");
 const Post = require("../../models/postModel");
+const Comment = require("../../models/commentModel"); 
 const { getFilesFromS3, sendFileToS3 } = require("../../utils/s3-bucket");
 
 
@@ -107,17 +108,68 @@ async function editedQueues(req, res) {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+
       const subredditName = decodeURIComponent(req.params.subreddit);
       const subreddit = await Subreddit.findOne({ name: subredditName });
       if (!subreddit) {
         return res.status(404).json({ message: "Subreddit not found" });
       }
+
       const isModerator = subreddit.moderators.some(
         (moderator) => moderator.username === user.username
       );
       if (!isModerator) {
         return res.status(403).json({ message: "You are not authorized to see the edited queues of this subreddit" });
       }
+
+      const type = req.params.type;
+      const sort = req.params.sort;
+
+      if (type !== "post" && type !== "comment" && type !== "all") {
+        return res.status(400).json({ message: "Invalid type parameter" });
+      }
+      if (sort !== "new" && sort !== "old") {
+        return res.status(400).json({ message: "Invalid sort parameter" });
+      }
+
+      let responseData = {};
+
+      if (type === "all" && sort === "new") {
+        const posts = await Post.find({ linkedSubreddit: subreddit._id, isEdited: true });
+        const comments = await Comment.find({ linkedSubreddit: subreddit._id, isEdited: true });
+        posts.sort((a, b) => b.createdAt - a.createdAt);
+        comments.sort((a, b) => b.createdAt - a.createdAt);
+        responseData = { posts, comments };
+
+      } else if (type === "all" && sort === "old") {
+        const posts = await Post.find({ linkedSubreddit: subreddit._id, isEdited: true });
+        const comments = await Comment.find({ linkedSubreddit: subreddit._id, isEdited: true });
+        posts.sort((a, b) => a.createdAt - b.createdAt);
+        comments.sort((a, b) => a.createdAt - b.createdAt);
+        responseData = { posts, comments };
+
+      } else if (type === "post" && sort === "new") {
+        const posts = await Post.find({ linkedSubreddit: subreddit._id, isEdited: true });
+        posts.sort((a, b) => b.createdAt - a.createdAt);
+        responseData = { posts };
+
+      } else if (type === "post" && sort === "old") {
+        const posts = await Post.find({ linkedSubreddit: subreddit._id, isEdited: true });
+        posts.sort((a, b) => a.createdAt - b.createdAt);
+        responseData = { posts };
+
+      } else if (type === "comment" && sort === "new") {
+        const comments = await Comment.find({ linkedSubreddit: subreddit._id, isEdited: true });
+        comments.sort((a, b) => b.createdAt - a.createdAt);
+        responseData = { comments };
+        
+      }
+      else if (type === "comment" && sort === "old") {
+        const comments = await Comment.find({ linkedSubreddit: subreddit._id, isEdited: true });
+        comments.sort((a, b) => a.createdAt - b.createdAt);
+        responseData = { comments };
+      }
+      return res.status(200).json({ success: true, data: responseData });
     }
   }
   catch (err) {

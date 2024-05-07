@@ -11,9 +11,8 @@ const {
 require("dotenv").config();
 const Notification = require("../../models/notificationModel");
 const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
-const schedule = require('node-schedule');
+const schedule = require("node-schedule");
 const { DateTime } = require("luxon");
-
 
 // Function to retrieve all comments for a post.
 /**
@@ -204,6 +203,7 @@ async function updatePostComments(req, res) {
       }
 
       comment.content = content;
+      comment.isEdited = true;
       await comment.save();
       return res.status(200).json({ success: true, comment });
     }
@@ -427,37 +427,50 @@ async function unmarkPostNSFW(req, res) {
 
 async function scheduledPost(req, res) {
   try {
-    if(req.user){
+    if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      const { type, title, content, subreddit, isNSFW, isSpoiler, isOC, sendReplies, options, voteLength,scheduledPublishDate,scheduledTimezone,repeatOption, contestMode, postAsAutoModerator } = req.body;
+      const {
+        type,
+        title,
+        content,
+        subreddit,
+        isNSFW,
+        isSpoiler,
+        isOC,
+        sendReplies,
+        options,
+        voteLength,
+        scheduledPublishDate,
+        scheduledTimezone,
+        repeatOption,
+        contestMode,
+      } = req.body;
       if (!type) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Type is required" });
-     }
+        return res
+          .status(400)
+          .json({ success: false, message: "Type is required" });
+      }
 
-     if (!["post", "poll", "link"].includes(type)) {
-      return res.status(400).json({
-        success: false,
-        message: "Type must be one of 'post', 'poll', 'link'",
-      });
-     }
-     let subredditname; 
+      if (!["post", "poll", "link"].includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: "Type must be one of 'post', 'poll', 'link'",
+        });
+      }
+      let subredditname;
       if (subreddit) {
         subredditname = await Subreddit.findOne({ name: subreddit });
         if (!subredditname) {
           return res
             .status(404)
             .json({ success: false, message: "Subreddit not found" });
-        } 
+        }
       }
 
-      if (
-        content && content.startsWith("http") && type === "link"
-      ) {
+      if (content && content.startsWith("http") && type === "link") {
         // Regular expression to match URLs like www.example.com
         const urlPattern =
           /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})(\/\S*)?$/;
@@ -478,14 +491,20 @@ async function scheduledPost(req, res) {
 
       let scheduledTime;
       if (scheduledPublishDate && scheduledTimezone) {
-        scheduledTime = DateTime.fromISO(scheduledPublishDate, { zone: scheduledTimezone });
+        scheduledTime = DateTime.fromISO(scheduledPublishDate, {
+          zone: scheduledTimezone,
+        });
         if (!scheduledTime.isValid) {
-          return res.status(400).json({ success: false, message: "Invalid scheduled date/time or timezone" });
+          return res
+            .status(400)
+            .json({
+              success: false,
+              message: "Invalid scheduled date/time or timezone",
+            });
         }
         // Convert scheduled time to UTC for scheduling
         scheduledTime = scheduledTime.toUTC();
       }
-
 
       const post = new Post({
         title,
@@ -503,26 +522,32 @@ async function scheduledPost(req, res) {
         scheduledTimezone,
         repeatOption,
         contestMode,
-        postAsAutoModerator,
-        isScheduled: !!scheduledTime
+        isScheduled: !!scheduledTime,
       });
       await post.save();
 
       if (scheduledTime) {
         schedule.scheduleJob(scheduledTime.toJSDate(), async () => {
-          const postToPublish = await Post.findOneAndUpdate({ _id: post._id }, { isScheduled: false });
-            await postToPublish.save();
-            console.log(`Scheduled post "${postToPublish.title}" published at ${scheduledTime.toISO()}`);
+          const postToPublish = await Post.findOneAndUpdate(
+            { _id: post._id },
+            { isScheduled: false }
+          );
+          await postToPublish.save();
+          console.log(
+            `Scheduled post "${
+              postToPublish.title
+            }" published at ${scheduledTime.toISO()}`
+          );
         });
       }
-     
+
       return res.status(201).json({
         success: true,
         message: " Scheduled Post created successfully",
         post,
         postId: post._id,
       });
-  }
+    }
   } catch (err) {
     console.log(err);
     return res
@@ -530,7 +555,6 @@ async function scheduledPost(req, res) {
       .json({ success: false, message: "Internal server error." });
   }
 }
-
 
 module.exports = {
   getPostComments,

@@ -27,7 +27,7 @@ router.get("/comments/:postId", (req, res, next) => authenticate(req, res, next,
  * @returns {object} Express router instance.
  */
 
-router.patch("/updatecomments", postController.updatePostComments);
+router.patch("/updatecomments",authenticate, postController.updatePostComments);
 
 
 /**

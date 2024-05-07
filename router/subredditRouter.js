@@ -104,7 +104,7 @@ router.patch(
 
 
 router.get(
-  "/editedQueues/:subreddit",
+  "/editedQueues/:subreddit/:type/:sort",
   authenticate,
   modToolsController.editedQueues
 );

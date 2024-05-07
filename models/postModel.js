@@ -176,10 +176,6 @@ const postSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  postAsAutoModerator:{
-    type: Boolean,
-    default: false,
-  },
   isEdited: {
     type: Boolean,
     default: false,
