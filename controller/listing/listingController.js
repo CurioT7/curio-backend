@@ -400,7 +400,7 @@ async function getUserPosts(req, res) {
       const timeFrame = req.params.timeframe;
       let page = req.query?.page;
       page = page ? parseInt(page) : 1;
-      const limit = 10; // Allow 20 items per page
+      const limit = 15; // Allow 15 items per page
       const skip = (page - 1) * limit;
 
       const fetchPosts = async (subreddit) => {
@@ -750,7 +750,7 @@ async function guestHomePage(req, res) {
     const timeFrame = req.params.timeframe;
     let page = req.query?.page;
     page = page ? parseInt(page) : 1;
-    const limit = 10; // Allow 10 items per page
+    const limit = 15; // Allow 15 items per page
     const skip = (page - 1) * limit;
 
     const fetchPosts = async () => {
