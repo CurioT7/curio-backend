@@ -153,13 +153,6 @@ async function login(req, res) {
       message: "Invalid credentials, check username or password",
     });
   }
-
-  if (user.isBanned) {
-    return res.status(403).json({
-      success: false,
-      message: "User is banned",
-    });
-  }
   //generate token
   const accessToken = await generateToken(user._id);
   return res.status(200).json({
