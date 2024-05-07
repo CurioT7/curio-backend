@@ -162,4 +162,6 @@ router.get("/mine/moderator", authenticate, subredditsController.getMineModerati
  */
 router.get("/about/muted/:subreddit", authenticate, subredditsController.getUserMuted);
 
+router.get("/about/unmoderated/:subreddit", authenticate, subredditsController.getUnmoderated);
+
 module.exports = router;
