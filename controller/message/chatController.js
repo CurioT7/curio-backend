@@ -221,7 +221,20 @@ async function getChat(req, res) {
       }
     }
 
-    const user = await User.findById(req.user.userId);
+    let profilePicture;
+    //get profile picture of each participant
+    const participants = chat[0].participants.split(","); // Assuming participants are separated by commas
+
+    let profilePictures = [];
+    for (let i = 0; i < participants.length; i++) {
+      const user = await User.findOne({ username: participants[i].trim() });
+      if (user.profilePicture) {
+        profilePicture = await getFilesFromS3(user.profilePicture);
+        profilePictures.push({ username: user.username, profilePicture });
+      }
+      chat[0].participants = profilePictures;
+    }
+
     return res.status(200).json({
       success: true,
       chat,
