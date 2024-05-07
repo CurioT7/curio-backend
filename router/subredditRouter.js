@@ -140,4 +140,6 @@ router.patch("/unmuteUser/:subreddit", authenticate, subredditsController.unMute
  * @param {callback} middleware - Express middleware
  */
 router.patch("/leaveModerator/:subreddit", authenticate, subredditsController.leaveModerator);
+
+router.get("/mine/moderator", authenticate, subredditsController.getMineModeration);
 module.exports = router;
