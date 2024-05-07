@@ -8,16 +8,6 @@ const crypto = require("crypto");
 const sharp = require("sharp");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
-const multer = require("multer");
-const storage = multer.memoryStorage();
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10 MB
-  },
-});
-
 // AWS S3 configuration
 const bucketName = process.env.BUCKET_NAME;
 const bucketRegion = process.env.BUCKET_REGION;
@@ -40,6 +30,7 @@ const s3 = new S3Client({
 async function sendFileToS3(file) {
   //resize image
   const buffer = file.buffer;
+  console.log(file.mimetype.split("/")[1]);
 
   //send media to s3
 
@@ -49,6 +40,8 @@ async function sendFileToS3(file) {
     Body: buffer,
     ContentType: file.mimetype,
   };
+
+  console.log(uploadParams.Key);
 
   const command = new PutObjectCommand(uploadParams);
   try {
@@ -82,4 +75,4 @@ async function getFilesFromS3(imageKey) {
 const randomImageName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
 
-module.exports = { s3, sendFileToS3, getFilesFromS3, multer, upload, storage };
+module.exports = { s3, sendFileToS3, getFilesFromS3 };

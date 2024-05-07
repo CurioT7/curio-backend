@@ -21,26 +21,6 @@ const invitationSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  manageUsers: {
-    type: Boolean,
-    default: false,
-  },
-  createLiveChats: {
-    type: Boolean,
-    default: false,
-  },
-  manageSettings: {
-    type: Boolean,
-    default: false,
-  },
-  managePostsAndComments: {
-    type: Boolean,
-    default: false,
-  },
-  everything: {
-    type: Boolean,
-    default: false,
-  },
 });
 
 const Invitation = mongoose.model("Invitation", invitationSchema);

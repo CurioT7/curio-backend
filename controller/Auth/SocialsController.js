@@ -92,11 +92,6 @@ const googleAuth = async (req, res) => {
         await webSignup(response.data, "google");
       }
       user = await User.findOne({ googleId: response.data.user_id });
-      if (user.isBanned) {
-        return res
-          .status(403)
-          .json({ success: false, message: "User is banned" });
-      }
       const accessToken = await generateToken(user._id);
       if (user.gender === null) {
         return res
