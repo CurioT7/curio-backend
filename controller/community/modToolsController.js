@@ -208,11 +208,10 @@ async function communitySettings(req, res) {
       if (!isModerator) {
         return res.status(403).json({ message: "You are not authorized to update the settings of this subreddit" });
       }
-      const communitySettings = await CommunitySettings.findOne({ name: subredditName });
+        let communitySettings;
+        communitySettings = await CommunitySettings.findOne({ name: subredditName });
         if (!communitySettings) {
-          communitySettings = new CommunitySettings({
-            name: subredditName,
-          });
+           communitySettings = new CommunitySettings({name: subredditName, description: subreddit.description, creator: subreddit.moderators});
           await communitySettings.save();
         }    
       if (subreddit.icon) {
@@ -234,10 +233,8 @@ async function communitySettings(req, res) {
 
 
 
-
 module.exports = {
    bannerAndAvatar,
    editedQueues,
    communitySettings,
-
 };

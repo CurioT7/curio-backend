@@ -217,4 +217,14 @@ router.get("/about/unmoderated/:subreddit", authenticate, subredditsController.g
 
 router.post("/moderator/editPermissions/:subreddit", authenticate, subredditsController.editPermissions);
 
+/**
+ * Route to get the community settings of a subreddit.
+ * @name GET /subreddit/communitySettings/:subreddit
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware
+ */
+router.get("/communitySettings/:subreddit", authenticate,modToolsController.communitySettings);
+
 module.exports = router;

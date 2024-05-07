@@ -102,7 +102,7 @@ const communitySettingsSchema = new Schema({
   avatar: {
     type: String,
   },
-  mod: {
+  creator: {
     type: [Schema.Types.ObjectId],
     ref: "User",
   },
