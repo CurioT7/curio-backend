@@ -234,6 +234,42 @@ async function getTopCommunities(req, res) {
       });
   }
 }
+
+/**
+ * Get the list of moderated communities by a user.
+ * 
+ * This function retrieves the list of moderated communities by a user based on their username.
+ * 
+ * @param {object} req - The request object.
+ * @param {object} req.params - The URL parameters.
+ * @param {string} req.params.username - The username of the user.
+ * @param {object} res - The response object.
+ * @returns {object} - The response JSON object containing the list of moderated communities.
+ * 
+ * @throws {404} - Not Found if the user is not found.
+ * @throws {500} - Internal Server Error if an unexpected error occurs.
+ */
+async function getModeratedCommunitiesByUsername(req, res) {
+  try {
+    const { username } = req.params;
+
+    // Find the user by username
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Retrieve the list of moderated communities
+    const moderatedCommunities = user.moderators.map(moderator => moderator.subreddit);
+
+    return res.status(200).json({ moderatedCommunities });
+  } catch (error) {
+    console.error("Error retrieving moderated communities:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
 /**
  * Create a new moderation for a subreddit.
  * @async
@@ -243,7 +279,6 @@ async function getTopCommunities(req, res) {
  * @function
  * @name createModeration
  * @returns {object} response
- 
  */
 async function createModeration(req, res) {
   try {
@@ -525,7 +560,9 @@ async function removeModeration(req, res) {
       error: error.message,
     });
   }
-}async function getModerators(req, res) {
+}
+
+async function getModerators(req, res) {
   try {
     const decodedURL = decodeURIComponent(req.params.subreddit); 
     const subreddit = await Community.findOne({ name: decodedURL });
@@ -1187,6 +1224,7 @@ module.exports = {
   createSubreddit,
   getSubredditInfo,
   getTopCommunities,
+  getModeratedCommunitiesByUsername,
   createModeration,
   removeModeration,
   acceptInvitation,

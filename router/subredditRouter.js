@@ -39,6 +39,27 @@ router.get("/r/:subreddit", subredditsController.getSubredditInfo);
 router.get("/best/communities", subredditsController.getTopCommunities);
 
 /**
+ * GET /moderatedSubreddits/:username - Get the list of moderated communities by a user.
+ * 
+ * This endpoint allows to retrieve the list of moderated communities by a user based on their username.
+ * 
+ * @name GET /moderatedSubreddits/:username
+ * @function
+ * @memberof module:subredditsRouter
+ * @inner
+ * 
+ * @param {object} req - The request object.
+ * @param {object} req.params - The URL parameters.
+ * @param {string} req.params.username - The username of the user.
+ * @param {object} res - The response object.
+ * @returns {object} - The response JSON object containing the list of moderated communities.
+ */
+router.get(
+  "/moderatedSubreddits/:username",
+  subredditsController.getModeratedCommunitiesByUsername
+);
+
+/**
  * Route to Inivite a user to moderate a subreddit.
  * @name POST /subreddit/moderationInvite/:subreddit
  * @function
@@ -46,7 +67,6 @@ router.get("/best/communities", subredditsController.getTopCommunities);
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
- 
 router.post(
   "/moderationInvite/:subreddit",
   authenticate, subredditsController.createModeration
@@ -79,6 +99,7 @@ router.post(
   authenticate,
   subredditsController.acceptInvitation
 );
+
 /**
  * Route to decline a moderation invitation.
  * @name POST /subreddit/declinemoderation/:subreddit
