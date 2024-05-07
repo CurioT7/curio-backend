@@ -173,6 +173,7 @@ async function getChat(req, res) {
       },
       {
         $lookup: {
+          //sender username
           from: "users",
           localField: "messages.sender",
           foreignField: "_id",
@@ -196,8 +197,10 @@ async function getChat(req, res) {
             $map: {
               input: "$senders",
               as: "sender",
+              //username and id
               in: {
                 username: "$$sender.username",
+                id: "$$sender._id",
               },
             },
           },
@@ -219,6 +222,7 @@ async function getChat(req, res) {
         },
       },
     ]);
+
     //get media sent in chat
     let media;
     //length of chat messages
@@ -434,6 +438,7 @@ async function sendMessage(req, res) {
       sender: req.user.userId,
       message: req.body.message && req.body.message,
       media: media && media,
+      status: "sent",
     });
     await chat.save();
 
@@ -443,9 +448,12 @@ async function sendMessage(req, res) {
     );
     const recipientSocket = getRecieverSocket(recipient);
     if (recipientSocket) {
-      recipientSocket.emit("new-message", { chatId: chat._id });
+      recipientSocket.emit("new-message", {
+        chatId: chat._id,
+        message: newMessage,
+      });
       //change message to delivered
-      chat.messages[chat.messages.length - 1].isDelivered = true;
+      chat.messages[chat.messages.length - 1].status = "delivered";
       await chat.save();
     }
     return res.status(201).json({
