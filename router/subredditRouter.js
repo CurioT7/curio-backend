@@ -230,4 +230,6 @@ router.get(
   subredditsController.getBannedUsers
 );
 
+router.post("/moderator/editPermissions/:subreddit", authenticate, subredditsController.editPermissions);
+
 module.exports = router;
