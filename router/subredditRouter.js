@@ -96,7 +96,7 @@ router.post("/declinemoderation/:subreddit", authenticate, subredditsController.
  * @param {string} path - Express path
  * @param {callback} middleware - Express middleware.
  */
-router.get("/getModerators/:subreddit", subredditsController.getModerators);
+router.get("/about/moderators/:subreddit", subredditsController.getModerators);
 
 /**
  * Route to get the moderation queue of a subreddit.
@@ -141,5 +141,25 @@ router.patch("/unmuteUser/:subreddit", authenticate, subredditsController.unMute
  */
 router.patch("/leaveModerator/:subreddit", authenticate, subredditsController.leaveModerator);
 
+/** 
+ * Route to get the subreddits that the user moderates.
+ * @name GET /mine/moderator
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ */
+
 router.get("/mine/moderator", authenticate, subredditsController.getMineModeration);
+
+/**
+ * Route to get the userMudted subreddits.
+ * @name GET /about/muted
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware
+ * @returns {Promise<void>} - Promise that resolves once the operation is complete.
+ */
+router.get("/about/muted/:subreddit", authenticate, subredditsController.getUserMuted);
+
 module.exports = router;
