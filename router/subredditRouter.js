@@ -160,6 +160,6 @@ router.get("/mine/moderator", authenticate, subredditsController.getMineModerati
  * @param {callback} middleware - Express middleware
  * @returns {Promise<void>} - Promise that resolves once the operation is complete.
  */
-router.get("about/muted/:subreddit", authenticate, subredditsController.getUserMuted);
+router.get("/about/muted/:subreddit", authenticate, subredditsController.getUserMuted);
 
 module.exports = router;
