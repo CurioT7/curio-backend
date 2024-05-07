@@ -102,4 +102,12 @@ router.patch(
   modToolsController.bannerAndAvatar
 );
 
+
+router.get(
+  "/editedQueues/:subreddit",
+  authenticate,
+  modToolsController.editedQueues
+);
+
+
 module.exports = router;

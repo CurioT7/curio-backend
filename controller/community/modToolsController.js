@@ -100,4 +100,35 @@ async function bannerAndAvatar(req, res) {
   }
 }
 
-module.exports = { bannerAndAvatar };
+async function editedQueues(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const subredditName = decodeURIComponent(req.params.subreddit);
+      const subreddit = await Subreddit.findOne({ name: subredditName });
+      if (!subreddit) {
+        return res.status(404).json({ message: "Subreddit not found" });
+      }
+      const isModerator = subreddit.moderators.some(
+        (moderator) => moderator.username === user.username
+      );
+      if (!isModerator) {
+        return res.status(403).json({ message: "You are not authorized to see the edited queues of this subreddit" });
+      }
+    }
+  }
+  catch (err) {
+    console.log(err);
+    return res.status(500).json({ success: false, message: "server error" });
+  }
+}
+      
+
+
+module.exports = {
+   bannerAndAvatar,
+    editedQueues,
+   };

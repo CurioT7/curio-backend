@@ -337,6 +337,7 @@ async function editPostContent(req, res) {
       }
 
       post.content = content;
+      post.isEdited = true;
       await post.save();
 
       return res.status(200).json({ success: true, post });
