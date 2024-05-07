@@ -190,6 +190,7 @@ async function getChat(req, res) {
               as: "participant",
               in: {
                 username: "$$participant.username",
+                id: "$$participant._id",
               },
             },
           },
