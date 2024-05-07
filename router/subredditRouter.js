@@ -213,7 +213,25 @@ router.get("/about/muted/:subreddit", authenticate, subredditsController.getUser
  */
 router.post("/moderator/ban", authenticate, subredditsController.banUser);
 
+/**
+ *Router to get the unmoderated posts of a subreddit.
+  * @name GET /about/unmoderated/:subreddit
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware
+ * @returns {Promise<void>} - Promise that resolves once the operation is complete.  
+ */
 router.get("/about/unmoderated/:subreddit", authenticate, subredditsController.getUnmoderated);
+
+/**
+ *Route to edit the permissions of a moderator in a subreddit.
+ * @name POST /moderator/editPermissions/:subreddit
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware
+ * @returns {Promise<void>} - Promise that resolves once the operation is complete.  
+ */
 
 router.post("/moderator/editPermissions/:subreddit", authenticate, subredditsController.editPermissions);
 
