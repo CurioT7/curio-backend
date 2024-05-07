@@ -34,11 +34,11 @@ const communitySettingsSchema = new Schema({
   },
   allowsCrossposting: {
     type: Boolean,
-    default: True,
+    default: true,
   },
   archivePosts: {
     type: Boolean,
-    default: False,
+    default: false,
   },
   allowImages: {
     type: Boolean,
@@ -108,4 +108,6 @@ const communitySettingsSchema = new Schema({
   },
 });
 
-module.exports = mongoose.model("CommunitySettings", communitySettingsSchema);
+const CommunitySettings = mongoose.model("CommunitySettings", communitySettingsSchema);
+module.exports = CommunitySettings;
+
