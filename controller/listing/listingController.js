@@ -6,7 +6,10 @@ const User = require("../../models/userModel");
 const { filterHiddenPosts } = require("../../utils/posts");
 const { decode } = require("jsonwebtoken");
 const { getFilesFromS3 } = require("../../utils/s3-bucket");
-const { getVoteStatusAndSubredditDetails } = require("../../utils/posts.js");
+const {
+  getVoteStatusAndSubredditDetails,
+  filterRemovedComments,
+} = require("../../utils/posts.js");
 /**
  * Get a random post from a subreddit.
  * @async
@@ -748,8 +751,17 @@ async function sortComments(req, res) {
         .status(400)
         .json({ success: false, message: "Invalid comment type" });
   }
+try {
+  // Filter out removed comments
+  comments = await filterRemovedComments(comments);
 
   return res.status(200).json({ success: true, comments });
+} catch (error) {
+  console.error("Error filtering comments:", error);
+  return res
+    .status(500)
+    .json({ success: false, message: "Internal server error" });
+}
 }
 
 /**
