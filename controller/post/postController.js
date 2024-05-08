@@ -11,7 +11,10 @@ const {
 } = require("../../utils/tokens");
 require("dotenv").config();
 const Notification = require("../../models/notificationModel");
-const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
+const {
+  getVoteStatusAndSubredditDetails,
+  filterRemovedComments,
+} = require("../../utils/posts");
 const schedule = require("node-schedule");
 const { DateTime } = require("luxon");
 const moment = require('moment');
@@ -42,16 +45,18 @@ async function getPostComments(req, res) {
         return res.status(404).json({ message: "User not found" });
       }
       const postComments = await Comment.find({ linkedPost: post._id });
+      const filteredComments=await filterRemovedComments(postComments);
       const detailsArray = await getVoteStatusAndSubredditDetails(
-        postComments,
+        filteredComments,
         user
       );
-      const commentsWithDetails = postComments.map((comment, index) => {
+      const commentsWithDetails = filteredComments.map((comment, index) => {
         return { ...comment.toObject(), details: detailsArray[index] };
       });
       return res.status(200).json(commentsWithDetails);
     }
-    const postComments = await Comment.find({ linkedPost: post._id });
+    let postComments = await Comment.find({ linkedPost: post._id });
+    postComments = await filterRemovedComments(postComments);
     return res.status(200).json({ success: true, comments: postComments });
   } catch (err) {
     console.log(err);

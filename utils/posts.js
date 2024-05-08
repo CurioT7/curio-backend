@@ -4,17 +4,36 @@ const Subreddit = require("../models/subredditModel");
 const Comment = require("../models/commentModel");
 
 /**
- * Filters out hidden posts from the list of posts.
+ * Filters out hidden & removed posts from the list of posts.
  * @param {Array} posts - The list of posts to filter.
  * @param {Object} user - The user object.
- * @returns {Array} - The list of posts with hidden posts removed.
+ * @returns {Array} - The list of posts with hidden and removed posts removed.
  */
 
 async function filterHiddenPosts(posts, user) {
   try {
     const hiddenPosts = await user.hiddenPosts;
+    // Filter out hidden posts
     posts = await posts.filter((post) => !hiddenPosts.includes(post._id));
+    // Filter out removed posts where isRemoved is false
+    posts = await posts.filter((post) => !post.isRemoved);
     return posts;
+  } catch (err) {
+    throw new Error(err);
+  }
+}
+
+/**
+ * Filters out removed comments from the list of comments.
+ * @param {Array} comments - The list of comments to filter.
+ * @param {Object} user - The user object.
+ * @returns {Array} - The list of comments with removed comments removed.
+ */
+async function filterRemovedComments(comments) {
+  try {
+    // Filter out removed comments where isRemoved is false
+    comments = await comments.filter((comment) => !comment.isRemoved);
+    return comments;
   } catch (err) {
     throw new Error(err);
   }
@@ -115,4 +134,8 @@ async function getVoteStatusAndSubredditDetails(items, user) {
   return detailsArray;
 }
 
-module.exports = { filterHiddenPosts, getVoteStatusAndSubredditDetails };
+module.exports = {
+  filterHiddenPosts,
+  getVoteStatusAndSubredditDetails,
+  filterRemovedComments,
+};
