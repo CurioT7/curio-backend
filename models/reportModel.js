@@ -49,10 +49,6 @@ const userReportSchema = new Schema({
       "comment",
     ],
   },
-  itemID: {
-    type: String,
-    default: null,
-  },
   linkedSubreddit: {
     type: String,
     default: null,
