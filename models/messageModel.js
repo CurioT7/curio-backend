@@ -22,6 +22,13 @@ const messageSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Subreddit",
   },
+  commentId: {
+    type: Schema.Types.ObjectId,
+    ref: "Comment",
+  },
+  commentNumber: {
+    type: Number,
+  },
   senderSubreddit: {
     type: Schema.Types.ObjectId,
     ref: "Subreddit",

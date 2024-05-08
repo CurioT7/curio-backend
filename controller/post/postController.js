@@ -159,6 +159,8 @@ async function createComments(req, res) {
             createdAt: new Date(),
             postId: post._id,
             linkedSubreddit: post.linkedSubreddit,
+            commentId: comment._id,
+            commentNumber: post.comments.length,
           });
           mentionedUser.mentions.push(message._id);
           await Promise.all([
@@ -172,9 +174,13 @@ async function createComments(req, res) {
       const replyMessage = new Message({
         sender: user,
         recipient: postAuthor,
+        linkedSubreddict: post.linkedSubreddit,
+        postId: post._id,
+        commentId: comment._id,
         type: "postReply",
         message: comment.content,
         createdAt: new Date(),
+        commentNumber: post.comments.length,
       });
       postAuthor.receivedPrivateMessages.push(replyMessage._id);
 

@@ -298,6 +298,14 @@ const userSchema = new mongoose.Schema({
   media: {
     type: String,
   },
+  pendingChatRequests: [
+    {
+      chat: {
+        type: Schema.Types.ObjectId,
+        ref: "Chat",
+      },
+    },
+  ],
   access: {
     type: String,
     enum: ["user", "admin"],
