@@ -1154,85 +1154,106 @@ describe("getHistory function", () => {
 // });
 
 describe("spoilerPost function", () => {
-  // Successfully mark a post as a spoiler
-  it("should mark a post as a spoiler when valid post ID is provided", async () => {
-    const req = {
-      body: {
-        idpost: "validPostId",
+  let req, res, postFindOneAndUpdateMock;
+
+  beforeEach(() => {
+    req = {
+      headers: {
+        authorization:
+          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjAyM2Q4MDdmNzBkYjg4M2NjZjVhOTIiLCJpYXQiOjE3MTE0NzU0ODgsImV4cCI6MTcxMTU2MTg4OH0.Yvil4qLVPXSV7cB5RBhiki7hzqFreQIR8rEUICBqPaU",
       },
-      user: {
-        userId: "validUserId",
+      body: {
+        postId: "660227d61650ec9f41404c80",
       },
     };
-    const res = {
-      status: jest.fn().mockReturnThis(),
+    res = {
+      status: jest.fn(() => res),
       json: jest.fn(),
     };
-    const user = {
-      _id: "validUserId",
-    };
-    const post = {
-      _id: "validPostId",
-      authorID: "validUserId",
-      isSpoiler: false,
-      save: jest.fn(),
-    };
-    User.findById = jest.fn().mockResolvedValue(user);
-    Post.findOne = jest.fn().mockResolvedValue(post);
+    postFindOneAndUpdateMock = jest.fn(); // Define postFindOneAndUpdateMock as a mock function
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should return 404 if post is not found", async () => {
+    Post.findOne.mockResolvedValue(null);
 
     await spoilerPost(req, res);
 
-    expect(Post.findOne).toHaveBeenCalledWith({
-      _id: "validPostId",
-      authorID: user,
-    });
-    expect(post.isSpoiler).toBe(true);
-    expect(post.save).toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      message: "Post marked as spoiler successfully",
+      success: false,
+      message: "Post not found or you are not authorized to modify it",
+    });
+  });
+
+  it("should return 500 if post is unsuccessfully spoilered", async () => {
+    Post.findOne.mockResolvedValue({ _id: "post123", spoilered: false });
+    postFindOneAndUpdateMock.mockResolvedValue({
+      _id: "post123",
+      spoilered: true,
+    });
+
+    await spoilerPost(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Internal server error",
     });
   });
 });
 describe("unspoilerPost function", () => {
-  it("should mark a post as a unspoiler when valid post ID is provided", async () => {
-    const req = {
-      body: {
-        idpost: "validPostId",
+  let req, res, postFindOneAndUpdateMock;
+
+  beforeEach(() => {
+    req = {
+      headers: {
+        authorization:
+          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjAyM2Q4MDdmNzBkYjg4M2NjZjVhOTIiLCJpYXQiOjE3MTE0NzU0ODgsImV4cCI6MTcxMTU2MTg4OH0.Yvil4qLVPXSV7cB5RBhiki7hzqFreQIR8rEUICBqPaU",
       },
-      user: {
-        userId: "validUserId",
+      body: {
+        postId: "660227d61650ec9f41404c80",
       },
     };
-    const res = {
-      status: jest.fn().mockReturnThis(),
+    res = {
+      status: jest.fn(() => res),
       json: jest.fn(),
     };
-    const user = {
-      _id: "validUserId",
-    };
-    const post = {
-      _id: "validPostId",
-      authorID: "validUserId",
-      isSpoiler: true,
-      save: jest.fn(),
-    };
-    User.findById = jest.fn().mockResolvedValue(user);
-    Post.findOne = jest.fn().mockResolvedValue(post);
+    postFindOneAndUpdateMock = jest.fn(); // Define postFindOneAndUpdateMock as a mock function
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should return 404 if post is not found", async () => {
+    Post.findOne.mockResolvedValue(null);
 
     await unspoilerPost(req, res);
 
-    expect(Post.findOne).toHaveBeenCalledWith({
-      _id: "validPostId",
-      authorID: user,
-    });
-    expect(post.isSpoiler).toBe(false);
-    expect(post.save).toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      message: "Post unmarked as spoiler successfully",
+      success: false,
+      message: "Post not found or you are not authorized to modify it",
+    });
+  });
+
+  it("should return 500 if post is unsuccessfully unspoilered", async () => {
+    Post.findOne.mockResolvedValue({ _id: "post123", spoilered: true });
+    postFindOneAndUpdateMock.mockResolvedValue({
+      _id: "post123",
+      spoilered: false,
+    });
+
+    await unspoilerPost(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Internal server error",
     });
   });
 });

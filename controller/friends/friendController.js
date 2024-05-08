@@ -334,7 +334,7 @@ async function unFriendRequest(req, res) {
  * @returns {object} res
  */
 async function getUserInfo(req, res) {
-  const { friendUsername } = req.params; 
+  const { friendUsername } = req.params; // Extract friend's username from request parameters
   let media = {};
   if (friendUsername.media) {
     media = await getFilesFromS3(friendUsername.media);

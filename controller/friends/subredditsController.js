@@ -433,7 +433,6 @@ async function acceptInvitation(req, res) {
       }`,
       recipient: user.username,
       subreddits: subreddit.name,
-      invitiations: invitationId,
       type: "subreddit",
       isDisabled: disabledSubreddit,
     });
@@ -694,7 +693,6 @@ async function declineInvitation(req, res) {
       }`,
       recipient: invitation.sender,
       subredditName: invitation.subreddit,
-      invitiations: invitationId,
       type: "subreddit",
       isDisabled: disabledSubreddit,
     });
