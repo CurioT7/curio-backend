@@ -148,9 +148,13 @@ async function getAllNotificationsForUser(req, res) {
         }
       }
 
-      return res
-        .status(200)
-        .json({ success: true, notifications: filteredNotifications });
+      return res.status(200).json({
+        success: true,
+        notifications: filteredNotifications.map((notification) => ({
+          ...notification,
+          media: notification.media || null,
+        })),
+      });
     }
   } catch (error) {
     console.error("Error:", error);
