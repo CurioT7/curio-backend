@@ -371,5 +371,21 @@ router.post(
   subredditsController.moderatorRemove
 );
 
+/**
+ * Route handler for retrieving removed items from a subreddit's spam list.
+ * @param {object} req - The request object.
+ * @param {object} req.user - The user object from the request.
+ * @param {string} req.user.userId - The ID of the user making the request.
+ * @param {object} req.params - The parameters object from the request.
+ * @param {string} req.params.subredditName - The name of the subreddit to retrieve removed items from.
+ * @param {object} res - The response object.
+ * @returns {object} The response containing the removed items with populated _id field.
+ */
+router.get(
+  "/r/:subredditName/about/spam",
+  authenticate,
+  subredditsController.getRemovedItems
+);
+
 
 module.exports = router;

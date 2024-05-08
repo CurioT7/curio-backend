@@ -1733,6 +1733,56 @@ async function moderatorRemove(req, res) {
   }
 }
 
+/**
+ * Retrieves the removed items from the specified subreddit's removedItems array and populates the _id field based on the linkedItemType.
+ * @param {object} req - The request object.
+ * @param {object} req.user - The user object from the request.
+ * @param {string} req.user.userId - The ID of the user making the request.
+ * @param {object} req.params - The parameters object from the request.
+ * @param {string} req.params.subredditName - The name of the subreddit to retrieve removed items from.
+ * @param {object} res - The response object.
+ * @returns {object} The response containing the removed items with populated _id field.
+ */
+async function getRemovedItems(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+
+      // Assuming subredditName is available in the request body or parameters
+      const subredditName = req.params.subredditName;
+
+      // Find the subreddit
+      const subreddit = await Community.findOne({ name: subredditName });
+
+      if (!subreddit) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Subreddit not found" });
+      }
+
+
+      // Map through removedItems and populate each _id
+      const populatedRemovedItems = await Promise.all(
+        subreddit.removedItems.map(async (item) => {
+          if (item.linkedItemType === "Post") {
+            return await Post.findById(item._id);
+          } else if (item.linkedItemType === "Comment") {
+            return await Comment.findById(item._id);
+          }
+        })
+      );
+
+      return res
+        .status(200)
+        .json({ success: true, removedItems: populatedRemovedItems });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
 module.exports = {
   newSubreddit,
   availableSubreddit,
@@ -1759,4 +1809,5 @@ module.exports = {
   getBannedUsers,
   moderatorApprove,
   moderatorRemove,
+  getRemovedItems,
 };
