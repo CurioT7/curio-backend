@@ -550,7 +550,7 @@ async function removeModeration(req, res) {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error.message,
+      // error: error.message,
     });
   }
 
@@ -571,7 +571,7 @@ async function getModerators(req, res) {
     if (!subreddit) {
       return res.status(404).json({
         success: false,
-        message: "Subreddit is not found",
+        message: "Subreddit not found",
       });
     }
     const moderators = subreddit.moderators;
@@ -1062,7 +1062,7 @@ async function getSubredditModerator(req, res) {
     if (!subreddit) {
       return res.status(404).json({
         success: false,
-        message: "Subreddit is not found",
+        message: "Subreddit not found",
       });
     }
     const moderators = subreddit.moderators;
