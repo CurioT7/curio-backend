@@ -4,8 +4,8 @@ const UserReports = require("../../models/reportModel");
 const Post = require("../../models/postModel");
 const Comment = require("../../models/commentModel");
 const Subreddit = require("../../models/subredditModel");
+const ban = require("../../models/banModel");
 const { verifyToken } = require("../../utils/tokens");
-
 
 /**
  * Handles the reporting of a user.
@@ -150,7 +150,7 @@ async function getSubredditReportedContent(req, res, next) {
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-//TODO if approved discard report
+      //TODO if approved discard report
       const subredditName = decodeURIComponent(req.params.subreddit);
       const subreddit = await Subreddit.findOne({ name: subredditName });
       if (!subreddit) {
@@ -165,12 +165,12 @@ async function getSubredditReportedContent(req, res, next) {
           .status(403)
           .json({ message: "Forbidden, you must be a moderator!" });
       }
-      
+
       const reportedItems = await UserReports.find({
         reportType: { $in: ["post", "comment"] },
         linkedSubreddit: subreddit._id,
         isIgnored: false,
-        isViewed: false, 
+        isViewed: false,
       }).populate("linkedItem");
 
       if (reportedItems.length === 0) {
@@ -225,19 +225,29 @@ async function takeActionOnReport(req, res) {
               .status(200)
               .json({ message: "Item ignored successfully" });
           }
-           
+
         case "ban":
-          //TODO add ban to database and add more details
+          const { violation, modNote, userMessage } = req.body;
           const reportedUser = await User.findOne({
             username: report.reportedUsername,
           });
           if (report.linkedItemType !== "User") {
             return res.status(400).json({ message: "You can only ban a user" });
-          } else if(reportedUser.username == user.username){
+          } else if (reportedUser.username == user.username) {
             return res.status(400).json({ message: "You can't ban yourself'" });
-          }else if (reportedUser.isBanned === true) {
+          } else if (reportedUser.isBanned === true) {
             return res.status(200).json({ message: "User is already banned" });
           } else {
+            // Create a new ban entry
+            const newBan = new ban({
+              bannedUsername: report.reportedUsername,
+              violation,
+              modNote,
+              userMessage,
+              bannedBy: "admin",
+            });
+            await newBan.save();
+
             reportedUser.isBanned = true;
             report.isViewed = true;
             await reportedUser.save();
@@ -288,7 +298,7 @@ async function takeActionOnReport(req, res) {
       .status(500)
       .json({ success: false, message: "Internal server error" });
   }
-} 
+}
 
 /**
  * Retrieves admin reports that have not been ignored or viewed yet.
