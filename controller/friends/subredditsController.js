@@ -11,6 +11,7 @@ const { getFilesFromS3 } = require("../../utils/s3-bucket");
 const Invitation = require("../../models/invitationModel");
 const Report = require("../../models/reportModel");
 const Post = require("../../models/postModel");
+const Comment = require("../../models/commentModel");
 /**
  * Check whether subreddit is available or not
  * @param {string} subreddit
@@ -1628,6 +1629,12 @@ async function moderatorRemove(req, res) {
             });
 
             await subreddit.save();
+            // Mark the post as removed
+            const post = await Post.findById(report.linkedItem);
+            if (post) {
+              post.isRemoved = true;
+              await post.save();
+            }
           } else if (report.linkedItemType === "Comment") {
             // Find the post to which the comment belongs
             const post = await Post.findOne({ comments: report.linkedItem });
@@ -1661,6 +1668,12 @@ async function moderatorRemove(req, res) {
             });
 
             await community.save();
+            // Mark the comment as removed
+            const comment = await Comment.findById(report.linkedItem);
+            if (comment) {
+              comment.isRemoved = true;
+              await comment.save();
+            }
           }
 
           // Find all reports linked to the same item
@@ -1715,7 +1728,7 @@ async function moderatorRemove(req, res) {
               .json({ message: "Item removed successfully" });
     }
   } catch (error) {
-    console.error("Error retrieving moderated communities:", error);
+    console.error(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }

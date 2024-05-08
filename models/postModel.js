@@ -154,11 +154,10 @@ const postSchema = new Schema({
     default: false,
   },
   isScheduled: {
-    type: Boolean, 
-    default: false 
-    },
-  scheduledPublishDate:
-  {
+    type: Boolean,
+    default: false,
+  },
+  scheduledPublishDate: {
     type: Date,
     default: null,
   },
@@ -167,11 +166,23 @@ const postSchema = new Schema({
     enum: ["does_not_repeat", "hourly", "daily", "weekly", "monthly", "custom"],
     default: "does_not_repeat",
   },
-  contestMode:{
+  contestMode: {
     type: Boolean,
     default: false,
   },
   isEdited: {
+    type: Boolean,
+    default: false,
+  },
+  isReportApproved: {
+    type: Boolean,
+    default: false,
+  },
+  isApprovedForShare: {
+    type: Boolean,
+    default: false,
+  },
+  isRemoved: {
     type: Boolean,
     default: false,
   },
