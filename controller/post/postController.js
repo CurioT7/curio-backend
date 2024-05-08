@@ -88,7 +88,7 @@ async function createComments(req, res) {
           .status(404)
           .json({ success: false, message: "Post not found." });
       }
-
+    
       // Check if the post is locked
       if (post.isLocked) {
         return res.status(403).json({
@@ -97,6 +97,16 @@ async function createComments(req, res) {
         });
       }
       const subreddit = await Subreddit.findById(post.linkedSubreddit);
+      const bannedUsernames = subreddit.bannedUsers.map((user) => user.username);
+
+      // Check if the user adding the comment is in the banned users list
+      if (bannedUsernames.includes(user.username)) {
+        return res.status(403).json({
+          success: false,
+          message: "User is banned in this subreddit. Cannot add a comment.",
+        });
+      }
+
       const mutedUsernames = subreddit.mutedUsers.map((user) => user.username);
       if (mutedUsernames.includes(user.username)) {
         return res.status(403).json({
@@ -219,6 +229,19 @@ async function updatePostComments(req, res) {
         return res
           .status(404)
           .json({ success: false, message: "comment not found" });
+      }
+
+      const subreddit = await Subreddit.findById(comment.linkedSubreddit);
+      const bannedUsernames = subreddit.bannedUsers.map(
+        (user) => user.username
+      );
+
+      // Check if the user adding the comment is in the banned users list
+      if (bannedUsernames.includes(user.username)) {
+        return res.status(403).json({
+          success: false,
+          message: "User is banned in this subreddit. Cannot add a comment.",
+        });
       }
 
       // check if user is authorized to edit comment
