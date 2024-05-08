@@ -179,6 +179,9 @@ async function updateUserPreferences(req, res) {
     "newFollowerEmail",
     "chatRequestEmail",
     "unsubscribeFromAllEmails",
+    "allowPrivateMessages",
+    "allowChatRequests",
+    "allowChatNotifications",
   ];
 
   Object.keys(req.body).forEach((field) => {
