@@ -598,6 +598,48 @@ async function scheduledPost(req, res) {
   }
 }
 
+/** 
+* Function to get scheduled posts
+* @async
+* @param {object} req - Express request object
+* @param {object} res - Express response object
+* @returns {object} - Express response object
+*/
+
+async function getScheduledPost(req, res) {
+  try {
+    if (req.user) {
+      const subreddit = req.params.subreddit;
+      const user = await User.findOne({ _id: req.user.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const scheduledPosts = await ScheduledPost.find({
+        authorName: user.username,
+      });
+      if (subreddit) {
+        subredditname = await Subreddit.findOne({ name: subreddit });
+        if (!subredditname) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Subreddit not found" });
+        }
+      }
+      if (!scheduledPosts) {
+        return res
+          .status(404)
+          .json({ success: false, message: "No scheduled posts found." });
+      }
+
+      return res.status(200).json({ success: true, scheduledPosts });
+    }
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
+  }
+}
 module.exports = {
   getPostComments,
   updatePostComments,
@@ -608,4 +650,5 @@ module.exports = {
   markPostNSFW,
   unmarkPostNSFW,
   scheduledPost,
+  getScheduledPost,
 };

@@ -113,4 +113,16 @@ router.post("/unmarknsfw",authenticate, postController.unmarkPostNSFW);
 
 router.post("/scheduledPost",authenticate, postController.scheduledPost);
 
+/**
+ * Route to handle GET requests for getting scheduled post.
+ * @name GET/scheduledPost
+ * @function
+ * @memberof module:routes/postRouter
+ * @param {string} path - The URL path for the route ("/scheduledPost").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ */
+router.get("/getScheduledPost/:subreddit",authenticate, postController.getScheduledPost);
+ 
+
 module.exports = router;
