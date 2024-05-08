@@ -98,12 +98,7 @@ async function reportContent(req, res) {
           .status(404)
           .json({ success: false, message: "Item not found" });
       }
-    const subreddit = await Subreddit.findOne({ _id: item.linkedSubreddit });
-if (!subreddit) {
-  return res
-    .status(404)
-    .json({ success: false, message: "Subreddit not found" });
-}
+
       //check if the user is trying to report his own content
       if (user.username === item.authorName) {
         return res.status(400).json({
@@ -118,7 +113,7 @@ if (!subreddit) {
           reporterUsername: user.username,
           reportedUsername: item.authorName,
           itemID: itemID,
-          linkedSubreddit: subreddit.name,
+          linkedSubreddit: item.linkedSubreddit,
           linkedItem: item._id,
           linkedItemType: itemType,
           reportType,
