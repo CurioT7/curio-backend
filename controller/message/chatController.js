@@ -388,14 +388,22 @@ async function chatsOverview(req, res) {
               },
               // Participants media
               profilePicture: "$participants.profilePicture",
-              // Sender name
+              // Sender name and id,
               sender: "$sender.username",
+              Id: "$sender._id",
             },
           },
           {
             $sort: { "messages.timestamp": -1 }, // Sort by the timestamp of the most recent message
           },
         ]);
+        //delete duplicate chats with same id
+        chats = chats.filter(
+          (chat, index, self) =>
+            index ===
+            self.findIndex((t) => t.participants === chat.participants)
+        );
+
         //get chat media
         let media;
         for (let i = 0; i < chats.length; i++) {
@@ -447,16 +455,16 @@ async function sendMessage(req, res) {
     const recipient = chat.participants.find(
       (participant) => participant.toString() !== req.user.userId
     );
-    const recipientSocket = getRecieverSocket(recipient);
-    if (recipientSocket) {
-      recipientSocket.emit("new-message", {
-        chatId: chat._id,
-        message: newMessage,
-      });
-      //change message to delivered
-      chat.messages[chat.messages.length - 1].status = "delivered";
-      await chat.save();
-    }
+    // const recipientSocket = getRecieverSocket(recipient);
+    // if (recipientSocket) {
+    //   recipientSocket.emit("new-message", {
+    //     chatId: chat._id,
+    //     message: newMessage,
+    //   });
+    //   //change message to delivered
+    //   chat.messages[chat.messages.length - 1].status = "delivered";
+    //   await chat.save();
+    // }
     return res.status(201).json({
       success: true,
       message: "Message sent successfully",
