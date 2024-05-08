@@ -346,7 +346,7 @@ async function createModeration(req, res) {
      disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
    }`,
    recipient: moderationid.username,
-   subreddits: subreddit.name,
+   subredditName: subreddit.name,
    invitiations: invitation._id,
    type: "invite",
    isDisabled: disabledSubreddit,
@@ -456,7 +456,7 @@ async function acceptInvitation(req, res) {
         disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
       }`,
       recipient: user.username,
-      subreddits: subreddit.name,
+      subredditName: subreddit.name,
       invitiations: invitationId,
       type: "subreddit",
       isDisabled: disabledSubreddit,
