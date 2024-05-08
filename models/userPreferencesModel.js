@@ -217,6 +217,18 @@ const userPreferencesSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  allowPrivateMessages: {
+    type: Boolean,
+    default: true,
+  },
+  allowChatRequests: {
+    type: Boolean,
+    default: true,
+  },
+  allowChatNotifications: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 /**
