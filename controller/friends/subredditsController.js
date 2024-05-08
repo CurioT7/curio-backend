@@ -1811,6 +1811,101 @@ async function getRemovedItems(req, res) {
   }
 }
 
+/**
+ * Approves the removal of a reported item or post, deleting it permanently from the database.
+ * @async
+ * @function approveRemoval
+ * @param {Object} req - The request object.
+ * @param {Object} req.user - The user object containing user information.
+ * @param {string} req.user.userId - The ID of the user performing the action.
+ * @param {Object} req.body - The request body containing item information.
+ * @param {string} req.body.itemID - The ID of the item to permanently delete.
+ * @param {string} req.body.itemType - The type of the item ('report' or 'post').
+ * @param {string} req.body.subredditName - The name of the subreddit where the action is performed.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response indicating success or failure.
+ */
+async function approveRemoval(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      const { itemID, itemType, subredditName } = req.body;
+      // Check if the user has moderator privileges
+      const isModerator = user.moderators.some(
+        (moderator) => moderator.subreddit === subredditName
+      );
+      if (!isModerator) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden, you must be a moderator!" });
+      }
+      let subreddit;
+      switch (itemType) {
+        case "report":
+          const report = await Report.findById(itemID).populate("linkedItem");
+          if (!report) {
+            return res
+              .status(404)
+              .json({ success: false, message: "Report not found" });
+          }
+
+          // Remove linked item from Post or Comment schema
+          if (report.linkedItemType === "Post") {
+            await Post.findByIdAndDelete(report.linkedItem._id);
+          } else if (report.linkedItemType === "Comment") {
+            await Comment.findByIdAndDelete(report.linkedItem._id);
+          }
+          
+          const subreddit = await Community.findOne({ name: subredditName });
+
+          if (!subreddit) {
+            return res
+              .status(404)
+              .json({ success: false, message: "Subreddit not found" });
+          }
+
+          // Remove the report from the database
+          await Report.findByIdAndDelete(itemID);
+
+          // Remove the item from the subreddit's removedItems array
+          subreddit.removedItems = subreddit.removedItems.filter(
+            (item) => !item._id.equals(report.linkedItem._id)
+          );
+          await subreddit.save();
+
+          break;
+
+        case "post":
+          // Find the subreddit
+          subreddit = await Community.findOne({ name: subredditName });
+
+          if (!subreddit) {
+            return res
+              .status(404)
+              .json({ success: false, message: "Subreddit not found" });
+          }
+          await Post.findByIdAndDelete(itemID);
+
+          // Remove the item from the subreddit's removedItems array
+          subreddit.removedItems = subreddit.removedItems.filter(
+            (item) => !item._id.equals(itemID)
+          );
+          await subreddit.save();
+
+          break;
+      }
+
+      return res
+        .status(200)
+        .json({ message: "Item permanently deleted successfully" });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
 
 module.exports = {
   newSubreddit,
@@ -1839,4 +1934,5 @@ module.exports = {
   moderatorApprove,
   moderatorRemove,
   getRemovedItems,
+  approveRemoval,
 };
