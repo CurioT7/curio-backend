@@ -387,5 +387,23 @@ router.get(
   subredditsController.getRemovedItems
 );
 
+/**
+ * Route handler for approving the removal of a reported item or post, deleting it permanently from the database.
+ * @param {object} req - The request object.
+ * @param {object} req.user - The user object containing user information.
+ * @param {string} req.user.userId - The ID of the user performing the action.
+ * @param {object} req.body - The request body containing item information.
+ * @param {string} req.body.itemID - The ID of the item to permanently delete.
+ * @param {string} req.body.itemType - The type of the item ('report' or 'post').
+ * @param {string} req.body.subredditName - The name of the subreddit where the action is performed.
+ * @param {object} res - The response object.
+ * @returns {object} The response indicating success or failure.
+ */
+router.post(
+  "/moderator/approveRemoval",
+  authenticate,
+  subredditsController.approveRemoval
+);
+
 
 module.exports = router;
