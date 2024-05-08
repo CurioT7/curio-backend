@@ -658,6 +658,8 @@ async function getModeratorsQueue(req, res) {
     }
 
     const reports = await Report.find({ linkedSubreddit: subreddit.name });
+ console.log("subreddit.name:", subreddit.name);
+ console.log("reports:", reports);
 
     return res.status(200).json({
       success: true,
