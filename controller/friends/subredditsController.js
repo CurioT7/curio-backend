@@ -1146,8 +1146,8 @@ async function getUnmoderated(req, res) {
 
     const unmoderatedPosts = await Post.find({
       _id: { $in: subreddit.posts },
-      isReportApproved: false, 
-    })
+      isApprovedForShare: false,
+    });
  console.log("subreddit.posts:", subreddit.posts);
  console.log("unmoderatedPosts:", unmoderatedPosts);
 
