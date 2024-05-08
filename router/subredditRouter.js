@@ -257,4 +257,15 @@ router.get("/communitySettings/:subreddit", authenticate,modToolsController.comm
 
 router.patch("/updateCommunitySettings/:subreddit", authenticate, modToolsController.updateCommunitySettings);
 
+/**
+ * Route to get subreddits that the user moderates and subreddits that the user is a member of
+ * @name GET /mineWhere:username
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware
+ */
+
+router.get("/mineWhere", authenticate, modToolsController.mineWhere);
+
 module.exports = router;
