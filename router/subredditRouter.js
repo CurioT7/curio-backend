@@ -147,7 +147,7 @@ router.get(
  * @param {callback} middleware - Express middleware
  */
 router.get(
-  "/getModerationQueue/:subreddit/:type/:time?",authenticate,
+  "/getModerationQueue/:subreddit",authenticate,
   subredditsController.getModeratorsQueue
 );
 
