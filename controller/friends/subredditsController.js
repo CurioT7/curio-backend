@@ -1759,7 +1759,15 @@ async function getRemovedItems(req, res) {
           .status(404)
           .json({ success: false, message: "Subreddit not found" });
       }
-
+      // Check if the user has moderator privileges
+      const isModerator = user.moderators.some(
+        (moderator) => moderator.subreddit === subredditName
+      );
+      if (!isModerator) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden, you must be a moderator!" });
+      }
 
       // Map through removedItems and populate each _id
       const populatedRemovedItems = await Promise.all(
