@@ -174,6 +174,8 @@ async function createComments(req, res) {
             createdAt: new Date(),
             postId: post._id,
             linkedSubreddit: post.linkedSubreddit,
+            commentId: comment._id,
+            commentNumber: post.comments.length,
           });
           mentionedUser.mentions.push(message._id);
           await Promise.all([
@@ -187,9 +189,13 @@ async function createComments(req, res) {
       const replyMessage = new Message({
         sender: user,
         recipient: postAuthor,
+        linkedSubreddict: post.linkedSubreddit,
+        postId: post._id,
+        commentId: comment._id,
         type: "postReply",
         message: comment.content,
         createdAt: new Date(),
+        commentNumber: post.comments.length,
       });
       postAuthor.receivedPrivateMessages.push(replyMessage._id);
 
@@ -620,6 +626,135 @@ async function scheduledPost(req, res) {
   }
 }
 
+/** 
+* Function to get scheduled posts
+* @async
+* @param {object} req - Express request object
+* @param {object} res - Express response object
+* @returns {object} - Express response object
+*/
+
+async function getScheduledPost(req, res) {
+  try {
+    if (req.user) {
+      const subreddit = req.params.subreddit;
+      const user = await User.findOne({ _id: req.user.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const scheduledPosts = await ScheduledPost.find({
+        authorName: user.username,
+      });
+      if (subreddit) {
+        subredditname = await Subreddit.findOne({ name: subreddit });
+        if (!subredditname) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Subreddit not found" });
+        }
+      }
+      if (!scheduledPosts) {
+        return res
+          .status(404)
+          .json({ success: false, message: "No scheduled posts found." });
+      }
+
+      return res.status(200).json({ success: true, scheduledPosts });
+    }
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
+  }
+}
+
+/**
+ * Function to delete a scheduled post
+ * @async
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @returns {object} - Express response object
+ */
+
+async function deleteScheduledPost(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const scheduledPostId = req.params.postId;
+      const scheduledPost = await ScheduledPost.findById(scheduledPostId);
+      if (!scheduledPost) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Scheduled post not found or published." });
+      }
+      if (scheduledPost.authorName !== user.username) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to delete this scheduled post.",
+        });
+      }
+      await scheduledPost.deleteOne();
+      return res
+        .status(200)
+        .json({ success: true, message: "Scheduled post deleted successfully." });
+    }
+  }
+  catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
+  }
+}
+
+/**
+ * Function to edit a scheduled post
+ * @async
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @returns {object} - Express response object
+ */
+
+async function editScheduledPost(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const { scheduledPostId, content } = req.body; 
+      const post = await ScheduledPost.findById(scheduledPostId);
+      if (!post) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Scheduled post not found." });
+      }
+      if (post.authorName !== user.username) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to edit this scheduled post.",
+        });
+      }
+      post.content = content;
+      post.isEdited = true;
+      await post.save();
+      return res.status(200).json({ success: true, post });
+    }
+  }
+  catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
+  }
+}
+           
+
+
 module.exports = {
   getPostComments,
   updatePostComments,
@@ -630,4 +765,7 @@ module.exports = {
   markPostNSFW,
   unmarkPostNSFW,
   scheduledPost,
+  getScheduledPost,
+  deleteScheduledPost,
+  editScheduledPost,
 };

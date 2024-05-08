@@ -113,4 +113,38 @@ router.post("/unmarknsfw",authenticate, postController.unmarkPostNSFW);
 
 router.post("/scheduledPost",authenticate, postController.scheduledPost);
 
+/**
+ * Route to handle GET requests for getting scheduled post.
+ * @name GET/scheduledPost
+ * @function
+ * @memberof module:routes/postRouter
+ * @param {string} path - The URL path for the route ("/scheduledPost").
+ * @param {function} middleware - The controller function to handle the GET request.
+ * @returns {object} Express router instance.
+ */
+router.get("/getScheduledPost/:subreddit",authenticate, postController.getScheduledPost);
+
+/**
+ * Route to handle DELETE requests for deleting scheduled post.
+ * @name DELETE/scheduledPost
+ * @function
+ * @memberof module:routes/postRouter
+ * @param {string} path - The URL path for the route ("/scheduledPost").
+ * @param {function} middleware - The controller function to handle the DELETE request.
+ * @returns {object} Express router instance.
+ */
+router.delete("/deleteScheduledPost/:postId",authenticate, postController.deleteScheduledPost);
+
+/**
+ * Route to handle PATCH requests for updating scheduled post.
+ * @name PATCH/scheduledPost
+ * @function
+ * @memberof module:routes/postRouter
+ * @param {string} path - The URL path for the route ("/scheduledPost").
+ * @param {function} middleware - The controller function to handle the PATCH request.
+ * @returns {object} Express router instance.
+ */
+router.patch("/editScheduledPost",authenticate, postController.editScheduledPost);
+ 
+
 module.exports = router;

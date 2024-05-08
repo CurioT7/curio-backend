@@ -23,10 +23,11 @@ const categoryRouter = require("./router/categoryRouter");
 const postRouter = require("./router/postRouter");
 const notificationRouter = require("./router/notificationRouter");
 const messageRouter = require("./router/messageRouter");
+const chatRouter = require("./router/chatRouter");
+
+const { app, server } = require("./utils/socket");
 
 const cors = require("cors");
-
-const app = express();
 
 /**
  * Connects to the MongoDB database and starts the Express server.
@@ -84,14 +85,15 @@ app.use("/api", postRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api", messageRouter);
 
+app.use("/api", chatRouter);
+
 const PORT = process.env.PORT;
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+  console.log(`WebSocket is running on port ${server.address().port}`);
 });
 
 // Seeding the database if needed
 if (process.env.SEED_DB === "true" && process.argv.includes("--seed")) {
   require("./utils/seeding");
 }
-
-module.exports = { app };
