@@ -4,6 +4,7 @@ const UserReports = require("../../models/reportModel");
 const Post = require("../../models/postModel");
 const Comment = require("../../models/commentModel");
 const Subreddit = require("../../models/subredditModel");
+const ban=require("../../models/banModel")
 const { verifyToken } = require("../../utils/tokens");
 
 
@@ -227,7 +228,7 @@ async function takeActionOnReport(req, res) {
           }
            
         case "ban":
-          //TODO add ban to database and add more details
+          const { violation, modNote, userMessage } = req.body;
           const reportedUser = await User.findOne({
             username: report.reportedUsername,
           });
@@ -238,6 +239,16 @@ async function takeActionOnReport(req, res) {
           }else if (reportedUser.isBanned === true) {
             return res.status(200).json({ message: "User is already banned" });
           } else {
+            // Create a new ban entry
+            const newBan = new ban({
+              bannedUsername: report.reportedUsername,
+              violation,
+              modNote,
+              userMessage,
+              bannedBy: "admin",
+            });
+            await newBan.save();
+
             reportedUser.isBanned = true;
             report.isViewed = true;
             await reportedUser.save();

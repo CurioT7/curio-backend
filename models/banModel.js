@@ -24,16 +24,19 @@ const banSchema = new mongoose.Schema({
   linkedSubreddit: {
     type: String,
     ref: "Subreddit",
-    default:null,
+    default: null,
   },
   violation: {
     type: String,
+    default: null,
   },
   modNote: {
     type: String,
+    default: null,
   },
   userMessage: {
     type: String,
+    default: null,
   },
   bannedBy: {
     type: String,
