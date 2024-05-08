@@ -4,95 +4,18 @@ const { validationResult } = require("express-validator");
 const User = require("../models/userModel");
 const Community = require("../models/subredditModel");
 const {
+  getUserInfo,
   followSubreddit,
   unFollowSubreddit,
   addFriend,
   deleteFriend,
-  addUserToSubbreddit,
-  friendRequest,
-  unFriendRequest,
-  getUserInfo,
+  getFollowersOrFollowings,
 } = require("../controller/friends/friendController");
 const { verifyToken } = require("../utils/tokens");
-
-// Mock the verifyToken function
+jest.mock("../models/subredditModel");
+jest.mock("../models/userModel");
 jest.mock("../utils/tokens");
 
-// describe("followSubreddit function", () => {
-// //   it("should follow a subreddit successfully when given valid username and communityName", async () => {
-// //     const req = {
-// //       body: {
-// //         subreddit: "testSubreddit",
-// //       },
-// //       headers: {
-// //         authorization: "Bearer token",
-// //       },
-// //     };
-
-// //     const res = {
-// //       status: jest.fn().mockReturnThis(),
-// //       json: jest.fn(),
-// //     };
-
-// //     const decodedToken = { userId: "testUserId" };
-
-// //     // Mocking the verifyToken function
-// //     verifyToken.mockResolvedValueOnce(decodedToken);
-
-// //     // Mocking the User.findOne function
-// //     User.findOne = jest
-// //       .fn()
-// //       .mockResolvedValueOnce({ username: "testUsername" });
-
-// //     // Mocking the Community.findOne function
-// //     Community.findOne = jest
-// //       .fn()
-// //       .mockResolvedValueOnce({ name: "testSubreddit" });
-
-// //     // Mocking the followSubreddits function
-// //     const followSubreddits = jest.fn();
-// //     followSubreddits.mockResolvedValueOnce(true);
-
-// //     // Executing the function
-// //     await followSubreddit(req, res);
-
-// //     // Assertions
-// //     expect(verifyToken).toHaveBeenCalledWith("token");
-// //     expect(User.findOne).toHaveBeenCalledWith({ _id: "testUserId" });
-// //     expect(Community.findOne).toHaveBeenCalledWith({ name: "testSubreddit" });
-// //     expect(followSubreddits).toHaveBeenCalledWith(
-// //       "testUsername",
-// //       "testSubreddit"
-// //     );
-// //     expect(res.status).toHaveBeenCalledWith(200);
-// //     expect(res.json).toHaveBeenCalledWith({
-// //       success: true,
-// //       message: "Subreddit followed successfully",
-// //     });
-// //   });
-// // });
-// // describe("unFollowSubreddit function", () => {
-// //   it("should return a 500 status code if the token is missing or invalid", async () => {
-// //     const req = {
-// //       headers: {
-// //         authorization: "Bearer invalidToken",
-// //       },
-// //     };
-// //     const res = {
-// //       status: jest.fn().mockReturnThis(),
-// //       json: jest.fn(),
-// //     };
-
-//     await unFollowSubreddit(req, res);
-
-//     expect(res.status).toHaveBeenCalledWith(500);
-//     expect(res.json).toHaveBeenCalledWith({
-//       message:
-//         "Cannot destructure property 'subreddit' of 'req.body' as it is undefined.",
-//       success: false,
-//     });
-//   });
-// });
 
 describe("addFriend function", () => {
   it("should add a friend to a user's followings and the user to the friend's followers", async () => {
@@ -161,67 +84,16 @@ describe("deleteFriend function", () => {
   });
 });
 
-// describe("addUserToSubbreddit function", () => {
-//   it("should add user to subreddit when function is called", async () => {
-//     const user = {
-//       username: "testUser",
-//       moderators: [],
-//       member: [],
-//     };
-//     const communityName = "testCommunity";
-//     const userModerator = {
-//       communityName: communityName,
-//       role: "creator",
-//     };
-//     const userMember = {
-//       communityName: communityName,
-//     };
-//     const moderator = user.moderators || [];
-//     moderator.push(userModerator);
-//     const members = user.member || [];
-//     members.push(userMember);
 
-//     const findOneAndUpdateMock = jest.fn();
-//     const userMock = {
-//       findOneAndUpdate: findOneAndUpdateMock,
-//     };
-//     await addUserToSubbreddit(userMock, communityName);
 
-//     expect(findOneAndUpdateMock).toHaveBeenCalledWith(
-//       { username: user.username },
-//       { moderators: moderator, member: members }
-//     );
-//   });
-// });
-
-describe("friendRequest function", () => {
-  it("should return 401 if token is invalid", async () => {
+describe("followSubreddit function", () => {
+  it("should return a 404 status code with an error message if user is not found", async () => {
     const req = {
-      headers: {
-        authorization: "Bearer invalidToken",
+      user: {
+        userId: "nonExistentUserId",
       },
       body: {
-        friendUsername: "friend",
-      },
-    };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
-    await friendRequest(req, res);
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
-  });
-});
-
-describe("unFriendRequest function", () => {
-  it("should return a 401 status code if the token is missing or invalid", async () => {
-    const req = {
-      headers: {
-        authorization: "Bearer invalidToken",
-      },
-      body: {
-        friendUsername: "friend",
+        subreddit: "testsubreddit",
       },
     };
 
@@ -230,12 +102,270 @@ describe("unFriendRequest function", () => {
       json: jest.fn(),
     };
 
-    await unFriendRequest(req, res);
+    User.findById.mockResolvedValue(null); // Simulating user not found
 
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
+    await followSubreddit(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "User not found",
+    });
+  });
+
+  it("should return a 404 status code with an error message if subreddit is not found", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+      },
+      body: {
+        subreddit: "nonExistentSubreddit",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Community.findOne.mockResolvedValue(null); // Simulating subreddit not found
+
+    await followSubreddit(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Subreddit not found",
+    });
+  });
+
+});
+
+describe("unFollowSubreddit function", () => {
+  it("should return a 404 status code with an error message if user is not found", async () => {
+    const req = {
+      user: {
+        userId: "nonExistentUserId",
+      },
+      body: {
+        subreddit: "testsubreddit",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue(null); // Simulating user not found
+
+    await unFollowSubreddit(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Username not found",
+    });
+  });
+
+  it("should return a 404 status code with an error message if subreddit is not found", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+      },
+      body: {
+        subreddit: "nonExistentSubreddit",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Community.findOne.mockResolvedValue(null); // Simulating subreddit not found
+
+    await unFollowSubreddit(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Subreddit not found",
+    });
+  });
+
+});
+describe("getUserInfo function", () => {
+  it("should return a 404 status code with an error message if user is not found", async () => {
+    const req = {
+      user: {
+        userId: "nonExistentUserId",
+      },
+      params: {
+        friendUsername: "testfriend",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue(null);
+
+    await getUserInfo(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "User not found",
+    });
+  });
+  // Retrieve user information for a valid friend username that exists in the user's friend list
+  it("should return user information when a valid friend username is provided", async () => {
+    const req = {
+      params: {
+        friendUsername: "validFriendUsername",
+      },
+      user: {
+        userId: "validUserId",
+      },
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+    const friend = {
+      username: "validFriendUsername",
+      bio: "validFriendBio",
+      profilePicture: "validFriendProfilePicture",
+      media: "validFriendMedia",
+    };
+    User.findById = jest
+      .fn()
+      .mockResolvedValueOnce({ followings: ["validFriendUsername"] });
+    User.findOne = jest.fn().mockResolvedValueOnce(friend);
+    await getUserInfo(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      username: friend.username,
+      bio: friend.bio,
+      profilePicture: friend.profilePicture,
+      media: {},
+    });
   });
 });
 
+describe("unFollowSubreddits function", () => {
+ 
+});
+describe("followSubreddit function", () => {
+  it("should return a 404 status code with an error message if user is not found", async () => {
+    const req = {
+      body: {
+        subreddit: "testsubreddit",
+      },
+      user: {
+        userId: "nonExistentUserId",
+      },
+    };
 
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
 
+    // Simulating user not found
+    User.findById.mockResolvedValue(null);
+
+    await followSubreddit(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "User not found",
+    });
+  });
+
+  it("should return a 404 status code with an error message if subreddit is not found", async () => {
+    const req = {
+      body: {
+        subreddit: "nonExistentSubreddit",
+      },
+      user: {
+        userId: "testUserId",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    // Simulating user found
+    User.findById.mockResolvedValue({});
+
+    // Simulating subreddit not found
+    Community.findOne.mockResolvedValue(null);
+
+    await followSubreddit(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Subreddit not found",
+    });
+  });
+
+});
+  
+describe("getFollowersOrFollowings function", () => {
+  it("should return a list of followers with profile pictures", async () => {
+    // Mocking request and response objects
+    const req = {
+      user: {
+        userId: "testUserId",
+      },
+      params: {
+        friends: "followers",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    // Mocking user data
+    const user = {
+      _id: "testUserId",
+      followers: ["follower1", "follower2"],
+    };
+
+    // Mocking User.findById to resolve with user data
+    User.findById.mockResolvedValue(user);
+
+    // Mocking user data with profile pictures
+    const usersWithProfilePictures = [
+      { username: "follower1", profilePicture: "profile1.jpg" },
+      { username: "follower2", profilePicture: "profile2.jpg" },
+    ];
+
+    // Mocking User.aggregate to resolve with users with profile pictures
+    User.aggregate.mockResolvedValue(usersWithProfilePictures);
+
+    // Calling the function
+    await getFollowersOrFollowings(req, res);
+
+    // Assertions
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      friendsArray: usersWithProfilePictures,
+    });
+  });
+
+  // Add more test cases for followings, and error scenarios if needed
+});
