@@ -225,11 +225,13 @@ async function getTopCommunities(req, res) {
     res.status(200).json({ success: true, totalCommunitiesCount, communities });
   } catch (error) {
     console.error("Error fetching communities:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Internal server error",
+        error: error.message,
+      });
   }
 }
 
@@ -382,7 +384,7 @@ async function createModeration(req, res) {
  * @param {Object} req - The HTTP request object.
  * @param {Object} res - The HTTP response object.
  * @returns {Promise<void>} A promise that resolves once the invitation is accepted.
- * @throws {Error} If an error occurs while accepting the invitation.
+ * @throws {Error} If an error occurs while accepting the invitation. 
  */
 async function acceptInvitation(req, res) {
   try {
@@ -441,7 +443,9 @@ async function acceptInvitation(req, res) {
     // Delete the invitation
     await Invitation.findByIdAndDelete(invitationId);
     const disabledSubreddit =
-      user.notificationSettings.disabledSubreddits.includes(subreddit.name);
+      user.notificationSettings.disabledSubreddits.includes(
+        subreddit.name
+      );
     console.log(disabledSubreddit);
     console.log(user.notificationSettings.disabledSubreddits);
     // Create a notification for the moderator with isDisabled set based on whether notifications are disabled
@@ -571,7 +575,7 @@ async function removeModeration(req, res) {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      // error: error.message,
+      error: error.message,
     });
   }
 }
@@ -586,15 +590,13 @@ async function removeModeration(req, res) {
    * @throws {Error} If an error occurs while fetching the moderators.
    */
 async function getModerators(req, res) {
-}
-async function getModerators(req, res) {
   try {
-    const decodedURL = decodeURIComponent(req.params.subreddit);
+    const decodedURL = decodeURIComponent(req.params.subreddit); 
     const subreddit = await Community.findOne({ name: decodedURL });
     if (!subreddit) {
       return res.status(404).json({
         success: false,
-        message: "Subreddit not found",
+        message: "Subreddit is not found",
       });
     }
     const moderators = subreddit.moderators;
@@ -603,7 +605,7 @@ async function getModerators(req, res) {
       moderators: moderators,
     });
   } catch (error) {
-    console.error(error);
+    console.error(error); 
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -618,7 +620,7 @@ async function getModerators(req, res) {
  *  @param {Object} req - The HTTP request object.
  * @param {Object} res - The HTTP response object.
  * @returns {Promise<void>} A promise that resolves once the queue is retrieved.
- * @throws {Error} If an error occurs while fetching the queue.
+ * @throws {Error} If an error occurs while fetching the queue.  
  */
 async function getModeratorsQueue(req, res) {
   try {
@@ -677,7 +679,7 @@ async function getModeratorsQueue(req, res) {
  * @param {Object} req - The HTTP request object.
  * @param {Object} res - The HTTP response object.
  * @returns {Promise<void>} A promise that resolves once the invitation is declined.
- * @throws {Error} If an error occurs while declining the invitation.
+ * @throws {Error} If an error occurs while declining the invitation. 
  */
 async function declineInvitation(req, res) {
   try {
@@ -700,7 +702,7 @@ async function declineInvitation(req, res) {
         message: "You are not authorized to decline this invitation",
       });
     await Invitation.findByIdAndDelete(invitationId);
-    const moderator = await User.findOne({ username: invitation.sender });
+    const moderator=await User.findOne({username:invitation.sender})
     const disabledSubreddit =
       moderator.notificationSettings.disabledSubreddits.includes(
         invitation.subreddit
@@ -709,9 +711,7 @@ async function declineInvitation(req, res) {
     console.log(moderator.notificationSettings.disabledSubreddits);
     const notification = new Notification({
       title: disabledSubreddit ? "Moderation (Disabled)" : "Moderation",
-      message: `${user.username} declined your invitation to moderate "${
-        invitation.subreddit
-      }". ${
+      message: `${user.username} declined your invitation to moderate "${invitation.subreddit}". ${
         disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
       }`,
       recipient: invitation.sender,
@@ -770,7 +770,7 @@ async function muteUser(req, res) {
     const muted = subreddit.mutedUsers.some(
       (muted) => muted.username === mutedUser
     );
-
+    
     if (subreddit.moderators.some((mod) => mod.username === mutedUser)) {
       return res.status(400).json({
         success: false,
@@ -783,26 +783,28 @@ async function muteUser(req, res) {
         success: false,
         message: "User is already muted",
       });
-
+    
     const mutedUserSettings = await User.findOne({ username: mutedUser });
-    const disabledSubreddit =
-      mutedUserSettings &&
-      mutedUserSettings.notificationSettings.disabledSubreddits.includes(
-        subreddit.name
-      );
+     const disabledSubreddit =
+       mutedUserSettings &&
+       mutedUserSettings.notificationSettings.disabledSubreddits.includes(
+         subreddit.name
+       );
 
-    const notification = new Notification({
-      title: disabledSubreddit ? "Muted (Disabled)" : "Muted",
-      message: `${user.username} muted you in "${subreddit.name}". ${
-        disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
-      }`,
-      recipient: mutedUser,
-      subredditName: subreddit.name,
-      type: "subreddit",
-      isDisabled: disabledSubreddit,
-    });
-    await notification.save();
-
+     const notification = new Notification({
+       title: disabledSubreddit ? "Muted (Disabled)" : "Muted",
+       message: `${user.username} muted you in "${subreddit.name}". ${
+         disabledSubreddit
+           ? "Notifications are disabled for the subreddit."
+           : ""
+       }`,
+       recipient: mutedUser,
+       subredditName: subreddit.name,
+       type: "subreddit",
+       isDisabled: disabledSubreddit,
+     });
+     await notification.save();
+    
     subreddit.mutedUsers.push({ username: mutedUser });
     await subreddit.save();
     return res.status(200).json({
@@ -810,6 +812,7 @@ async function muteUser(req, res) {
       message: "User muted successfully",
       mutedUser: mutedUser,
     });
+   
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -817,6 +820,7 @@ async function muteUser(req, res) {
       error: error.message,
     });
   }
+
 }
 /**
  * Unmute a user in a subreddit.
@@ -838,7 +842,8 @@ async function unMuteUser(req, res) {
         success: false,
         message: "User not found",
       });
-    if (!subreddit)
+    if (!subreddit
+    )
       return res.status(404).json({
         success: false,
         message: "Subreddit not found",
@@ -859,24 +864,26 @@ async function unMuteUser(req, res) {
         success: false,
         message: "User is not muted",
       });
-    const mutedUserSettings = await User.findOne({ username: mutedUser });
-    const disabledSubreddit =
-      mutedUserSettings &&
-      mutedUserSettings.notificationSettings.disabledSubreddits.includes(
-        subreddit.name
-      );
+     const mutedUserSettings = await User.findOne({ username: mutedUser });
+     const disabledSubreddit =
+       mutedUserSettings &&
+       mutedUserSettings.notificationSettings.disabledSubreddits.includes(
+         subreddit.name
+       );
 
-    const notification = new Notification({
-      title: disabledSubreddit ? "Un-Muted (Disabled)" : "Un-Muted",
-      message: `${user.username} unmuted you in "${subreddit.name}". ${
-        disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
-      }`,
-      recipient: mutedUser,
-      subredditName: subreddit.name,
-      type: "subreddit",
-      isDisabled: disabledSubreddit,
-    });
-    await notification.save();
+     const notification = new Notification({
+       title: disabledSubreddit ? "Un-Muted (Disabled)" : "Un-Muted",
+       message: `${user.username} unmuted you in "${subreddit.name}". ${
+         disabledSubreddit
+           ? "Notifications are disabled for the subreddit."
+           : ""
+       }`,
+       recipient: mutedUser,
+       subredditName: subreddit.name,
+       type: "subreddit",
+       isDisabled: disabledSubreddit,
+     });
+     await notification.save();
     subreddit.mutedUsers = subreddit.mutedUsers.filter(
       (muted) => muted.username !== mutedUser
     );
@@ -949,7 +956,7 @@ async function leaveModerator(req, res) {
         },
       }
     );
-
+  
     return res.status(200).json({
       success: true,
       message: "Moderator left successfully",
@@ -982,32 +989,6 @@ async function getMineModeration(req, res) {
     const isModerator = await Community.find({
       moderators: { $elemMatch: { username: user.username } },
     });
-    const subredditsWithPermissions = isModerator.map((subreddit) => {
-      const moderatorInfo = subreddit.moderators.find(
-        (moderator) => moderator.username === user.username
-      );
-
-      return {
-        name: subreddit.name,
-        role: moderatorInfo.role,
-        permissions: {
-          manageUsers: moderatorInfo
-            ? moderatorInfo.manageUsers || false
-            : false,
-          createLiveChats: moderatorInfo
-            ? moderatorInfo.createLiveChats || false
-            : false,
-          manageSettings: moderatorInfo
-            ? moderatorInfo.manageSettings || false
-            : false,
-          managePostsAndComments: moderatorInfo
-            ? moderatorInfo.managePostsAndComments || false
-            : false,
-          everything: moderatorInfo ? moderatorInfo.everything || false : false,
-        },
-      };
-    });
-
     return res.status(200).json({
       success: true,
       subreddits: isModerator,
@@ -1047,7 +1028,7 @@ async function getUserMuted(req, res) {
         success: false,
         message: "Subreddit not found",
       });
-
+   
     const isModerator = subreddit.moderators.some(
       (mod) => mod.username === user.username
     );
@@ -1061,7 +1042,8 @@ async function getUserMuted(req, res) {
       success: true,
       mutedUsers: mutedUsers,
     });
-  } catch (error) {
+  }
+  catch (error) {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -1086,7 +1068,7 @@ async function getSubredditModerator(req, res) {
     if (!subreddit) {
       return res.status(404).json({
         success: false,
-        message: "Subreddit not found",
+        message: "Subreddit is not found",
       });
     }
     const moderators = subreddit.moderators;
@@ -1117,8 +1099,7 @@ async function banUser(req, res) {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
 
-      const { subredditName, violation, modNote, userMessage, userToBan } =
-        req.body;
+      const { subredditName, violation, modNote, userMessage, userToBan } = req.body;
 
       // Validate input parameters
       if (!subredditName || !violation || !userToBan) {
@@ -1130,7 +1111,7 @@ async function banUser(req, res) {
       if (!bannedUser) {
         return res.status(404).json({ message: "User to ban not found" });
       }
-
+      
       const isModerator = user.moderators.some(
         (moderator) => moderator.subreddit === subredditName
       );
@@ -1140,11 +1121,12 @@ async function banUser(req, res) {
           .json({ message: "Forbidden, you must be a moderator!" });
       }
 
+   
       const subreddit = await Community.findOne({ name: subredditName });
       if (!subreddit) {
         return res.status(404).json({ message: "Subreddit not found" });
       }
-
+      
       // Check if the banned user is a member of the subreddit
       const isMember = subreddit.members.some(
         (member) => member.username === userToBan
@@ -1264,7 +1246,7 @@ async function editPermissions(req, res) {
     const user = await User.findById(req.user.userId);
     const decodedURI = decodeURIComponent(req.params.subreddit);
     const subreddit = await Community.findOne({ name: decodedURI });
-
+   
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -1277,8 +1259,8 @@ async function editPermissions(req, res) {
         message: "Subreddit not found",
       });
     }
-    const isCreator = subreddit.moderators.some(
-      (mod) => mod.username === user.username && mod.role === "creator"
+     const isCreator = subreddit.moderators.some(
+       (mod) => mod.username === user.username && mod.role === "creator"
     );
     if (!isCreator) {
       return res.status(403).json({
@@ -1313,7 +1295,9 @@ async function editPermissions(req, res) {
       success: true,
       message: "Permissions updated successfully",
     });
-  } catch (error) {
+  
+  } catch (error)
+  {
     console.error(error);
     return res.status(500).json({
       success: false,
