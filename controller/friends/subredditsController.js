@@ -1251,7 +1251,8 @@ async function banUser(req, res) {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
 
-      const { subredditName, violation, modNote, userMessage, userToBan } = req.body;
+      const { subredditName, violation, modNote, userMessage, userToBan } =
+        req.body;
 
       // Validate input parameters
       if (!subredditName || !violation || !userToBan) {
@@ -1263,7 +1264,7 @@ async function banUser(req, res) {
       if (!bannedUser) {
         return res.status(404).json({ message: "User to ban not found" });
       }
-      
+
       const isModerator = user.moderators.some(
         (moderator) => moderator.subreddit === subredditName
       );
@@ -1273,12 +1274,11 @@ async function banUser(req, res) {
           .json({ message: "Forbidden, you must be a moderator!" });
       }
 
-   
       const subreddit = await Community.findOne({ name: subredditName });
       if (!subreddit) {
         return res.status(404).json({ message: "Subreddit not found" });
       }
-      
+
       // Check if the banned user is a member of the subreddit
       const isMember = subreddit.members.some(
         (member) => member.username === userToBan
@@ -1324,7 +1324,7 @@ async function banUser(req, res) {
 
 /**
  * Unban a user from a subreddit.
- * 
+ *
  * @param {object} req - The request object.
  * @param {object} req.user - The user object from the request.
  * @param {string} req.user.userId - The ID of the user performing the unban action.
@@ -1333,15 +1333,15 @@ async function banUser(req, res) {
  * @param {string} req.body.bannedUser - The username of the user to unban.
  * @param {object} res - The response object.
  * @returns {object} - The response JSON object indicating success or failure.
- * 
+ *
  * @typedef {object} User
  * @property {string} _id - The unique identifier of the user.
  * @property {Array} moderators - Array of subreddit moderator objects.
- * 
+ *
  * @typedef {object} Community
  * @property {string} name - The name of the subreddit.
  * @property {Array} bannedUsers - Array of banned user objects.
- * 
+ *
  * @typedef {object} ban
  * @property {string} bannedUsername - The username of the banned user.
  * @property {string} violation - The reason for the ban.
@@ -1403,19 +1403,19 @@ async function unbanUser(req, res) {
 
 /**
  * Get the list of banned users in a subreddit.
- * 
+ *
  * This function retrieves the list of banned users in a subreddit.
- * 
+ *
  * @param {object} req - The request object.
  * @param {object} req.params - The URL parameters.
  * @param {string} req.params.subredditName - The name of the subreddit.
  * @param {object} res - The response object.
  * @returns {object} - The response JSON object containing the list of banned users.
- * 
+ *
  * @throws {404} - Not Found if the subreddit is not found.
  * @throws {403} - Forbidden if the user does not have permission to view the banned users list.
  * @throws {500} - Internal Server Error if an unexpected error occurs.
- * 
+ *
  * @memberof module:subredditsController
  * @inner
  */
@@ -1453,10 +1453,10 @@ async function getBannedUsers(req, res) {
         if (userDetails.media) {
           userDetails.media = await getFilesFromS3(userDetails.media);
         }
-          bannedUsers.push({
-            banDetails: banDetails,
-            userDetails: userDetails,
-          });
+        bannedUsers.push({
+          banDetails: banDetails,
+          userDetails: userDetails,
+        });
       }
 
       return res.status(200).json({ bannedUsers });
@@ -1469,21 +1469,21 @@ async function getBannedUsers(req, res) {
 
 /**
  * Get the list of moderated communities by a user.
- * 
+ *
  * This function retrieves the list of moderated communities by a user based on their username.
- * 
+ *
  * @param {object} req - The request object.
  * @param {object} req.params - The URL parameters.
  * @param {string} req.params.username - The username of the user.
  * @param {object} res - The response object.
  * @returns {object} - The response JSON object containing the list of moderated communities.
- * 
+ *
  * @throws {404} - Not Found if the user is not found.
  * @throws {500} - Internal Server Error if an unexpected error occurs.
  */
 async function getModeratedCommunitiesByUsername(req, res) {
   try {
-    const { username } = req.params;
+    const username = req.params.username;
 
     // Find the user by username
     const user = await User.findOne({ username });
@@ -1492,7 +1492,9 @@ async function getModeratedCommunitiesByUsername(req, res) {
     }
 
     // Retrieve the list of moderated communities
-    const moderatedCommunities = user.moderators.map(moderator => moderator.subreddit);
+    const moderatedCommunities = user.moderators.map(
+      (moderator) => moderator.subreddit
+    );
 
     return res.status(200).json({ moderatedCommunities });
   } catch (error) {
