@@ -190,6 +190,16 @@ async function editedQueues(req, res) {
   }
 }
 
+/**
+ * Function to get the community settings of a subreddit.
+ * @name communitySettings
+ * @function
+ * @memberof module:controller/community/modToolsController
+ * @param {import('express').Request} req - The request object.
+ * @param {import('express').Response} res - The response object.
+ * @returns {import('express').Response} The community settings of a subreddit.
+ */
+
 async function communitySettings(req, res) {
   try {
     if (req.user) {
@@ -231,6 +241,16 @@ async function communitySettings(req, res) {
     return res.status(500).json({ success: false, message: "server error" });
   }
 }
+
+/**
+ * Function to update the community settings of a subreddit.
+ * @name updateCommunitySettings
+ * @function
+ * @memberof module:controller/community/modToolsController
+ * @param {import('express').Request} req - The request object.
+ * @param {import('express').Response} res - The response object.
+ * @returns {import('express').Response} The updated community settings of a subreddit.
+ */
 
 async function updateCommunitySettings(req, res) {
   try {
