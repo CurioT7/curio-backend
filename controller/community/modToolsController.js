@@ -3,7 +3,9 @@ const Subreddit = require("../../models/subredditModel");
 const User = require("../../models/userModel");
 const Post = require("../../models/postModel");
 const Comment = require("../../models/commentModel"); 
+const CommunitySettings = require("../../models/CommunitySettingsModel");
 const { getFilesFromS3, sendFileToS3 } = require("../../utils/s3-bucket");
+const { updateLocale } = require("moment/moment");
 
 
 /**
@@ -187,10 +189,132 @@ async function editedQueues(req, res) {
     return res.status(500).json({ success: false, message: "server error" });
   }
 }
-      
+
+async function communitySettings(req, res) {
+  try {
+    if (req.user) {
+      const
+        user = await User.findOne({ _id: req.user.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const subredditName = decodeURIComponent(req.params.subreddit);
+      const subreddit = await Subreddit.findOne({ name: subredditName });
+      if (!subreddit) {
+        return res.status(404).json({ message: "Subreddit not found" });
+      }
+      const isModerator = subreddit.moderators.some(
+        (moderator) => moderator.username === user.username
+      );
+      if (!isModerator) {
+        return res.status(403).json({ message: "You are not authorized to update the settings of this subreddit" });
+      }
+        let communitySettings;
+        communitySettings = await CommunitySettings.findOne({ name: subredditName });
+        if (!communitySettings) {
+           communitySettings = new CommunitySettings({name: subredditName, description: subreddit.description, creator: subreddit.moderators});
+          await communitySettings.save();
+        }    
+      if (subreddit.icon) {
+        const icon = await getFilesFromS3(subreddit.icon);
+        subreddit.icon = icon;
+      }
+      if (subreddit.banner) {
+        const banner = await getFilesFromS3(subreddit.banner);
+        subreddit.banner = banner;
+      }
+      res.json(communitySettings);
+    }
+  }
+  catch (err) {
+    console.log(err);
+    return res.status(500).json({ success: false, message: "server error" });
+  }
+}
+
+async function updateCommunitySettings(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const subredditName = decodeURIComponent(req.params.subreddit);
+      const subreddit = await Subreddit.findOne({ name: subredditName });
+      if (!subreddit) {
+        return res.status(404).json({ message: "Subreddit not found" });
+      }
+      const isModerator = subreddit.moderators.some(
+        (moderator) => moderator.username === user.username
+      );
+      if (!isModerator) {
+        return res.status(403).json({ message: "You are not authorized to update the settings of this subreddit" });
+      }
+      let communitySettings;
+      communitySettings = await CommunitySettings.findOne({ name: subredditName });
+      if (!communitySettings) {
+        return res.status(404).json({ message: "Community settings not found" });
+      }
+      const communitySettingsUpdateFields = {};
+      const commonUpdateFields = {};
+
+      const commonFields = [
+        "name", 
+        "description",
+      ];
+
+      const communitySettingsFields = [
+        "name",
+        "description",
+        "welcomeMessage",
+        "privacyMode",
+        "isNSFW",
+        "posts",
+        "isSpoiler",
+        "allowsCrossposting",
+        "archivePosts",
+        "allowImages",
+        "allowMultipleImages",
+        "allowPolls",
+        "postSpamFilterStrength", 
+        "commentSpamFilterStrength",
+        "linksSpamFilterStrength", 
+        "commentsSort", 
+        "collapseDeletedComments",
+        "commentScoreHide", 
+        "allowGifComment",
+        "allowImageComment", 
+        "allowCollectibleExpressions"
+      ];
+      Object.keys(req.body).forEach((field) => {
+        if(commonFields.includes(field)) {
+          commonUpdateFields[field] = req.body[field];
+          communitySettingsUpdateFields[field] = req.body[field];
+        }else if(communitySettingsFields.includes(field)) {
+          communitySettingsUpdateFields[field] = req.body[field];
+        }
+      });
+        
+        await Subreddit.updateOne({ name: subredditName }, commonUpdateFields);
+        communitySettings = await CommunitySettings.findOneAndUpdate(
+        { name: subredditName },
+        communitySettingsUpdateFields,
+        { new: true, upsert: true }
+      );
+      res.json({communitySettings, message: "Community settings updated successfully"});
+    }
+  }
+  catch (err) {
+    console.log(err);
+    return res.status(500).json({ success: false, message: "server error" });
+  }
+}
+
 
 
 module.exports = {
    bannerAndAvatar,
-    editedQueues,
-   };
+   editedQueues,
+   communitySettings,
+   updateCommunitySettings,
+};

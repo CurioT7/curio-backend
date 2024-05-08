@@ -34,11 +34,11 @@ const communitySettingsSchema = new Schema({
   },
   allowsCrossposting: {
     type: Boolean,
-    default: True,
+    default: true,
   },
   archivePosts: {
     type: Boolean,
-    default: False,
+    default: false,
   },
   allowImages: {
     type: Boolean,
@@ -70,7 +70,7 @@ const communitySettingsSchema = new Schema({
   commentsSort: {
     type: String,
     enum: ["None", "Best", "Old", "Q&A", "New", "Top", "Controversial"],
-    default: "New",
+    default: "None",
   },
   collapseDeletedComments: {
     type: Boolean,
@@ -102,10 +102,12 @@ const communitySettingsSchema = new Schema({
   avatar: {
     type: String,
   },
-  mod: {
+  creator: {
     type: [Schema.Types.ObjectId],
     ref: "User",
   },
 });
 
-module.exports = mongoose.model("CommunitySettings", communitySettingsSchema);
+const CommunitySettings = mongoose.model("CommunitySettings", communitySettingsSchema);
+module.exports = CommunitySettings;
+
