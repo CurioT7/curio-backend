@@ -60,7 +60,7 @@ const userReportSchema = new Schema({
   },
   linkedItem: {
     type: mongoose.Schema.Types.ObjectId,
-    refPath: "linkedItemType", 
+    refPath: "linkedItemType",
     default: null,
   },
   linkedItemType: {
