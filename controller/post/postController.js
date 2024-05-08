@@ -542,11 +542,11 @@ async function scheduledPost(req, res) {
         title,
         type,
         content,
+        linkedSubreddit: subredditname._id,
         authorName: user.username,
         isNSFW,
         isSpoiler,
         isOC,
-        linkedSubreddit: subreddit ? subreddit._id : undefined,
         sendReplies,
         options: optionsArray,
         voteLength,
@@ -563,20 +563,18 @@ async function scheduledPost(req, res) {
           ...scheduledPost,
           title: scheduledPost.title,
           authorName: scheduledPost.authorName,
+          
           scheduledPublishDate: scheduledPost.scheduledTime,
           timeToPublish: null,
           isScheduled: false,
         });
         await post.save();
+        await ScheduledPost.deleteOne({ _id: scheduledPost._id });
         user.posts.push(post._id);
-        if (subreddit) {
-          subreddit.posts.push(post._id);
-          await subreddit.save();
+        if (subredditname) {
+          subredditname.posts.push(post._id);
+          await subredditname.save();
         }
-
-
-
-        console.log(`Scheduled post "${post.title}" published`);
       }, timeDiff);
 
       return res.status(201).json({
