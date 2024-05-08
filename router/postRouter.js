@@ -134,6 +134,17 @@ router.get("/getScheduledPost/:subreddit",authenticate, postController.getSchedu
  * @returns {object} Express router instance.
  */
 router.delete("/deleteScheduledPost/:postId",authenticate, postController.deleteScheduledPost);
+
+/**
+ * Route to handle PATCH requests for updating scheduled post.
+ * @name PATCH/scheduledPost
+ * @function
+ * @memberof module:routes/postRouter
+ * @param {string} path - The URL path for the route ("/scheduledPost").
+ * @param {function} middleware - The controller function to handle the PATCH request.
+ * @returns {object} Express router instance.
+ */
+router.patch("/editScheduledPost",authenticate, postController.editScheduledPost);
  
 
 module.exports = router;
