@@ -165,7 +165,7 @@ async function getSubredditReportedContent(req, res, next) {
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-      //TODO if approved discard report filter ignored reports
+      //TODO if approved discard report filter ignored reports and viewed
       const subredditName = decodeURIComponent(req.params.subreddit);
       const subreddit = await Subreddit.findOne({ name: subredditName });
       if (!subreddit) {

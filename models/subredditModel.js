@@ -155,7 +155,7 @@ const subredditSchema = new Schema({
         type: String,
         enum: ["creator", "moderator"],
       },
-       manageUsers: {
+      manageUsers: {
         type: Boolean,
         default: false,
       },
@@ -207,6 +207,18 @@ const subredditSchema = new Schema({
       username: {
         type: String,
         ref: "User",
+      },
+    },
+  ],
+  removedItems: [
+    {
+      _id: {
+        type: Schema.Types.ObjectId,
+        refPath: "linkedItemType",
+      },
+      linkedItemType: {
+        type: String,
+        enum: ["Post", "Comment"],
       },
     },
   ],

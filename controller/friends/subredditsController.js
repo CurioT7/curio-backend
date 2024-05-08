@@ -1501,7 +1501,20 @@ async function getModeratedCommunitiesByUsername(req, res) {
   }
 }
 
-
+/**
+ * Approves or ignores a reported item based on moderator action.
+ * @async
+ * @function moderatorApprove
+ * @param {Object} req - The request object.
+ * @param {Object} req.user - The user object containing user information.
+ * @param {string} req.user.userId - The ID of the user performing the action.
+ * @param {Object} req.body - The request body containing item information.
+ * @param {string} req.body.itemID - The ID of the item to approve or remove.
+ * @param {string} req.body.itemType - The type of the item ('report' or 'post').
+ * @param {string} req.body.subredditName - The name of the subreddit where the action is performed.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response indicating success or failure.
+ */
 async function moderatorApprove(req, res) {
   try {
     if (req.user) {
@@ -1574,6 +1587,162 @@ async function moderatorApprove(req, res) {
   }
 }
 
+/**
+ * Removes a reported or a post item based on moderator action.
+ * @async
+ * @function moderatorRemove
+ * @param {Object} req - The request object.
+ * @param {Object} req.user - The user object containing user information.
+ * @param {string} req.user.userId - The ID of the user performing the action.
+ * @param {Object} req.body - The request body containing item information.
+ * @param {string} req.body.itemID - The ID of the item to remove.
+ * @param {string} req.body.itemType - The type of the item ('report' or 'post').
+ * @param {string} req.body.subredditName - The name of the subreddit where the action is performed.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response indicating success or failure.
+ */
+async function moderatorRemove(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      const { itemID, itemType, subredditName } = req.body;
+      // Check if the user has moderator privileges
+      const isModerator = user.moderators.some(
+        (moderator) => moderator.subreddit === subredditName
+      );
+      if (!isModerator) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden, you must be a moderator!" });
+      }
+      switch (itemType) {
+        case "report":
+          const report = await Report.findById(itemID).populate("linkedItem");
+          if (!report) {
+            return res
+              .status(404)
+              .json({ success: false, message: "Report not found" });
+          }
+
+          // Mark the report as viewed
+          report.isViewed = true;
+
+          // Check if the linkedItem is a Post or Comment
+          if (report.linkedItemType === "Post") {
+            // Find the subreddit where the post belongs
+            const subreddit = await Community.findOne({
+              name: subredditName,
+              posts: report.linkedItem,
+            });
+
+            if (!subreddit) {
+              return res
+                .status(404)
+                .json({ success: false, message: "Subreddit not found" });
+            }
+
+            // Remove the post from the subreddit's posts array
+            subreddit.posts.pull(report.linkedItem);
+
+            // Add the post to the subreddit's removedItems array
+            subreddit.removedItems.push({
+              _id: report.linkedItem,
+              linkedItemType: "Post",
+            });
+
+            await subreddit.save();
+          } else if (report.linkedItemType === "Comment") {
+            // Find the post to which the comment belongs
+            const post = await Post.findOne({ comments: report.linkedItem });
+
+            if (!post) {
+              return res
+                .status(404)
+                .json({ success: false, message: "Post not found" });
+            }
+
+            // Remove the comment from the post's comments array
+            post.comments.pull(report.linkedItem);
+
+            await post.save();
+
+            // Find the community (subreddit) to which the post belongs
+            const community = await Community.findOne({
+              name: subredditName,
+            });
+
+            if (!community) {
+              return res
+                .status(404)
+                .json({ success: false, message: "Subreddit not found" });
+            }
+
+            // Add the comment to the community's removedItems array
+            community.removedItems.push({
+              _id: report.linkedItem,
+              linkedItemType: "Comment",
+            });
+
+            await community.save();
+          }
+
+          // Find all reports linked to the same item
+          const allReports = await Report.find({
+            linkedItem: report.linkedItem,
+          });
+
+          // Update all found reports to be viewed
+          for (const document of allReports) {
+            document.isViewed = true;
+            await document.save();
+          }
+
+          // Save the changes to the report
+          await report.save();
+          break;
+
+        case "post":
+          const post = await Post.findById(itemID);
+          if (!post) {
+            return res
+              .status(404)
+              .json({ success: false, message: "Post not found" });
+          }
+          // Find the subreddit where the post belongs
+          const subreddit = await Community.findOne({
+            name: subredditName,
+            posts: itemID,
+          });
+
+          if (!subreddit) {
+            return res
+              .status(404)
+              .json({ success: false, message: "Subreddit not found" });
+          }
+
+          // Remove the post from the subreddit's posts array
+          subreddit.posts.pull(itemID);
+
+          // Add the post to the subreddit's removedItems array
+          subreddit.removedItems.push({
+            _id: itemID,
+            linkedItemType: "Post",
+          });
+
+          await subreddit.save();
+          break;
+      }
+
+       return res
+              .status(200)
+              .json({ message: "Item removed successfully" });
+    }
+  } catch (error) {
+    console.error("Error retrieving moderated communities:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 module.exports = {
   newSubreddit,
   availableSubreddit,
@@ -1599,4 +1768,5 @@ module.exports = {
   unbanUser,
   getBannedUsers,
   moderatorApprove,
+  moderatorRemove,
 };
