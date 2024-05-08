@@ -257,4 +257,70 @@ router.get("/communitySettings/:subreddit", authenticate,modToolsController.comm
 
 router.patch("/updateCommunitySettings/:subreddit", authenticate, modToolsController.updateCommunitySettings);
 
+/**
+ * GET /moderatedSubreddits/:username - Get the list of moderated communities by a user.
+ * 
+ * This endpoint allows to retrieve the list of moderated communities by a user based on their username.
+ * 
+ * @name GET /moderatedSubreddits/:username
+ * @function
+ * @memberof module:subredditsRouter
+ * @inner
+ * 
+ * @param {object} req - The request object.
+ * @param {object} req.params - The URL parameters.
+ * @param {string} req.params.username - The username of the user.
+ * @param {object} res - The response object.
+ * @returns {object} - The response JSON object containing the list of moderated communities.
+ */
+router.get(
+  "/moderatedSubreddits/:username",
+  subredditsController.getModeratedCommunitiesByUsername
+);
+/**
+ * POST request to ban a user from a subreddit.
+ * @async
+ * @name POST /moderator/ban
+ * @function 
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the user is banned.
+ */
+router.post("/moderator/ban", authenticate, subredditsController.banUser);
+
+/**
+ * POST request to unban a user from a subreddit.
+ * @async
+ * @name POST /moderator/unban
+ * @function 
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the user is unbanned.
+ */
+router.post("/moderator/unban", authenticate, subredditsController.unbanUser);
+
+/**
+ * GET /r/:subredditName/about/banned - Get the list of banned users in a subreddit.
+ * 
+ * This endpoint allows moderators to retrieve the list of banned users in a subreddit.
+ * 
+ * @name GET /r/:subredditName/about/banned
+ * @function
+ * @memberof module:subredditsRouter
+ * @inner
+ * 
+ * @param {object} req - The request object.
+ * @param {object} req.user - The authenticated user object.
+ * @param {string} req.user.userId - The ID of the user performing the request.
+ * @param {object} req.params - The URL parameters.
+ * @param {string} req.params.subredditName - The name of the subreddit.
+ * @param {object} res - The response object.
+ * @returns {object} - The response JSON object containing the list of banned users and their details.
+ */
+router.get(
+  "/r/:subredditName/about/banned",
+  authenticate,
+  subredditsController.getBannedUsers
+);
+
 module.exports = router;
