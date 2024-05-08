@@ -14,7 +14,7 @@ const Notification = require("../../models/notificationModel");
 const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
 const schedule = require("node-schedule");
 const { DateTime } = require("luxon");
-const moment = require('moment');
+const moment = require("moment");
 
 // Function to retrieve all comments for a post.
 /**
@@ -475,7 +475,7 @@ async function scheduledPost(req, res) {
           .json({ success: false, message: "Type is required" });
       }
 
-      if (!["post","media", "poll", "link"].includes(type)) {
+      if (!["post", "media", "poll", "link"].includes(type)) {
         return res.status(400).json({
           success: false,
           message: "Type must be one of 'post','media', 'poll', 'link'",
@@ -529,14 +529,13 @@ async function scheduledPost(req, res) {
         name: req.body.subreddit,
         "mutedUsers.username": user.username,
       });
-  
+
       if (mutedUser) {
         return res.status(403).json({
           success: false,
           message: "You are muted in this subreddit. Cannot submit a post.",
         });
       }
-      
 
       if (timeDiff <= 0) {
         return res.status(400).json({
@@ -569,7 +568,7 @@ async function scheduledPost(req, res) {
           ...scheduledPost,
           title: scheduledPost.title,
           authorName: scheduledPost.authorName,
-          
+
           scheduledPublishDate: scheduledPost.scheduledTime,
           timeToPublish: null,
           isScheduled: false,
@@ -598,13 +597,13 @@ async function scheduledPost(req, res) {
   }
 }
 
-/** 
-* Function to get scheduled posts
-* @async
-* @param {object} req - Express request object
-* @param {object} res - Express response object
-* @returns {object} - Express response object
-*/
+/**
+ * Function to get scheduled posts
+ * @async
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @returns {object} - Express response object
+ */
 
 async function getScheduledPost(req, res) {
   try {

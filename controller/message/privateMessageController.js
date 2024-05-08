@@ -184,7 +184,8 @@ async function inbox(req, res) {
         ) ||
         user.sentPrivateMessages.some(
           (m) => m._id.toString() === message._id.toString()
-        )
+        ) ||
+        user.mentions.some((m) => m._id.toString() === message._id.toString())
       );
     });
 
