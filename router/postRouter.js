@@ -27,7 +27,7 @@ router.get("/comments/:postId", (req, res, next) => authenticate(req, res, next,
  * @returns {object} Express router instance.
  */
 
-router.patch("/updatecomments", postController.updatePostComments);
+router.patch("/updatecomments",authenticate, postController.updatePostComments);
 
 
 /**
@@ -100,5 +100,17 @@ router.post("/marknsfw",authenticate,postController.markPostNSFW);
  * @returns {object} Express router instance.
  */
 router.post("/unmarknsfw",authenticate, postController.unmarkPostNSFW);
+
+/**
+ * Route to handle POST requests for scheduling a post.
+ * @name POST/scheduledPost
+ * @function
+ * @memberof module:routes/postRouter
+ * @param {string} path - The URL path for the route ("/scheduledPost").
+ * @param {function} middleware - The controller function to handle the POST request.
+ * @returns {object} Express router instance.
+ */
+
+router.post("/scheduledPost",authenticate, postController.scheduledPost);
 
 module.exports = router;

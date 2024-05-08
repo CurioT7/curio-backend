@@ -184,8 +184,29 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ["creator", "moderator"],
       },
+      manageUsers: {
+        type: Boolean,
+        default: false,
+      },
+      createLiveChats: {
+        type: Boolean,
+        default: false,
+      },
+      manageSettings: {
+        type: Boolean,
+        default: false,
+      },
+      managePostsAndComments: {
+        type: Boolean,
+        default: false,
+      },
+      everything: {
+        type: Boolean,
+        default: false,
+      },
     },
   ],
+   
   hiddenPosts: [
     {
       type: Schema.Types.ObjectId,
@@ -285,6 +306,15 @@ const userSchema = new mongoose.Schema({
       },
     },
   ],
+  access: {
+    type: String,
+    enum: ["user", "admin"],
+    default: "user",
+  },
+  isBanned: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 /**

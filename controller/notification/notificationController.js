@@ -8,6 +8,7 @@ const jwt = require("jsonwebtoken");
 const Subreddit = require("../../models/subredditModel");
 const UserPreferences = require("../../models/userPreferencesModel");
 const Comment = require("../../models/commentModel");
+const { getFilesFromS3 } = require("../../utils/s3-bucket");
 
 /**
  * Filters out hidden notifications for a given user.
@@ -98,19 +99,19 @@ async function getAllNotificationsForUser(req, res) {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
 
-        const notifications = await Notification.aggregate([
-          {
-            $match: {
-              recipient: user.username,
-            },
+      const notifications = await Notification.aggregate([
+        {
+          $match: {
+            recipient: user.username,
           },
-          // Sort notifications by most recent
-          {
-            $sort: {
-              timestamp: -1, 
-            },
+        },
+        // Sort notifications by most recent
+        {
+          $sort: {
+            timestamp: -1,
           },
-        ]);
+        },
+      ]);
 
       // Filter out hidden notifications
       const filteredNotifications = await filterHiddenNotifications(
@@ -132,7 +133,19 @@ async function getAllNotificationsForUser(req, res) {
           type: "subreddit",
           subredditName: randomSubreddit[0].name,
         });
+
+        if (randomSubreddit[0].media) {
+          notification.media = randomSubreddit[0].media;
+          notification.media = await getFilesFromS3(randomSubreddit[0].media);
+        }
+
         await notification.save();
+      }
+
+      for (const notification of filteredNotifications) {
+        if (notification.media) {
+          notification.media = await getFilesFromS3(notification.media);
+        }
       }
 
       return res
@@ -144,6 +157,7 @@ async function getAllNotificationsForUser(req, res) {
     return res.status(500).json({ message: "Internal server error" });
   }
 }
+
 
 /**
  * Checks if a subreddit with the given name exists in the database.

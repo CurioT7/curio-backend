@@ -98,10 +98,18 @@ async function unhidePost(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
+/**
+ * Mark a post as Spoiler
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Mark a post as Spoiler
+ * @throws {Error} - If there is an error marking the post as spoiler
+ */
 async function spoilerPost(req, res) {
   const postId = req.body.idpost;
   try {
-    const user =  await User.findById(req.user.userId);
+    const user = await User.findById(req.user.userId);
     // Find the post by ID
     const post = await Post.findOne({ _id: postId, authorID: user });
     if (!post) {
@@ -122,12 +130,20 @@ async function spoilerPost(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
-
+/**
+ * Unmark a post as Spoiler
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - A response object
+ * @description Unmark a post as Spoiler
+ * @throws {Error} - If there is an error unmarking the post as spoiler
+ * @async
+ */
 async function unspoilerPost(req, res) {
-  const postId = req.body.idpost; 
-  
+  const postId = req.body.idpost;
+
   try {
-   const user= await User.findById(req.user.userId);
+    const user = await User.findById(req.user.userId);
     // Find the post by ID
     const post = await Post.findOne({ _id: postId, authorID: user });
     if (!post) {
@@ -336,7 +352,10 @@ async function submitPost(req, res, user, imageKey) {
           .json({ success: false, message: "Subreddit not found" });
       }
       if (subreddit.privacyMode === "private") {
-        if (!subreddit.members.includes(user._id)) {
+        const isMember = subreddit.members.some(
+          (member) => member.username === user.username
+        );
+        if (!isMember) {
           return res.status(403).json({
             success: false,
             message: "User is not a member of this subreddit",
@@ -369,6 +388,17 @@ async function submitPost(req, res, user, imageKey) {
         .map((option) => ({ name: option, votes: 0 }));
     }
 
+    const mutedUser = await Subreddit.findOne({
+      name: req.body.subreddit,
+      "mutedUsers.username": user.username,
+    });
+
+    if (mutedUser) {
+      return res.status(403).json({
+        success: false,
+        message: "You are muted in this subreddit. Cannot submit a post.",
+      });
+    }
     const post = new Post({
       title: req.body.title,
       type: req.body.type,
@@ -377,7 +407,7 @@ async function submitPost(req, res, user, imageKey) {
       isNSFW: req.body.isNSFW,
       isSpoiler: req.body.isSpoiler,
       isOC: req.body.isOC,
-      linkedSubreddit: subreddit && subreddit._id,
+      linkedSubreddit: subreddit && subreddit,
       media: imageKey,
       sendReplies: req.body.sendReplies,
       options: req.body.options && optionsArray,
@@ -522,7 +552,10 @@ async function sharePost(req, res) {
         .json({ success: false, message: "Subreddit not found" });
     }
     if (subreddit.privacyMode === "private") {
-      if (!subreddit.members.includes(user._id)) {
+      const isMember = subreddit.members.some(
+        (member) => member.username === user.username
+      );
+      if (!isMember) {
         return res.status(403).json({
           success: false,
           message: "User is not a member of this subreddit",
@@ -867,13 +900,12 @@ async function castVote(req, res) {
           recipient: author.username,
           postId: itemName === "post" ? itemID : undefined,
           commentId: itemName === "comment" ? itemID : undefined,
-          isDisabled: false, 
+          isDisabled: false,
           type: itemName,
         });
 
         await notification.save();
       }
-   
 
       await Promise.all([item.save(), user.save()]);
       return res
@@ -887,7 +919,6 @@ async function castVote(req, res) {
       .json({ success: false, message: "Internal server error", error: error });
   }
 }
-
 
 /**
  * Add a post to the user's browsing history.

@@ -2,6 +2,8 @@ const Post = require("../../models/postModel");
 const User = require("../../models/userModel");
 const Comment = require("../../models/commentModel");
 const Message = require("../../models/messageModel");
+const Subreddit = require("../../models/subredditModel");
+const ScheduledPost = require("../../models/scheduledPostModel");
 const {
   generateToken,
   verifyToken,
@@ -10,6 +12,9 @@ const {
 require("dotenv").config();
 const Notification = require("../../models/notificationModel");
 const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
+const schedule = require("node-schedule");
+const { DateTime } = require("luxon");
+const moment = require('moment');
 
 // Function to retrieve all comments for a post.
 /**
@@ -20,6 +25,7 @@ const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
  * @returns {object} - Express response object
  */
 const mongoose = require("mongoose");
+const { $Command } = require("@aws-sdk/client-s3");
 
 async function getPostComments(req, res) {
   try {
@@ -85,11 +91,17 @@ async function createComments(req, res) {
           message: "Post is locked. Cannot add a comment.",
         });
       }
-
+      const subreddit = await Subreddit.findById(post.linkedSubreddit);
+      const mutedUsernames = subreddit.mutedUsers.map((user) => user.username);
+      if (mutedUsernames.includes(user.username)) {
+        return res.status(403).json({
+          success: false,
+          message: "User is muted in this subreddit. Cannot add a comment.",
+        });
+      }
       // Find the author of the post
       const postAuthor = await User.findOne({ username: post.authorName });
-
-      // Proceed to create the comment
+      // // Proceed to create the comment
       const comment = new Comment({
         content,
         authorName: user.username,
@@ -213,6 +225,7 @@ async function updatePostComments(req, res) {
       }
 
       comment.content = content;
+      comment.isEdited = true;
       await comment.save();
       return res.status(200).json({ success: true, comment });
     }
@@ -346,6 +359,7 @@ async function editPostContent(req, res) {
       }
 
       post.content = content;
+      post.isEdited = true;
       await post.save();
 
       return res.status(200).json({ success: true, post });
@@ -424,6 +438,166 @@ async function unmarkPostNSFW(req, res) {
   }
 }
 
+// Function to schedule a post
+/**
+ * Schedules a post for publishing at a later date and time.
+ * @async
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @returns {object} - Express response object
+ */
+
+async function scheduledPost(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const {
+        type,
+        title,
+        content,
+        subreddit,
+        isNSFW,
+        isSpoiler,
+        isOC,
+        sendReplies,
+        options,
+        voteLength,
+        scheduledPublishDate,
+        repeatOption,
+        contestMode,
+      } = req.body;
+      if (!type) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Type is required" });
+      }
+
+      if (!["post","media", "poll", "link"].includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: "Type must be one of 'post','media', 'poll', 'link'",
+        });
+      }
+      let subredditname;
+      if (subreddit) {
+        subredditname = await Subreddit.findOne({ name: subreddit });
+        if (!subredditname) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Subreddit not found" });
+        }
+        if (subreddit.privacyMode === "private") {
+          const isMember = subreddit.members.some(
+            (member) => member.username === user.username
+          );
+          if (!isMember) {
+            return res.status(403).json({
+              success: false,
+              message: "User is not a member of this subreddit",
+            });
+          }
+        }
+      }
+
+      if (content && content.startsWith("http") && type === "link") {
+        // Regular expression to match URLs like www.example.com
+        const urlPattern =
+          /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})(\/\S*)?$/;
+        if (!urlPattern.test(req.body.content)) {
+          return res
+            .status(400)
+            .json({ success: false, message: "Invalid URL format" });
+        }
+      }
+
+      let optionsArray;
+      if (type === "poll") {
+        optionsArray = options;
+        optionsArray = optionsArray
+          .split(",")
+          .map((option) => ({ name: option, votes: 0 }));
+      }
+
+      const scheduledTime = DateTime.fromISO(scheduledPublishDate).toUTC();
+      const now = DateTime.utc();
+      const timeDiff = scheduledTime.diff(now);
+
+      const mutedUser = await Subreddit.findOne({
+        name: req.body.subreddit,
+        "mutedUsers.username": user.username,
+      });
+  
+      if (mutedUser) {
+        return res.status(403).json({
+          success: false,
+          message: "You are muted in this subreddit. Cannot submit a post.",
+        });
+      }
+      
+
+      if (timeDiff <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Scheduled publish date cannot be in the past",
+        });
+      }
+      const scheduledPost = new ScheduledPost({
+        title,
+        type,
+        content,
+        linkedSubreddit: subredditname._id,
+        authorName: user.username,
+        isNSFW,
+        isSpoiler,
+        isOC,
+        sendReplies,
+        options: optionsArray,
+        voteLength,
+        scheduledPublishDate: scheduledTime,
+        timeToPublish: timeDiff,
+        repeatOption,
+        contestMode,
+        isScheduled: true,
+      });
+      await scheduledPost.save();
+
+      setTimeout(async () => {
+        const post = new Post({
+          ...scheduledPost,
+          title: scheduledPost.title,
+          authorName: scheduledPost.authorName,
+          
+          scheduledPublishDate: scheduledPost.scheduledTime,
+          timeToPublish: null,
+          isScheduled: false,
+        });
+        await post.save();
+        await ScheduledPost.deleteOne({ _id: scheduledPost._id });
+        user.posts.push(post._id);
+        if (subredditname) {
+          subredditname.posts.push(post._id);
+          await subredditname.save();
+        }
+      }, timeDiff);
+
+      return res.status(201).json({
+        success: true,
+        message: " Scheduled Post created successfully",
+        scheduledPost,
+        scheduledPostID: scheduledPost._id,
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
+  }
+}
+
 module.exports = {
   getPostComments,
   updatePostComments,
@@ -433,4 +607,5 @@ module.exports = {
   editPostContent,
   markPostNSFW,
   unmarkPostNSFW,
+  scheduledPost,
 };

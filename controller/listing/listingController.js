@@ -72,7 +72,6 @@ async function randomPost(req, res) {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 }
-
 /**
  * Get the top-viewed posts from a subreddit, or a random post if there are no top-viewed posts.
  * @async
@@ -91,20 +90,24 @@ async function getTopPosts(req, res) {
         .json({ success: false, message: "Subreddit not found" });
     }
 
-    const topPosts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
-      upvotes: -1,
-    });
-
-    const media = topPosts.map((post) => post.media);
-    if (media) {
-      for (let i = 0; i < media.length; i++) {
-        topPosts[i].media = await getFilesFromS3(media[i]);
-      }
-    }
+    const topPosts = await Post.aggregate([
+      { $match: { linkedSubreddit: subreddit._id } },
+      { $sort: { upvotes: -1 } },
+    ]);
 
     if (topPosts.length > 0) {
+      // Get media for each post
+      for (let i = 0; i < topPosts.length; i++) {
+        const media = topPosts[i].media;
+        if (media) {
+          topPosts[i].media = await getFilesFromS3(media);
+        }
+      }
+
+      // Increment views of the first post
       await Post.updateOne({ _id: topPosts[0]._id }, { $inc: { views: 1 } });
 
+      // If user is authenticated, get vote status and subreddit details
       let detailsArray;
       if (req.user) {
         const user = await User.findOne({ _id: req.user.userId });
@@ -113,17 +116,24 @@ async function getTopPosts(req, res) {
 
       return res.status(200).json({
         success: true,
-        topPosts,
-        detailsArray: detailsArray && detailsArray,
+        posts: detailsArray
+          ? topPosts.map((post, index) => ({
+              ...post,
+              details: detailsArray[index],
+            }))
+          : topPosts,
       });
-    } 
+    } else {
+      return res
+        .status(404)
+        .json({ success: false, message: "No top posts found" });
+    }
   } catch (error) {
     return res
       .status(400)
       .json({ success: false, message: "Error getting top posts" });
   }
 }
-
 /**
  * Get the newest posts from a subreddit.
  * @async
@@ -145,16 +155,41 @@ async function newPosts(req, res) {
     const posts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
       createdAt: -1,
     });
-    const media = posts.map((post) => post.media);
-    if (media) {
-      for (let i = 0; i < media.length; i++) {
-        posts[i].media = await getFilesFromS3(media[i]);
-      }
-    }
-    const postIds = posts.map((post) => post._id);
-    await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
-    return res.status(200).json({ success: true, posts });
+    if (posts.length > 0) {
+      // Handle media for each post
+      for (let i = 0; i < posts.length; i++) {
+        const media = posts[i].media;
+        if (media) {
+          posts[i].media = await getFilesFromS3(media);
+        }
+      }
+
+      // Update view counts for all posts
+      const postIds = posts.map((post) => post._id);
+      await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
+
+      // Return response with details for authenticated users
+      let detailsArray;
+      if (req.user) {
+        const user = await User.findOne({ _id: req.user.userId });
+        detailsArray = await getVoteStatusAndSubredditDetails(posts, user);
+      }
+
+      return res.status(200).json({
+        success: true,
+        posts: detailsArray
+          ? posts.map((post, index) => ({
+              ...post.toObject(),
+              details: detailsArray[index],
+            }))
+          : posts,
+      });
+    } else {
+      return res
+        .status(404)
+        .json({ success: false, message: "No new posts found" });
+    }
   } catch (error) {
     return res
       .status(400)
@@ -174,6 +209,7 @@ async function hotPosts(req, res) {
   try {
     const subredditName = decodeURIComponent(req.params.subreddit);
     const subreddit = await Subreddit.findOne({ name: subredditName });
+
     if (!subreddit) {
       return res
         .status(404)
@@ -183,20 +219,45 @@ async function hotPosts(req, res) {
     const posts = await Post.find({ linkedSubreddit: subreddit._id }).sort({
       views: -1,
     });
-    const media = posts.map((post) => post.media);
-    if (media) {
-      for (let i = 0; i < media.length; i++) {
-        posts[i].media = await getFilesFromS3(media[i]);
-      }
-    }
-    const postIds = posts.map((post) => post._id);
-    await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
 
-    return res.status(200).json({ success: true, posts });
+    if (posts.length > 0) {
+      // Handle media for each post
+      for (let i = 0; i < posts.length; i++) {
+        const media = posts[i].media;
+        if (media) {
+          posts[i].media = await getFilesFromS3(media);
+        }
+      }
+
+      // Update view counts for all posts
+      const postIds = posts.map((post) => post._id);
+      await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
+
+      let detailsArray;
+      if (req.user) {
+        const user = await User.findOne({ _id: req.user.userId });
+        detailsArray = await getVoteStatusAndSubredditDetails(posts, user);
+      }
+
+      return res.status(200).json({
+        success: true,
+        posts: detailsArray
+          ? posts.map((post, index) => ({
+              ...post.toObject(),
+              details: detailsArray[index],
+            }))
+          : posts,
+      });
+    } else {
+      return res
+        .status(404)
+        .json({ success: false, message: "No hot posts found" });
+    }
   } catch (error) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Error getting hot posts" });
+    return res.status(400).json({
+      success: false,
+      message: "Error getting hot posts",
+    });
   }
 }
 
@@ -223,18 +284,45 @@ async function mostComments(req, res) {
       path: "comments",
       select: "_id",
     });
-    posts.forEach((post) => {
-      post.numComments = post.comments.length; // Number of comments is the length of the comments array
-    });
 
-    posts.sort((a, b) => b.numComments - a.numComments);
-    const media = posts.map((post) => post.media);
-    if (media) {
-      for (let i = 0; i < media.length; i++) {
-        posts[i].media = await getFilesFromS3(media[i]);
+    if (posts.length > 0) {
+      // Calculate the number of comments for each post
+      posts.forEach((post) => {
+        post.numComments = post.comments.length;
+      });
+
+      // Sort posts based on the number of comments
+      posts.sort((a, b) => b.numComments - a.numComments);
+
+      // Handle media for each post
+      for (let i = 0; i < posts.length; i++) {
+        const media = posts[i].media;
+        if (media) {
+          posts[i].media = await getFilesFromS3(media);
+        }
       }
+
+      let detailsArray;
+      if (req.user) {
+        const user = await User.findOne({ _id: req.user.userId });
+        detailsArray = await getVoteStatusAndSubredditDetails(posts, user);
+      }
+
+      return res.status(200).json({
+        success: true,
+        posts: detailsArray
+          ? posts.map((post, index) => ({
+              ...post.toObject(),
+              details: detailsArray[index],
+            }))
+          : posts,
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: "No posts found with most comments",
+      });
     }
-    return res.status(200).json({ success: true, posts });
   } catch (error) {
     return res.status(400).json({
       success: false,
@@ -242,7 +330,6 @@ async function mostComments(req, res) {
     });
   }
 }
-
 /**
  * Get the top-viewed posts from a subreddit, by an interval time
  * @async
@@ -270,22 +357,29 @@ async function getTopPostsbytime(req, res) {
         .toDate();
     }
 
-    const topPosts = await Post.find({
-      linkedSubreddit: subreddit._id,
-      createdAt: { $gte: timeThreshold },
-    }).sort({ upvotes: -1 });
-
-        const media = topPosts.map((post) => post.media);
-    if (media) {
-      for (let i = 0; i < media.length; i++) {
-        topPosts[i].media = await getFilesFromS3(media[i]);
-      }
-    }
+    const topPosts = await Post.aggregate([
+      {
+        $match: {
+          linkedSubreddit: subreddit._id,
+          createdAt: { $gte: timeThreshold },
+        },
+      },
+      { $sort: { upvotes: -1 } },
+    ]);
 
     if (topPosts.length > 0) {
-      const postIds = topPosts.map((post) => post._id);
-      await Post.updateMany({ _id: { $in: postIds } }, { $inc: { views: 1 } });
+      // Get media for each post
+      for (let i = 0; i < topPosts.length; i++) {
+        const media = topPosts[i].media;
+        if (media) {
+          topPosts[i].media = await getFilesFromS3(media);
+        }
+      }
 
+      // Increment views of the first post
+      await Post.updateOne({ _id: topPosts[0]._id }, { $inc: { views: 1 } });
+
+      // If user is authenticated, get vote status and subreddit details
       let detailsArray;
       if (req.user) {
         const user = await User.findOne({ _id: req.user.userId });
@@ -294,8 +388,12 @@ async function getTopPostsbytime(req, res) {
 
       return res.status(200).json({
         success: true,
-        topPosts,
-        detailsArray: detailsArray && detailsArray,
+        posts: detailsArray
+          ? topPosts.map((post, index) => ({
+              ...post,
+              details: detailsArray[index],
+            }))
+          : topPosts,
       });
     } else {
       return res.status(404).json({
@@ -400,7 +498,7 @@ async function getUserPosts(req, res) {
       const timeFrame = req.params.timeframe;
       let page = req.query?.page;
       page = page ? parseInt(page) : 1;
-      const limit = 10; // Allow 20 items per page
+      const limit = 15; // Allow 15 items per page
       const skip = (page - 1) * limit;
 
       const fetchPosts = async (subreddit) => {
@@ -444,7 +542,7 @@ async function getUserPosts(req, res) {
 
           case "random":
             // Fetch random posts
-             return Post.find({ linkedSubreddit: subredditDetails._id })
+            return Post.find({ linkedSubreddit: subredditDetails._id })
               .populate("originalPostId")
               .skip(skip)
               .limit(limit)
@@ -526,7 +624,7 @@ async function getUserPosts(req, res) {
       const subredditPosts = await Promise.all(user.subreddits.map(fetchPosts));
 
       const flattenedPosts = subredditPosts.flat();
-      totalCount = await Post.countDocuments(flattenedPosts);
+       totalCount = await Post.countDocuments(flattenedPosts);
 
       let fetchedPosts = flattenedPosts;
       if (timeFrame) {
@@ -564,6 +662,9 @@ async function getUserPosts(req, res) {
             return res.status(400).json({ message: "Invalid time frame" });
         }
       }
+
+      // Apply pagination after time frame filtering
+      fetchedPosts = fetchedPosts.slice(skip, skip + limit);
 
       // Get vote status and subreddit details for each post
       const detailsArray = await getVoteStatusAndSubredditDetails(
@@ -750,9 +851,9 @@ async function guestHomePage(req, res) {
     const timeFrame = req.params.timeframe;
     let page = req.query?.page;
     page = page ? parseInt(page) : 1;
-    const limit = 10; // Allow 10 items per page
+    const limit = 15; // Allow 15 items per page
     const skip = (page - 1) * limit;
-
+     
     const fetchPosts = async () => {
       switch (type) {
         case "best":
