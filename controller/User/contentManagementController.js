@@ -351,6 +351,19 @@ async function submitPost(req, res, user, imageKey) {
           .status(404)
           .json({ success: false, message: "Subreddit not found" });
       }
+
+      const bannedUsernames = subreddit.bannedUsers.map(
+        (user) => user.username
+      );
+
+      // Check if the user adding the comment is in the banned users list
+      if (bannedUsernames.includes(user.username)) {
+        return res.status(403).json({
+          success: false,
+          message: "User is banned in this subreddit. Cannot add a post.",
+        });
+      }
+
       if (subreddit.privacyMode === "private") {
         const isMember = subreddit.members.some(
           (member) => member.username === user.username
