@@ -405,5 +405,63 @@ router.post(
   subredditsController.approveRemoval
 );
 
+/**
+ * Adds a rule to the specified subreddit.
+ * @async
+ * @function addSubredditInfo
+ * @param {Object} req - The request object.
+ * @param {Object} req.user - The user object containing user information.
+ * @param {string} req.user.userId - The ID of the user performing the action.
+ * @param {Object} req.body - The request body containing information to be added to the subreddit.
+ * @param {string} req.body.subredditName - The name of the subreddit where the rule will be added.
+ * @param {string} req.body.type - The type of information to be added ("rule").
+ * @param {Object} req.body.info - The rule to be added, containing appliesTo, reportReason, and fullDescription.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response indicating success or failure.
+ */
+router.post(
+  "/moderator/rules",
+  authenticate,
+  subredditsController.addSubredditInfo
+);
+
+/**
+ * Deletes a rule from the specified subreddit.
+ * @async
+ * @function deleteSubredditInfo
+ * @param {Object} req - The request object.
+ * @param {Object} req.user - The user object containing user information.
+ * @param {string} req.user.userId - The ID of the user performing the action.
+ * @param {Object} req.body - The request body containing information to be deleted from the subreddit.
+ * @param {string} req.body.subredditName - The name of the subreddit where the rule will be deleted.
+ * @param {string} req.body.type - The type of information to be deleted ("rule").
+ * @param {string} req.body.id - The ID of the rule to be deleted.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response indicating success or failure.
+ */
+router.post(
+  "/moderator/deleteRules",
+  authenticate,
+  subredditsController.deleteSubredditInfo
+);
+
+/**
+ * Retrieves information from a subreddit based on the type (e.g., rules or removal reasons).
+ * @async
+ * @function getSubredditInfoByType
+ * @param {Object} req - The request object.
+ * @param {Object} req.user - The user object containing user information.
+ * @param {string} req.user.userId - The ID of the user performing the action.
+ * @param {Object} req.params - The request parameters.
+ * @param {string} req.params.subredditName - The name of the subreddit to retrieve information from.
+ * @param {string} req.params.type - The type of information to retrieve ("rules" or "removalReasons").
+ * @param {Object} res - The response object.
+ * @returns {Object} The response containing the requested information.
+ */
+router.get(
+  "/moderator/info/:subredditName/:type",
+  authenticate,
+  subredditsController.getSubredditInfoByType
+);
 
 module.exports = router;

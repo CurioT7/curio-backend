@@ -98,8 +98,16 @@ const subredditSchema = new Schema({
   },
   rules: [
     {
-      type: String,
-    },
+      appliesTo: String,
+      reportReason: String,
+      fullDescription: String
+    }
+  ],
+  removalReasons: [
+    {
+      title: String,
+      reasonMessage: String
+    }
   ],
   category: {
     type: String,

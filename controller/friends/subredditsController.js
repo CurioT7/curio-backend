@@ -1884,6 +1884,220 @@ async function approveRemoval(req, res) {
   }
 }
 
+/**
+ * Adds information to a subreddit such as rules or removal reasons.
+ * @async
+ * @function addSubredditInfo
+ * @param {Object} req - The request object.
+ * @param {Object} req.user - The user object containing user information.
+ * @param {string} req.user.userId - The ID of the user performing the action.
+ * @param {Object} req.body - The request body containing information to be added to the subreddit.
+ * @param {string} req.body.subredditName - The name of the subreddit where the information will be added.
+ * @param {string} req.body.type - The type of information to be added (e.g., "rule" or "removalReason").
+ * @param {Object} req.body.info - The information to be added, format depends on the type.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response indicating success or failure.
+ */
+async function addSubredditInfo(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      const { subredditName, type, info } = req.body;
+
+      // Find the subreddit by name
+      const subreddit = await Community.findOne({ name: subredditName });
+      if (!subreddit) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Subreddit not found" });
+      }
+      // Check if the user has moderator privileges
+      const isModerator = user.moderators.some(
+        (moderator) => moderator.subreddit === subredditName
+      );
+      if (!isModerator) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden, you must be a moderator!" });
+      }
+      // Validate the 'info' object based on the type
+      if (type === "rule") {
+        if (!info.appliesTo || !info.reportReason || !info.fullDescription) {
+          return res.status(400).json({
+            success: false,
+            message: "Missing required fields for rule",
+          });
+        }
+        // Remove the _id field to let MongoDB generate a unique ID
+        delete info._id;
+        subreddit.rules.push(info);
+      } else if (type === "removalReason") {
+        if (!info.title || !info.reasonMessage) {
+          return res.status(400).json({
+            success: false,
+            message: "Missing required fields for removal reason",
+          });
+        }
+        subreddit.removalReasons.push(info);
+      } else {
+        return res.status(400).json({ success: false, message: "Invalid type" });
+      }
+
+      // Save the changes
+      await subreddit.save();
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Subreddit info added successfully" });
+    }
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
+/**
+ * Deletes information from a subreddit such as rules or removal reasons.
+ * @async
+ * @function deleteSubredditInfo
+ * @param {Object} req - The request object.
+ * @param {Object} req.user - The user object containing user information.
+ * @param {string} req.user.userId - The ID of the user performing the action.
+ * @param {Object} req.body - The request body containing information to be deleted from the subreddit.
+ * @param {string} req.body.subredditName - The name of the subreddit where the information will be deleted.
+ * @param {string} req.body.type - The type of information to be deleted (e.g., "rule" or "removalReason").
+ * @param {string} req.body.id - The ID of the information to be deleted.
+ * @param {Object} res - The response object.
+ * @returns {Object} The response indicating success or failure.
+ */
+async function deleteSubredditInfo(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      const { subredditName, type, id } = req.body;
+
+      // Find the subreddit by name
+      const subreddit = await Community.findOne({ name: subredditName });
+      if (!subreddit) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Subreddit not found" });
+      }
+      // Check if the user has moderator privileges
+      const isModerator = user.moderators.some(
+        (moderator) => moderator.subreddit === subredditName
+      );
+      if (!isModerator) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden, you must be a moderator!" });
+      }
+
+      // Validate the ID
+      if (!id) {
+        return res
+          .status(400)
+          .json({ success: false, message: "ID is required" });
+      }
+
+      // Find the index of the rule or removal reason
+      let index;
+      if (type === "rule") {
+        index = subreddit.rules.findIndex((rule) => rule._id.toString() === id);
+      } else if (type === "removalReason") {
+        index = subreddit.removalReasons.findIndex(
+          (reason) => reason._id.toString() === id
+        );
+      } else {
+        return res.status(400).json({ success: false, message: "Invalid type" });
+      }
+
+      // Check if the rule or removal reason exists
+      if (index === -1) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Item not found" });
+      }
+
+      // Remove the rule or removal reason
+      if (type === "rule") {
+        subreddit.rules.splice(index, 1);
+      } else if (type === "removalReason") {
+        subreddit.removalReasons.splice(index, 1);
+      }
+
+      // Save the changes
+      await subreddit.save();
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Subreddit info deleted successfully" });
+    }
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
+
+/**
+ * Retrieves information from a subreddit based on the type (e.g., rules or removal reasons).
+ * @async
+ * @function getSubredditInfoByType
+ * @param {Object} req - The request object.
+ * @param {Object} req.user - The user object containing user information.
+ * @param {string} req.user.userId - The ID of the user performing the action.
+ * @param {Object} req.params - The request parameters.
+ * @param {string} req.params.subredditName - The name of the subreddit to retrieve information from.
+ * @param {string} req.params.type - The type of information to retrieve (e.g., "rules" or "removalReasons").
+ * @param {Object} res - The response object.
+ * @returns {Object} The response containing the requested information.
+ */
+async function getSubredditInfoByType(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      const { subredditName, type } = req.params;
+
+      // Find the subreddit by name
+      const subreddit = await Community.findOne({ name: subredditName });
+      if (!subreddit) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Subreddit not found" });
+      }
+      // Check if the user has moderator privileges
+      const isModerator = user.moderators.some(
+        (moderator) => moderator.subreddit === subredditName
+      );
+      if (!isModerator) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden, you must be a moderator!" });
+      }
+      let infoArray;
+      if (type === "rules") {
+        infoArray = subreddit.rules;
+      } else if (type === "removalReasons") {
+        infoArray = subreddit.removalReasons;
+      } else {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid type" });
+      }
+
+      return res.status(200).json({ success: true, [type]: infoArray });
+    }
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+}
 
 
 module.exports = {
@@ -1914,4 +2128,7 @@ module.exports = {
   moderatorRemove,
   getRemovedItems,
   approveRemoval,
+  addSubredditInfo,
+  deleteSubredditInfo,
+  getSubredditInfoByType,
 };
