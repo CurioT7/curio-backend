@@ -377,6 +377,15 @@ async function createModeration(req, res) {
   }
 }
 
+/**
+ * Accept an invitation to moderate a subreddit.
+ * @async
+ * @function acceptInvitation
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the invitation is accepted.
+ * @throws {Error} If an error occurs while accepting the invitation. 
+ */
 async function acceptInvitation(req, res) {
   try {
     const invitationId = req.body.invitationId;
@@ -475,6 +484,15 @@ async function acceptInvitation(req, res) {
   }
 }
 
+/**
+ *  Remove a moderation from a subreddit.
+ * @async
+ * @function removeModeration
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the moderation is removed.
+ * @throws {Error} If an error occurs while removing the moderation.
+ */
 async function removeModeration(req, res) {
   try {
     const user = await User.findById(req.user.userId);
@@ -562,6 +580,15 @@ async function removeModeration(req, res) {
   }
 }
 
+  /**
+   * Get the list of moderators for a subreddit.
+   * @async
+   * @function getModerators
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @returns {Promise<void>} A promise that resolves once the moderators are retrieved.
+   * @throws {Error} If an error occurs while fetching the moderators.
+   */
 async function getModerators(req, res) {
   try {
     const decodedURL = decodeURIComponent(req.params.subreddit); 
@@ -586,6 +613,15 @@ async function getModerators(req, res) {
   }
 }
 
+/**
+ * get moderators queue
+ * @async
+ * @function getModeratorsQueue
+ *  @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the queue is retrieved.
+ * @throws {Error} If an error occurs while fetching the queue.  
+ */
 async function getModeratorsQueue(req, res) {
   try {
     const user = await User.findById(req.user.userId);
@@ -636,7 +672,15 @@ async function getModeratorsQueue(req, res) {
   }
 }
 
-
+/**
+ * Decline an invitation to moderate a subreddit.
+ * @async
+ * @function declineInvitation
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the invitation is declined.
+ * @throws {Error} If an error occurs while declining the invitation. 
+ */
 async function declineInvitation(req, res) {
   try {
     const invitationId = req.body.invitationId;
@@ -689,7 +733,16 @@ async function declineInvitation(req, res) {
     });
   }
 }
-
+/**
+ * Mute a user in a subreddit.
+ * @async
+ * @function muteUser
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the user is muted.
+ * @throws {Error} If an error occurs while muting the user.
+ * @returns {object} response
+ */
 async function muteUser(req, res) {
   try {
     const user = await User.findById(req.user.userId);
@@ -769,7 +822,15 @@ async function muteUser(req, res) {
   }
 
 }
-
+/**
+ * Unmute a user in a subreddit.
+ * @async
+ * @function unMuteUser
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the user is unmuted.
+ * @throws {Error} If an error occurs while unmuting the user.
+ */
 async function unMuteUser(req, res) {
   try {
     const user = await User.findById(req.user.userId);
@@ -839,7 +900,15 @@ async function unMuteUser(req, res) {
     });
   }
 }
-
+/**
+ * Leave moderation for a subreddit.
+ * @async
+ * @function leaveModerator
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the user leaves moderation.
+ * @throws {Error} If an error occurs while leaving moderation.
+ */
 async function leaveModerator(req, res) {
   try {
     const user = await User.findById(req.user.userId);
@@ -900,7 +969,15 @@ async function leaveModerator(req, res) {
     });
   }
 }
-
+/**
+ * Get the list of muted users for a subreddit.
+ * @async
+ * @function getUserMuted
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the list of muted users is retrieved.
+ * @throws {Error} If an error occurs while fetching the muted users.
+ */
 async function getMineModeration(req, res) {
   try {
     const user = await User.findById(req.user.userId);
@@ -924,6 +1001,17 @@ async function getMineModeration(req, res) {
     });
   }
 }
+
+
+/**
+ * Get the list of muted users for a subreddit.
+ * @async
+ * @function getUserMuted
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the list of muted users is retrieved.
+ * @throws {Error} If an error occurs while fetching the muted users.
+ */
 async function getUserMuted(req, res) {
   try {
     const user = await User.findById(req.user.userId);
@@ -963,6 +1051,16 @@ async function getUserMuted(req, res) {
     });
   }
 }
+/**
+ * Get the list of moderators for a subreddit.
+ * @async
+ * @function getSubredditModerator
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the list of moderators is retrieved.
+ * @throws {Error} If an error occurs while fetching the moderators.
+ * @returns {Object} Response object
+ */
 async function getSubredditModerator(req, res) {
   try {
     const decodedURI = decodeURIComponent(req.params.subreddit);
@@ -1073,6 +1171,143 @@ async function banUser(req, res) {
 }
 
 /**
+ * Get unmoderated posts and comments in a subreddit.
+ * @async
+ * @function getUnmoderated
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the unmoderated posts and comments are retrieved.
+ * @throws {Error} If an error occurs during the process.
+ * @returns {Object} Response object
+ */
+async function getUnmoderated(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const decodedURI = decodeURIComponent(req.params.subreddit);
+    const subreddit = await Community.findOne({ name: decodedURI });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    if (!subreddit) {
+      return res.status(404).json({
+        success: false,
+        message: "Subreddit not found",
+      });
+    }
+    const isModerator = subreddit.moderators.some(
+      (mod) => mod.username === user.username
+    );
+    if (!isModerator) {
+      return res.status(403).json({
+        success: false,
+        message: "Only moderators can view the unmoderated queue",
+      });
+    }
+    // Populate comments for each post
+    const populatedPosts = await Post.find({
+      _id: { $in: subreddit.posts },
+    }).populate("comments");
+
+    // Extract comments from populated posts
+    const comments = populatedPosts.reduce((allComments, post) => {
+      allComments.push(...post.comments);
+      return allComments;
+    }, []);
+
+    return res.status(200).json({
+      success: true,
+      unmoderatedPosts: populatedPosts,
+      unmoderatedComments: comments,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+/**
+ * Edit permissions for a moderator in a subreddit.
+ * @async
+ * @function editPermissions
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @returns {Promise<void>} A promise that resolves once the permissions are updated.
+ * @throws {Error} If an error occurs during the process.
+ * @returns {Object} Response object
+ */
+async function editPermissions(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    const decodedURI = decodeURIComponent(req.params.subreddit);
+    const subreddit = await Community.findOne({ name: decodedURI });
+   
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    if (!subreddit) {
+      return res.status(404).json({
+        success: false,
+        message: "Subreddit not found",
+      });
+    }
+     const isCreator = subreddit.moderators.some(
+       (mod) => mod.username === user.username && mod.role === "creator"
+    );
+    if (!isCreator) {
+      return res.status(403).json({
+        success: false,
+        message: "Only the creator of the subreddit can edit permissions",
+      });
+    }
+    const {
+      moderationName,
+      manageUsers,
+      createLiveChats,
+      manageSettings,
+      managePostsAndComments,
+      everything,
+    } = req.body;
+    const moderator = subreddit.moderators.find(
+      (mod) => mod.username === moderationName
+    );
+    if (!moderator) {
+      return res.status(404).json({
+        success: false,
+        message: "Moderator not found",
+      });
+    }
+    moderator.manageUsers = manageUsers;
+    moderator.createLiveChats = createLiveChats;
+    moderator.manageSettings = manageSettings;
+    moderator.managePostsAndComments = managePostsAndComments;
+    moderator.everything = everything;
+    await subreddit.save();
+    return res.status(200).json({
+      success: true,
+      message: "Permissions updated successfully",
+    });
+  
+  } catch (error)
+  {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+}
+
+}
+
+ /**
  * Unban a user from a subreddit.
  * 
  * @param {object} req - The request object.
@@ -1098,7 +1333,7 @@ async function banUser(req, res) {
  * @property {string} modNote - Additional note from the moderator.
  * @property {string} userMessage - Message sent to the banned user.
  */
-async function unbanUser(req, res) {
+async function unbanUser(req, res) { 
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
@@ -1240,4 +1475,6 @@ module.exports = {
   getMineModeration,
   getUserMuted,
   getSubredditModerator,
+  getUnmoderated,
+  editPermissions,
 };
