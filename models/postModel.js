@@ -180,6 +180,14 @@ const postSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  isReportApproved: {
+    type: Boolean,
+    default: false,
+  },
+  isApprovedForShare:{
+    type: Boolean,
+    default: false,
+  },
 });
 
 // Define a virtual property to calculate karma

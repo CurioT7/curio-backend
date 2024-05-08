@@ -106,22 +106,37 @@ async function reportContent(req, res) {
           message: "You cannot report your own content",
         });
       }
-      //TODO notify moderator
+      let newReport;
+      if (item.isReportApproved == true || item.isApprovedForShare == false) {
+        // Create a new report instance
+        newReport = new UserReports({
+          reporterUsername: user.username,
+          reportedUsername: item.authorName,
+          itemID: itemID,
+          linkedSubreddit: item.linkedSubreddit,
+          linkedItem: item._id,
+          linkedItemType: itemType,
+          reportType,
+          reportReason,
+          reportDetails,
+          isIgnored: true,
+        });
+      } else {
+        // Create a new report instance
+        newReport = new UserReports({
+          reporterUsername: user.username,
+          reportedUsername: item.authorName,
+          itemID: itemID,
+          linkedSubreddit: item.linkedSubreddit,
+          linkedItem: item._id,
+          linkedItemType: itemType,
+          reportType,
+          reportReason,
+          reportDetails,
+        });
+      }
 
-      // Create a new report instance
-      const newReport = new UserReports({
-        reporterUsername: user.username,
-        reportedUsername: item.authorName,
-        itemID: itemID,
-        linkedSubreddit: item.linkedSubreddit,
-        linkedItem: item._id,
-        linkedItemType: itemType,
-        reportType,
-        reportReason,
-        reportDetails,
-      });
-
-      await newReport.save();
+     await newReport.save();
 
       return res.status(201).json({
         success: true,
@@ -150,7 +165,7 @@ async function getSubredditReportedContent(req, res, next) {
   try {
     if (req.user) {
       const user = await User.findOne({ _id: req.user.userId });
-      //TODO if approved discard report
+      //TODO if approved discard report filter ignored reports
       const subredditName = decodeURIComponent(req.params.subreddit);
       const subreddit = await Subreddit.findOne({ name: subredditName });
       if (!subreddit) {
