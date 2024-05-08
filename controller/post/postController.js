@@ -640,6 +640,51 @@ async function getScheduledPost(req, res) {
       .json({ success: false, message: "Internal server error." });
   }
 }
+
+/**
+ * Function to delete a scheduled post
+ * @async
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @returns {object} - Express response object
+ */
+
+async function deleteScheduledPost(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const scheduledPostId = req.params.postId;
+      console.log(scheduledPostId);
+      const scheduledPost = await ScheduledPost.findById(scheduledPostId);
+      console.log(scheduledPost);
+      if (!scheduledPost) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Scheduled post not found or published." });
+      }
+      if (scheduledPost.authorName !== user.username) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to delete this scheduled post.",
+        });
+      }
+      await scheduledPost.deleteOne();
+      return res
+        .status(200)
+        .json({ success: true, message: "Scheduled post deleted successfully." });
+    }
+  }
+  catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
+  }
+}
+
 module.exports = {
   getPostComments,
   updatePostComments,
@@ -651,4 +696,5 @@ module.exports = {
   unmarkPostNSFW,
   scheduledPost,
   getScheduledPost,
+  deleteScheduledPost,
 };

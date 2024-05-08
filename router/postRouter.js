@@ -123,6 +123,17 @@ router.post("/scheduledPost",authenticate, postController.scheduledPost);
  * @returns {object} Express router instance.
  */
 router.get("/getScheduledPost/:subreddit",authenticate, postController.getScheduledPost);
+
+/**
+ * Route to handle DELETE requests for deleting scheduled post.
+ * @name DELETE/scheduledPost
+ * @function
+ * @memberof module:routes/postRouter
+ * @param {string} path - The URL path for the route ("/scheduledPost").
+ * @param {function} middleware - The controller function to handle the DELETE request.
+ * @returns {object} Express router instance.
+ */
+router.delete("/deleteScheduledPost/:postId",authenticate, postController.deleteScheduledPost);
  
 
 module.exports = router;
