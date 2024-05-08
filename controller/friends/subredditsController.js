@@ -1141,21 +1141,17 @@ async function getUnmoderated(req, res) {
         message: "Only moderators can view the unmoderated queue",
       });
     }
-    // Populate comments for each post
-    const populatedPosts = await Post.find({
-      _id: { $in: subreddit.posts },
-    }).populate("comments");
 
-    // Extract comments from populated posts
-    const comments = populatedPosts.reduce((allComments, post) => {
-      allComments.push(...post.comments);
-      return allComments;
-    }, []);
+    const unmoderatedPosts = await Post.find({
+      _id: { $in: subreddit.posts },
+      isReportApproved: false, 
+    })
+ console.log("subreddit.posts:", subreddit.posts);
+ console.log("unmoderatedPosts:", unmoderatedPosts);
 
     return res.status(200).json({
       success: true,
-      unmoderatedPosts: populatedPosts,
-      unmoderatedComments: comments,
+      unmoderatedPosts: unmoderatedPosts,
     });
   } catch (error) {
     console.error(error);
