@@ -3,7 +3,6 @@ const User = require("../../models/userModel");
 const Comment = require("../../models/commentModel");
 const Message = require("../../models/messageModel");
 const Subreddit = require("../../models/subredditModel");
-const ScheduledPost = require("../../models/scheduledPostModel");
 const {
   generateToken,
   verifyToken,
@@ -14,7 +13,6 @@ const Notification = require("../../models/notificationModel");
 const { getVoteStatusAndSubredditDetails } = require("../../utils/posts");
 const schedule = require("node-schedule");
 const { DateTime } = require("luxon");
-const moment = require('moment');
 
 // Function to retrieve all comments for a post.
 /**
@@ -460,6 +458,7 @@ async function scheduledPost(req, res) {
         options,
         voteLength,
         scheduledPublishDate,
+        scheduledTimezone,
         repeatOption,
         contestMode,
       } = req.body;
@@ -469,10 +468,10 @@ async function scheduledPost(req, res) {
           .json({ success: false, message: "Type is required" });
       }
 
-      if (!["post","media", "poll", "link"].includes(type)) {
+      if (!["post", "poll", "link"].includes(type)) {
         return res.status(400).json({
           success: false,
-          message: "Type must be one of 'post','media', 'poll', 'link'",
+          message: "Type must be one of 'post', 'poll', 'link'",
         });
       }
       let subredditname;
@@ -482,17 +481,6 @@ async function scheduledPost(req, res) {
           return res
             .status(404)
             .json({ success: false, message: "Subreddit not found" });
-        }
-        if (subreddit.privacyMode === "private") {
-          const isMember = subreddit.members.some(
-            (member) => member.username === user.username
-          );
-          if (!isMember) {
-            return res.status(403).json({
-              success: false,
-              message: "User is not a member of this subreddit",
-            });
-          }
         }
       }
 
@@ -515,30 +503,24 @@ async function scheduledPost(req, res) {
           .map((option) => ({ name: option, votes: 0 }));
       }
 
-      const scheduledTime = DateTime.fromISO(scheduledPublishDate).toUTC();
-      const now = DateTime.utc();
-      const timeDiff = scheduledTime.diff(now);
-
-      const mutedUser = await Subreddit.findOne({
-        name: req.body.subreddit,
-        "mutedUsers.username": user.username,
-      });
-  
-      if (mutedUser) {
-        return res.status(403).json({
-          success: false,
-          message: "You are muted in this subreddit. Cannot submit a post.",
+      let scheduledTime;
+      if (scheduledPublishDate && scheduledTimezone) {
+        scheduledTime = DateTime.fromISO(scheduledPublishDate, {
+          zone: scheduledTimezone,
         });
+        if (!scheduledTime.isValid) {
+          return res
+            .status(400)
+            .json({
+              success: false,
+              message: "Invalid scheduled date/time or timezone",
+            });
+        }
+        // Convert scheduled time to UTC for scheduling
+        scheduledTime = scheduledTime.toUTC();
       }
-      
 
-      if (timeDiff <= 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Scheduled publish date cannot be in the past",
-        });
-      }
-      const scheduledPost = new ScheduledPost({
+      const post = new Post({
         title,
         type,
         content,
@@ -550,40 +532,34 @@ async function scheduledPost(req, res) {
         sendReplies,
         options: optionsArray,
         voteLength,
-        scheduledPublishDate: scheduledTime,
-        timeToPublish: timeDiff,
+        scheduledPublishDate,
+        scheduledTimezone,
         repeatOption,
         contestMode,
-        isScheduled: true,
+        isScheduled: !!scheduledTime,
       });
-      await scheduledPost.save();
+      await post.save();
 
-      setTimeout(async () => {
-        const post = new Post({
-          ...scheduledPost,
-          title: scheduledPost.title,
-          authorName: scheduledPost.authorName,
-          scheduledPublishDate: scheduledPost.scheduledTime,
-          timeToPublish: null,
-          isScheduled: false,
+      if (scheduledTime) {
+        schedule.scheduleJob(scheduledTime.toJSDate(), async () => {
+          const postToPublish = await Post.findOneAndUpdate(
+            { _id: post._id },
+            { isScheduled: false }
+          );
+          await postToPublish.save();
+          console.log(
+            `Scheduled post "${
+              postToPublish.title
+            }" published at ${scheduledTime.toISO()}`
+          );
         });
-        await post.save();
-        user.posts.push(post._id);
-        if (subreddit) {
-          subreddit.posts.push(post._id);
-          await subreddit.save();
-        }
-
-
-
-        console.log(`Scheduled post "${post.title}" published`);
-      }, timeDiff);
+      }
 
       return res.status(201).json({
         success: true,
         message: " Scheduled Post created successfully",
-        scheduledPost,
-        scheduledPostID: scheduledPost._id,
+        post,
+        postId: post._id,
       });
     }
   } catch (err) {

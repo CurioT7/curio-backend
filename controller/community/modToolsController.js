@@ -190,16 +190,6 @@ async function editedQueues(req, res) {
   }
 }
 
-/**
- * Function to get the community settings of a subreddit.
- * @name communitySettings
- * @function
- * @memberof module:controller/community/modToolsController
- * @param {import('express').Request} req - The request object.
- * @param {import('express').Response} res - The response object.
- * @returns {import('express').Response} The community settings of a subreddit.
- */
-
 async function communitySettings(req, res) {
   try {
     if (req.user) {
@@ -241,16 +231,6 @@ async function communitySettings(req, res) {
     return res.status(500).json({ success: false, message: "server error" });
   }
 }
-
-/**
- * Function to update the community settings of a subreddit.
- * @name updateCommunitySettings
- * @function
- * @memberof module:controller/community/modToolsController
- * @param {import('express').Request} req - The request object.
- * @param {import('express').Response} res - The response object.
- * @returns {import('express').Response} The updated community settings of a subreddit.
- */
 
 async function updateCommunitySettings(req, res) {
   try {
@@ -329,41 +309,6 @@ async function updateCommunitySettings(req, res) {
     return res.status(500).json({ success: false, message: "server error" });
   }
 }
-/**
- * Function to get the subreddits where the user is a moderator or a member.
- * @name mineWhere
- * @function
- * @memberof module:controller/community/modToolsController
- * @param {import('express').Request} req - The request object.
- * @param {import('express').Response} res - The response object.
- * @returns {import('express').Response} The subreddits where the user is a moderator or a member.
- */
-async function mineWhere(req, res) {
-  try {
-    if (req.user) {
-      const user = await User.findOne({ _id: req.user.userId });
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      } const username = user.username; 
-
-      const moderatorSubreddits = await Subreddit.find({
-        moderators: { $elemMatch: { username } },
-      }).select({ name: 1, role: 'moderator' }); 
-
-      const memberSubreddits = await Subreddit.find({
-        members: { $elemMatch: { username } },
-      }).select({ name: 1, role: 'member' }); 
-
-      const allSubreddits = [...moderatorSubreddits, ...memberSubreddits];
-
-      res.json(allSubreddits);
-    }
-  }
-  catch (err) {
-    console.log(err);
-    return res.status(500).json({ success: false, message: "server error" });
-  }
-}
 
 
 
@@ -372,5 +317,4 @@ module.exports = {
    editedQueues,
    communitySettings,
    updateCommunitySettings,
-   mineWhere,
 };

@@ -162,6 +162,11 @@ const postSchema = new Schema({
     type: Date,
     default: null,
   },
+  scheduledTimezone:
+  {
+    type: String,
+    default:'GMT+03:00',
+  },
   repeatOption: {
     type: String,
     enum: ["does_not_repeat", "hourly", "daily", "weekly", "monthly", "custom"],
@@ -172,6 +177,14 @@ const postSchema = new Schema({
     default: false,
   },
   isEdited: {
+    type: Boolean,
+    default: false,
+  },
+  isReportApproved: {
+    type: Boolean,
+    default: false,
+  },
+  isApprovedForShare:{
     type: Boolean,
     default: false,
   },

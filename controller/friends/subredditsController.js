@@ -433,7 +433,6 @@ async function acceptInvitation(req, res) {
       }`,
       recipient: user.username,
       subreddits: subreddit.name,
-      invitiations: invitationId,
       type: "subreddit",
       isDisabled: disabledSubreddit,
     });
@@ -694,7 +693,6 @@ async function declineInvitation(req, res) {
       }`,
       recipient: invitation.sender,
       subredditName: invitation.subreddit,
-      invitiations: invitationId,
       type: "subreddit",
       isDisabled: disabledSubreddit,
     });
@@ -1478,6 +1476,79 @@ async function getModeratedCommunitiesByUsername(req, res) {
   }
 }
 
+
+async function moderatorApprove(req, res) {
+  try {
+    if (req.user) {
+      const user = await User.findOne({ _id: req.user.userId });
+      const { itemID, itemType, subredditName } = req.body;
+
+      // Check if the user has moderator privileges
+      const isModerator = user.moderators.some(
+        (moderator) => moderator.subreddit === subredditName
+      );
+      if (!isModerator) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden, you must be a moderator!" });
+      }
+      switch (itemType) {
+        case "report":
+          const report = await Report.findById(itemID).populate("linkedItem");
+          if (!report) {
+            return res
+              .status(404)
+              .json({ success: false, message: "Report not found" });
+          }
+
+          // Mark the report as ignored
+          report.isIgnored = true;
+
+          // Check if the linkedItem is a Post or Comment
+          if (
+            report.linkedItemType === "Post" ||
+            report.linkedItemType === "Comment"
+          ) {
+            // Update the isReportApproved field of the linkedItem to true
+            await report.linkedItem.updateOne({ isReportApproved: true });
+
+            // Find all reports linked to the same item and mark them as ignored
+            const allReports = await Report.find({
+              linkedItem: report.linkedItem,
+            });
+
+            // Update all found reports to be ignored
+            for (const document of allReports) {
+              document.isIgnored = true;
+              await document.save();
+            }
+          }
+          // Save the changes to the report
+          await report.save();
+          break;
+
+        case "post":
+          const post = await Post.findById(itemID);
+          if (!post) {
+            return res
+              .status(404)
+              .json({ success: false, message: "Post not found" });
+          }
+          post.isApprovedForShare = true;
+          await post.save();
+          break;
+      }
+      return res
+              .status(200)
+              .json({ message: "Item approved successfully" });
+    }
+  }
+    catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 module.exports = {
   newSubreddit,
   availableSubreddit,
@@ -1503,4 +1574,5 @@ module.exports = {
   banUser,
   unbanUser,
   getBannedUsers,
+  moderatorApprove,
 };

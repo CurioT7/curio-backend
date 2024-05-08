@@ -98,14 +98,6 @@ async function unhidePost(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
-/**
- * Mark a post as Spoiler
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @returns {Object} - A response object
- * @description Mark a post as Spoiler
- * @throws {Error} - If there is an error marking the post as spoiler
- */
 async function spoilerPost(req, res) {
   const postId = req.body.idpost;
   try {
@@ -130,15 +122,7 @@ async function spoilerPost(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
-/**
- * Unmark a post as Spoiler
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @returns {Object} - A response object
- * @description Unmark a post as Spoiler
- * @throws {Error} - If there is an error unmarking the post as spoiler
- * @async
- */
+
 async function unspoilerPost(req, res) {
   const postId = req.body.idpost;
 
