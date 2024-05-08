@@ -329,6 +329,30 @@ async function createModeration(req, res) {
     });
     await invitation.save();
 
+    const moderationid=await User.findOne({username:moderationName});
+ const disabledSubreddit =
+   moderationid.notificationSettings.disabledSubreddits.includes(
+     subreddit.name
+   );
+
+ console.log(disabledSubreddit);
+ console.log(moderationid.notificationSettings.disabledSubreddits);
+ // Create a notification for the moderator with isDisabled set based on whether notifications are disabled
+ const notification = new Notification({
+   title: disabledSubreddit ? "Moderation (Disabled)" : "Moderation",
+   message: `${user.username} invited youto be a moderator for "${
+     subreddit.name
+   }". ${
+     disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
+   }`,
+   recipient: moderationid.username,
+   subredditName: subreddit.name,
+   invitiations: invitation._id,
+   type: "invite",
+   isDisabled: disabledSubreddit,
+ });
+    await notification.save();
+
     return res.status(200).json({
       success: true,
       message: "Moderator invitation sent successfully",
@@ -432,7 +456,7 @@ async function acceptInvitation(req, res) {
         disabledSubreddit ? "Notifications are disabled for the subreddit." : ""
       }`,
       recipient: user.username,
-      subreddits: subreddit.name,
+      subredditName: subreddit.name,
       invitiations: invitationId,
       type: "subreddit",
       isDisabled: disabledSubreddit,
@@ -441,8 +465,7 @@ async function acceptInvitation(req, res) {
     // Save the notification to the database
     await notification.save();
 
-    // Save the notification to the database
-    await notification.save();
+ 
 
     return res.status(200).json({
       success: true,
