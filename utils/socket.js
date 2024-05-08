@@ -7,7 +7,7 @@ const Chat = require("../models/chatModel");
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: process.env.VITE_FRONTEND_HOST,
+  cors: "*",
 });
 
 let onlineUsers = [];
