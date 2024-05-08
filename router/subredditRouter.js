@@ -227,4 +227,16 @@ router.post("/moderator/editPermissions/:subreddit", authenticate, subredditsCon
  */
 router.get("/communitySettings/:subreddit", authenticate,modToolsController.communitySettings);
 
+
+/**
+ * Route to update the community settings of a subreddit.
+ * @name PATCH /subreddit/communitySettings/:subreddit
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware
+ */
+
+router.patch("/updateCommunitySettings/:subreddit", authenticate, modToolsController.updateCommunitySettings);
+
 module.exports = router;

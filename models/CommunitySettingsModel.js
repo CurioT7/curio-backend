@@ -70,7 +70,7 @@ const communitySettingsSchema = new Schema({
   commentsSort: {
     type: String,
     enum: ["None", "Best", "Old", "Q&A", "New", "Top", "Controversial"],
-    default: "New",
+    default: "None",
   },
   collapseDeletedComments: {
     type: Boolean,
