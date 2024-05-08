@@ -542,7 +542,7 @@ async function scheduledPost(req, res) {
         title,
         type,
         content,
-        linkedSubreddit: subredditname,
+        linkedSubreddit: subredditname._id,
         authorName: user.username,
         isNSFW,
         isSpoiler,
