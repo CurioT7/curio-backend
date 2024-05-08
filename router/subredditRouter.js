@@ -335,10 +335,41 @@ router.get(
   subredditsController.getBannedUsers
 );
 
+/**
+ * POST /moderator/approve
+ * 
+ * @description Route for moderators to approve reported items in a subreddit.
+ * @name /moderator/approve
+ * @function
+ * @memberof module:SubredditRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function[]} middleware - Express middleware functions
+ * @param {Function} handler - Express request handler function
+ */
 router.post(
   "/moderator/approve",
   authenticate,
   subredditsController.moderatorApprove
 );
+
+/**
+ * POST /moderator/remove
+ * 
+ * @description Route for moderators to remove reported items in a subreddit.
+ * @name /moderator/remove
+ * @function
+ * @memberof module:SubredditRoutes
+ * @inner
+ * @param {string} path - Express route path
+ * @param {Function[]} middleware - Express middleware functions
+ * @param {Function} handler - Express request handler function
+ */
+router.post(
+  "/moderator/remove",
+  authenticate,
+  subredditsController.moderatorRemove
+);
+
 
 module.exports = router;
