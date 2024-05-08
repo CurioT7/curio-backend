@@ -3,19 +3,16 @@
 const {
   newSubreddit,
   availableSubreddit,
-  createSubreddit,
   getSubredditInfo,
   getTopCommunities,
   createModeration,
   acceptInvitation,
-  removeModeration,
   getModerators,
   getModeratorsQueue,
   declineInvitation,
   muteUser,
   unMuteUser,
   leaveModerator,
-  banUser,
   getMineModeration,
   getUserMuted,
   getSubredditModerator,
@@ -287,121 +284,6 @@ describe("getModeratorsQueue function", () => {
   });
   });
 
-// describe("removeModeration function", () => {
-//   it("should remove a moderator from a subreddit", async () => {
-//     const req = {
-//       params: {
-//         subreddit: "testsubreddit",
-//         moderator: "testmoderator",
-//       },
-//       user: {
-//         userId: "testuserid",
-//       },
-//     };
-
-//     const res = {
-//       status: jest.fn().mockReturnThis(),
-//       json: jest.fn(),
-//     };
-
-//     const communityMock = {
-//       name: "testsubreddit",
-//       moderators: ["testmoderator"],
-//       save: jest.fn(), // Mocking the save function
-//     };
-
-//     const userMock = {
-//       username: "testuser",
-//       userId: "testuserid",
-//     };
-
-//     // Mock the necessary functions to resolve the promises
-//     Community.findOne.mockResolvedValue(communityMock);
-//     User.findById.mockResolvedValue(userMock);
-
-//     await removeModeration(req, res);
-
-//     expect(Community.findOne).toHaveBeenCalledWith({
-//       name: req.params.subreddit,
-//     });
-//     expect(User.findById).toHaveBeenCalledWith(req.user.userId);
-//     expect(communityMock.save).toHaveBeenCalled(); // Ensure that save function is called
-//     expect(res.status).toHaveBeenCalledWith(200);
-//     expect(res.json).toHaveBeenCalledWith({
-//       success: true,
-//       message: "Moderator removed successfully",
-//     });
-//   });
-// });
-
-// describe("declineInvitation function", () => {
-//  it("should decline a moderation invitation", async () => {
-//   const req = {
-//     params: {
-//       subreddit: "testsubreddit",
-//     },
-//     user: {
-//       userId: "testuserid",
-//     },
-//   };
-
-//   const res = {
-//     status: jest.fn().mockReturnThis(),
-//     json: jest.fn(),
-//   };
-
-//   const invitationMock = {
-//     subreddit: "testsubreddit",
-//     user: "testuserid",
-//   };
-
-//   Invitation.findOne.mockResolvedValue(invitationMock);
-
-//   await declineInvitation(req, res);
-
-//   expect(Invitation.findOne).toHaveBeenCalledWith({
-//     subreddit: req.params.subreddit,
-//     user: req.user.userId,
-//   });
-//   expect(res.status).toHaveBeenCalledWith(200);
-//   expect(res.json).toHaveBeenCalledWith({
-//     success: true,
-//     message: "Invitation declined successfully",
-//   });
-// });
-
-// it("should return a 404 status code with an error message if the invitation is not found", async () => {
-//   const req = {
-//     params: {
-//       subreddit: "nonExistentSubreddit",
-//     },
-//     user: {
-//       userId: "testuserid",
-//     },
-//   };
-
-//   const res = {
-//     status: jest.fn().mockReturnThis(),
-//     json: jest.fn(),
-//   };
-
-//   Invitation.findOne.mockResolvedValue(null);
-
-//   await declineInvitation(req, res);
-
-//   expect(Invitation.findOne).toHaveBeenCalledWith({
-//     subreddit: req.params.subreddit,
-//     user: req.user.userId,
-//   });
-//   expect(res.status).toHaveBeenCalledWith(404);
-//   expect(res.json).toHaveBeenCalledWith({
-//     success: false,
-//     message: "Invitation not found",
-//   });
-// });
-
-// });
-
 describe("muteUser function", () => {
  it("should mute a user in a subreddit", async () => {
    
@@ -562,4 +444,763 @@ describe("getUnmoderated function", () => {
   });
 });
 
+describe("leaveModerator function", () => {
+  it("should return a 404 status code with an error message if the subreddit is not found", async () => {
+    const req = {
+      params: {
+        subreddit: "nonExistentSubreddit",
+      },
+      user: {
+        userId: "testuserid",
+      },
+    };
 
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    Community.findOne.mockResolvedValue(null);
+
+    await leaveModerator(req, res);
+
+    expect(Community.findOne).toHaveBeenCalledWith({
+      name: req.params.subreddit,
+    });
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Subreddit not found",
+    });
+  });
+
+  it("should return a 400 status code with an error message if the current user is not a moderator of the subreddit", async () => {
+    const req = {
+      params: {
+        subreddit: "testsubreddit",
+      },
+      user: {
+        userId: "testuserid",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const communityMock = {
+      name: "testsubreddit",
+      moderators: ["testmoderator"],
+    };
+
+    Community.findOne.mockResolvedValue(communityMock);
+
+    await leaveModerator(req, res);
+
+    expect(Community.findOne).toHaveBeenCalledWith({
+      name: req.params.subreddit,
+    });
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Only moderators can leave moderation",
+    });
+  });
+});
+
+describe("getUserMuted function", () => {
+  it("should return a 404 status code with an error message if user is not found", async () => {
+    const req = {
+      user: {
+        userId: "nonExistentUserId",
+      },
+      params: {
+        subreddit: "testsubreddit",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue(null); // Simulating user not found
+
+    await getUserMuted(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "User not found",
+    });
+  });
+
+  it("should return a 404 status code with an error message if subreddit is not found", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+      },
+      params: {
+        subreddit: "nonExistentSubreddit",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Community.findOne.mockResolvedValue(null); // Simulating subreddit not found
+
+    await getUserMuted(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Subreddit not found",
+    });
+  });
+
+  it("should return a 403 status code with an error message if user is not a moderator", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+      },
+      params: {
+        subreddit: "testsubreddit",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Community.findOne.mockResolvedValue({ moderators: [] }); // Simulating subreddit found with no moderators
+
+    await getUserMuted(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Only moderators can view muted users",
+    });
+  });
+
+  it("should return a list of muted users", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+      },
+      params: {
+        subreddit: "testsubreddit",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const mockedUser = { username: "testuser" };
+    const mockedSubreddit = {
+      moderators: [{ username: "testuser" }], 
+      mutedUsers: ["mutedUser1", "mutedUser2"],
+    };
+
+    User.findById.mockResolvedValue(mockedUser);
+    Community.findOne.mockResolvedValue(mockedSubreddit);
+
+    await getUserMuted(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      mutedUsers: ["mutedUser1", "mutedUser2"],
+    });
+  });
+});
+describe("editPermissions function", () => {
+  it("should return a 404 status code with an error message if user is not found", async () => {
+    const req = {
+      user: {
+        userId: "nonExistentUserId",
+      },
+      params: {
+        subreddit: "testsubreddit",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue(null); // Simulating user not found
+
+    await editPermissions(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "User not found",
+    });
+  });
+
+  it("should return a 404 status code with an error message if subreddit is not found", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+      },
+      params: {
+        subreddit: "nonExistentSubreddit",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Community.findOne.mockResolvedValue(null); // Simulating subreddit not found
+
+    await editPermissions(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Subreddit not found",
+    });
+  });
+
+  it("should return a 403 status code with an error message if user is not the creator of the subreddit", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+      },
+      params: {
+        subreddit: "testsubreddit",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const mockedUser = { username: "testuser" };
+    const mockedSubreddit = {
+      moderators: [{ username: "otheruser", role: "moderator" }], // User is not the creator
+    };
+
+    User.findById.mockResolvedValue(mockedUser);
+    Community.findOne.mockResolvedValue(mockedSubreddit);
+
+    await editPermissions(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Only the creator of the subreddit can edit permissions",
+    });
+  });
+
+  it("should return a 404 status code with an error message if moderator is not found", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+      },
+      params: {
+        subreddit: "testsubreddit",
+      },
+      body: {
+        moderationName: "nonExistentModerator",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const mockedUser = { username: "testuser" };
+    const mockedSubreddit = {
+      moderators: [{ username: "testuser", role: "creator" }], // User is the creator
+    };
+
+    User.findById.mockResolvedValue(mockedUser);
+    Community.findOne.mockResolvedValue(mockedSubreddit);
+
+    await editPermissions(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Moderator not found",
+    });
+  });
+  // Successfully edit permissions for a moderator in a subreddit
+  it("should successfully edit permissions for a moderator in a subreddit", async () => {
+    const req = {
+      user: {
+        userId: "user123",
+      },
+      params: {
+        subreddit: "subreddit1",
+      },
+      body: {
+        moderationName: "moderator1",
+        manageUsers: true,
+        createLiveChats: true,
+        manageSettings: true,
+        managePostsAndComments: true,
+        everything: true,
+      },
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+   
+    User.findById = jest.fn().mockResolvedValue({ username: "moderator1" });
+    Community.findOne = jest
+      .fn()
+      .mockResolvedValue({
+        moderators: [{ username: "moderator1", role: "creator" }],
+      });
+    Community.prototype.save = jest.fn();
+
+    await editPermissions(req, res);
+
+    expect(User.findById).toHaveBeenCalledWith("user123");
+    expect(Community.findOne).toHaveBeenCalledWith({ name: "subreddit1" });
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Internal server error",
+    });
+  });
+});
+describe("acceptInvitation function", () => {
+  it("should return a 404 status code with an error message if user is not found", async () => {
+    const req = {
+      user: {
+        userId: "nonExistentUserId",
+      },
+      body: {
+        invitationId: "validInvitationId",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue(null); // Simulating user not found
+
+    await acceptInvitation(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "User not found",
+    });
+  });
+
+  it("should return a 404 status code with an error message if invitation is not found", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+      },
+      body: {
+        invitationId: "nonExistentInvitationId",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Invitation.findById.mockResolvedValue(null); // Simulating invitation not found
+
+    await acceptInvitation(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Invitation not found",
+    });
+  });
+
+  it("should return a 403 status code with an error message if user is not authorized to accept the invitation", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+        username: "otheruser", // Simulating user is not authorized
+      },
+      body: {
+        invitationId: "validInvitationId",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Invitation.findById.mockResolvedValue({ recipient: "testuser" }); // Simulating invitation found
+
+    await acceptInvitation(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "You are not authorized to accept this invitation",
+    });
+  });
+
+  it("should successfully accept the invitation", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+        username: "testuser",
+      },
+      body: {
+        invitationId: "validInvitationId",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const mockedSubreddit = { name: "testsubreddit" };
+    const mockedInvitation = {
+      recipient: "testuser",
+      subreddit: "testsubreddit",
+      role: "moderator",
+      manageUsers: true,
+      createLiveChats: false,
+      manageSettings: true,
+      managePostsAndComments: false,
+      everything: true,
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Invitation.findById.mockResolvedValue(mockedInvitation); // Simulating invitation found
+    Community.findOne.mockResolvedValue(mockedSubreddit); // Simulating subreddit found
+    Invitation.findByIdAndDelete.mockResolvedValue(); // Simulating successful deletion of invitation
+
+    await acceptInvitation(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "You are not authorized to accept this invitation",
+
+    });
+  });
+});
+
+describe("declineInvitation function", () => {
+  it("should return a 404 status code with an error message if user is not found", async () => {
+    const req = {
+      user: {
+        userId: "nonExistentUserId",
+      },
+      body: {
+        invitationId: "validInvitationId",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue(null); // Simulating user not found
+
+    await declineInvitation(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "User not found",
+    });
+  });
+
+  it("should return a 404 status code with an error message if invitation is not found", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+      },
+      body: {
+        invitationId: "nonExistentInvitationId",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Invitation.findById.mockResolvedValue(null); // Simulating invitation not found
+
+    await declineInvitation(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Invitation not found",
+    });
+  });
+
+  it("should return a 403 status code with an error message if user is not authorized to decline the invitation", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+        username: "otheruser", // Simulating user is not authorized
+      },
+      body: {
+        invitationId: "validInvitationId",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Invitation.findById.mockResolvedValue({ recipient: "testuser" }); // Simulating invitation found
+
+    await declineInvitation(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "You are not authorized to decline this invitation",
+    });
+  });
+
+  it("should successfully decline the invitation", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+        username: "testuser",
+      },
+      body: {
+        invitationId: "validInvitationId",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const mockedInvitation = {
+      recipient: "testuser",
+      sender: "moderator",
+      subreddit: "testsubreddit",
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Invitation.findById.mockResolvedValue(mockedInvitation); // Simulating invitation found
+    Invitation.findByIdAndDelete.mockResolvedValue(); // Simulating successful deletion of invitation
+
+    await declineInvitation(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "You are not authorized to decline this invitation",
+    });
+  });
+});
+
+describe("unMuteUser function", () => {
+  it("should return a 404 status code with an error message if user is not found", async () => {
+    const req = {
+      user: {
+        userId: "nonExistentUserId",
+      },
+      params: {
+        subreddit: "testsubreddit",
+      },
+      body: {
+        mutedUser: "testuser",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue(null); // Simulating user not found
+
+    await unMuteUser(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "User not found",
+    });
+  });
+
+  it("should return a 404 status code with an error message if subreddit is not found", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+      },
+      params: {
+        subreddit: "nonExistentSubreddit",
+      },
+      body: {
+        mutedUser: "testuser",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Community.findOne.mockResolvedValue(null); // Simulating subreddit not found
+
+    await unMuteUser(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Subreddit not found",
+    });
+  });
+
+  it("should return a 403 status code with an error message if user is not a moderator", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+        username: "testuser",
+      },
+      params: {
+        subreddit: "testsubreddit",
+      },
+      body: {
+        mutedUser: "testmuteduser",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const mockedSubreddit = {
+      moderators: [{ username: "othermoderator" }], // Simulating user is not a moderator
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Community.findOne.mockResolvedValue(mockedSubreddit); // Simulating subreddit found
+
+    await unMuteUser(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Only moderators can unmute users",
+    });
+  });
+
+  it("should return a 400 status code with an error message if user to be unmuted is not muted", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+        username: "testuser",
+      },
+      params: {
+        subreddit: "testsubreddit",
+      },
+      body: {
+        mutedUser: "testuser",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const mockedSubreddit = {
+      moderators: [{ username: "testuser" }],
+      mutedUsers: [], // Simulating user to be unmuted is not muted
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Community.findOne.mockResolvedValue(mockedSubreddit); // Simulating subreddit found
+
+    await unMuteUser(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Only moderators can unmute users",
+    });
+  });
+
+  it("should successfully unmute the user", async () => {
+    const req = {
+      user: {
+        userId: "testuserid",
+        username: "testuser",
+      },
+      params: {
+        subreddit: "testsubreddit",
+      },
+      body: {
+        mutedUser: "testmuteduser",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const mockedSubreddit = {
+      moderators: [{ username: "testuser" }],
+      mutedUsers: ["testmuteduser"], // Simulating user to be unmuted is muted
+    };
+
+    const mockedUser = {
+      username: "testmuteduser",
+      notificationSettings: {
+        disabledSubreddits: ["testsubreddit"],
+      },
+    };
+
+    User.findById.mockResolvedValue({}); // Simulating user found
+    Community.findOne.mockResolvedValue(mockedSubreddit); // Simulating subreddit found
+    User.findOne.mockResolvedValue(mockedUser); // Simulating muted user found
+
+    await unMuteUser(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Only moderators can unmute users",
+    });
+  });
+});
