@@ -19,6 +19,7 @@ const communitySettingsSchema = new Schema({
   privacyMode: {
     type: String,
     enum: ["private", "public", "restricted"],
+    default: "public",
   },
   isNSFW: {
     type: Boolean,
