@@ -5,14 +5,15 @@ const User = require("../models/userModel");
 const {
   randomPost,
   getTopPosts,
-  getTopPostsbytime,
+  newPosts,
   hotPosts,
   mostComments,
+  getTopPostsbytime,
   setSuggestedSort,
   getUserPosts,
+  guestHomePage,
   sortComments,
   getTopComments,
-  guestHomePage,
 } = require("../controller/listing/listingController");
 const moment = require("moment");
 
@@ -252,6 +253,28 @@ describe("sortComments", () => {
     expect(res.json).toHaveBeenCalledWith({
       success: false,
       message: "Post not found in the specified subreddit",
+    });
+  });
+});
+
+describe("newPosts", () => {
+  it("should return an error message when the subreddit is not found", async () => {
+    const req = { params: { subreddit: "invalidSubreddit" } };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    subredditModel.findOne = jest.fn().mockResolvedValue(null);
+    await newPosts(req, res);
+
+    expect(subredditModel.findOne).toHaveBeenCalledWith({
+      name: "invalidSubreddit",
+    });
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Subreddit not found",
     });
   });
 });

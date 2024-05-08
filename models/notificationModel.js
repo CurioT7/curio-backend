@@ -67,6 +67,13 @@ const notificationSchema = new Schema({
     type: String,
     ref: "Subreddit",
   },
+  invitiations: {
+    type: Schema.Types.ObjectId,
+    ref: "Invitation",
+  },
+  media: {
+    type: String,
+  },
 });
 
 /**
