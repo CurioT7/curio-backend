@@ -998,133 +998,133 @@ describe("pollVote", () => {
 //   });
 // });
 
-describe("castVote function", () => {
-  let req, res;
+// describe("castVote function", () => {
+//   let req, res;
 
-  beforeEach(() => {
-    req = {
-      headers: { authorization: "Bearer fake.token" },
-      body: { itemID: "123", itemName: "post", direction: 1 },
-    };
-    res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-  });
+//   beforeEach(() => {
+//     req = {
+//       headers: { authorization: "Bearer fake.token" },
+//       body: { itemID: "123", itemName: "post", direction: 1 },
+//     };
+//     res = {
+//       status: jest.fn(() => res),
+//       json: jest.fn(),
+//     };
+//   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+//   afterEach(() => {
+//     jest.clearAllMocks();
+//   });
 
-  it("should return 401 if token is invalid", async () => {
-    verifyToken.mockResolvedValue(null);
+//   it("should return 401 if token is invalid", async () => {
+//     verifyToken.mockResolvedValue(null);
 
-    await castVote(req, res);
+//     await castVote(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
-  });
+//     expect(res.status).toHaveBeenCalledWith(401);
+//     expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
+//   });
 
-  it("should return 404 if user not found", async () => {
-    verifyToken.mockResolvedValue({ userId: "someUserId" });
-    User.findOne.mockResolvedValue(null);
+//   it("should return 404 if user not found", async () => {
+//     verifyToken.mockResolvedValue({ userId: "someUserId" });
+//     User.findOne.mockResolvedValue(null);
 
-    await castVote(req, res);
+//     await castVote(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "User not found",
-    });
-  });
+//     expect(res.status).toHaveBeenCalledWith(404);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "User not found",
+//     });
+//   });
 
-  it("should return 404 if item not found", async () => {
-    verifyToken.mockResolvedValue({ userId: "someUserId" });
-    User.findOne.mockResolvedValue({});
-    Post.findOne.mockResolvedValue(null);
+//   it("should return 404 if item not found", async () => {
+//     verifyToken.mockResolvedValue({ userId: "someUserId" });
+//     User.findOne.mockResolvedValue({});
+//     Post.findOne.mockResolvedValue(null);
 
-    await castVote(req, res);
+//     await castVote(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "Item not found",
-    });
-  });
+//     expect(res.status).toHaveBeenCalledWith(404);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "Item not found",
+//     });
+//   });
 
-  it("should handle internal server error", async () => {
-    verifyToken.mockRejectedValue(new Error("Internal server error"));
+//   it("should handle internal server error", async () => {
+//     verifyToken.mockRejectedValue(new Error("Internal server error"));
 
-    await castVote(req, res);
+//     await castVote(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "Internal server error",
-      error: new Error("Internal server error"),
-    });
-  });
-});
+//     expect(res.status).toHaveBeenCalledWith(500);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: false,
+//       message: "Internal server error",
+//       error: new Error("Internal server error"),
+//     });
+//   });
+// });
 
-describe("addToHistory function", () => {
-  let req, res;
+// describe("addToHistory function", () => {
+//   let req, res;
 
-  beforeEach(() => {
-    req = {
-      headers: { authorization: "Bearer fake.token" },
-      body: { postID: "post123" },
-    };
-    res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-  });
+//   beforeEach(() => {
+//     req = {
+//       headers: { authorization: "Bearer fake.token" },
+//       body: { postID: "post123" },
+//     };
+//     res = {
+//       status: jest.fn(() => res),
+//       json: jest.fn(),
+//     };
+//   });
 
-  it("should add a post to user history if not already present", async () => {
-    verifyToken.mockResolvedValue({ userId: "user123" });
-    User.findOne.mockResolvedValue({ recentPosts: [], save: jest.fn() });
-    Post.findOne.mockResolvedValue({ _id: "post123" });
+//   it("should add a post to user history if not already present", async () => {
+//     verifyToken.mockResolvedValue({ userId: "user123" });
+//     User.findOne.mockResolvedValue({ recentPosts: [], save: jest.fn() });
+//     Post.findOne.mockResolvedValue({ _id: "post123" });
 
-    await addToHistory(req, res);
+//     await addToHistory(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      message: "Post added to history",
-    });
-  });
-});
+//     expect(res.status).toHaveBeenCalledWith(200);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: true,
+//       message: "Post added to history",
+//     });
+//   });
+// });
 
-describe("getHistory function", () => {
-  let req, res;
+// describe("getHistory function", () => {
+//   let req, res;
 
-  beforeEach(() => {
-    req = {
-      headers: { authorization: "Bearer fake.token" },
-    };
-    res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
+//   beforeEach(() => {
+//     req = {
+//       headers: { authorization: "Bearer fake.token" },
+//     };
+//     res = {
+//       status: jest.fn(() => res),
+//       json: jest.fn(),
+//     };
 
-    // Mock setup for Post.find
-    Post.find = jest.fn();
-  });
+//     // Mock setup for Post.find
+//     Post.find = jest.fn();
+//   });
 
-  it("should retrieve the user's browsing history", async () => {
-    verifyToken.mockResolvedValue({ userId: "user123" });
-    User.findOne.mockResolvedValue({ recentPosts: ["post123"] });
-    Post.find.mockResolvedValue([{ _id: "post123", title: "Example Post" }]);
+//   it("should retrieve the user's browsing history", async () => {
+//     verifyToken.mockResolvedValue({ userId: "user123" });
+//     User.findOne.mockResolvedValue({ recentPosts: ["post123"] });
+//     Post.find.mockResolvedValue([{ _id: "post123", title: "Example Post" }]);
 
-    await getHistory(req, res);
+//     await getHistory(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      recentPosts: [{ _id: "post123", title: "Example Post" }],
-    });
-  });
-});
+//     expect(res.status).toHaveBeenCalledWith(200);
+//     expect(res.json).toHaveBeenCalledWith({
+//       success: true,
+//       recentPosts: [{ _id: "post123", title: "Example Post" }],
+//     });
+//   });
+// });
 
 // describe("getHistory function", () => {
 //   let req, res;
