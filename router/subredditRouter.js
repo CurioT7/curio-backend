@@ -258,15 +258,24 @@ router.get("/communitySettings/:subreddit", authenticate,modToolsController.comm
 router.patch("/updateCommunitySettings/:subreddit", authenticate, modToolsController.updateCommunitySettings);
 
 /**
+ * Route to get subreddits that the user moderates and subreddits that the user is a member of
+ * @name GET /mineWhere:username
+ * @function
+ * @memberof module:routes/subreddit
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware
+ */
+
+router.get("/mineWhere", authenticate, modToolsController.mineWhere);
+
+
+/**
  * GET /moderatedSubreddits/:username - Get the list of moderated communities by a user.
- * 
  * This endpoint allows to retrieve the list of moderated communities by a user based on their username.
- * 
  * @name GET /moderatedSubreddits/:username
  * @function
  * @memberof module:subredditsRouter
  * @inner
- * 
  * @param {object} req - The request object.
  * @param {object} req.params - The URL parameters.
  * @param {string} req.params.username - The username of the user.
@@ -277,6 +286,7 @@ router.get(
   "/moderatedSubreddits/:username",
   subredditsController.getModeratedCommunitiesByUsername
 );
+
 /**
  * POST request to ban a user from a subreddit.
  * @async
@@ -301,14 +311,11 @@ router.post("/moderator/unban", authenticate, subredditsController.unbanUser);
 
 /**
  * GET /r/:subredditName/about/banned - Get the list of banned users in a subreddit.
- * 
  * This endpoint allows moderators to retrieve the list of banned users in a subreddit.
- * 
  * @name GET /r/:subredditName/about/banned
  * @function
  * @memberof module:subredditsRouter
  * @inner
- * 
  * @param {object} req - The request object.
  * @param {object} req.user - The authenticated user object.
  * @param {string} req.user.userId - The ID of the user performing the request.

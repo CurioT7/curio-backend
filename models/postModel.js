@@ -162,11 +162,6 @@ const postSchema = new Schema({
     type: Date,
     default: null,
   },
-  scheduledTimezone:
-  {
-    type: String,
-    default:'GMT+03:00',
-  },
   repeatOption: {
     type: String,
     enum: ["does_not_repeat", "hourly", "daily", "weekly", "monthly", "custom"],
