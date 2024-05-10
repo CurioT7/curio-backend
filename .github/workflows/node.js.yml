@@ -46,5 +46,12 @@ jobs:
         file_name: .env
         fail_on_empty: true
         sort_keys: false
-    - run: npm run build --if-present
     - run: npm test
+    - name: Build & push Docker image
+      uses: mr-smithers-excellent/docker-build-push@v6
+      with:
+        image: isslolo/curio/curio-backend
+        registry: docker.io
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
