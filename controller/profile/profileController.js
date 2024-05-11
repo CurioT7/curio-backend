@@ -315,6 +315,9 @@ async function getJoinedCommunities(req, res) {
 }
 
 module.exports = {
+  findUserByUsername,
+  handleServerError,
+  fetchPostsByUsername,
   getJoinedCommunities,
   getPostsByUser,
   getCommentsByUser,
@@ -322,4 +325,5 @@ module.exports = {
   getDownvotedContent,
   getAboutInformation,
   getOverviewInformation,
+  getVotedContent,
 };

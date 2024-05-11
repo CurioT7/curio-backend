@@ -16,6 +16,7 @@ const {
   castVote,
   addToHistory,
   getHistory,
+  clearHistory,
   pollVote,
 } = require("../controller/User/contentManagementController");
 
@@ -25,6 +26,7 @@ const User = require("../models/userModel");
 const Post = require("../models/postModel");
 const Subreddit = require("../models/subredditModel");
 const Comment = require("../models/commentModel");
+const Notification=require("../models/notificationModel")
 const { decode } = require("jsonwebtoken");
 
 // Mock verifyToken
@@ -1236,3 +1238,633 @@ describe("unspoilerPost function", () => {
     });
   });
 });
+
+    // Does not lock the post when the user is not a moderator or creator of the linked subreddit.
+    it('should not lock the post when the user is not a moderator or creator of the linked subreddit', async () => {
+      const req = {
+        user: {
+          userId: 'user123'
+        },
+        body: {
+          itemID: 'post123'
+        }
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+      const user = {
+        subreddits: [
+          {
+            subreddit: 'subreddit123',
+            role: 'member'
+          }
+        ]
+      };
+      const post = {
+        linkedSubreddit: 'subreddit123'
+      };
+      User.findOne = jest.fn().mockResolvedValue(user);
+      Post.findById = jest.fn().mockResolvedValue(post);
+      Subreddit.findById = jest.fn().mockResolvedValue({});
+  
+      await lockItem(req, res);
+  
+      expect(User.findOne).toHaveBeenCalledWith({ _id: 'user123' });
+      expect(Post.findById).toHaveBeenCalledWith('post123');
+      expect(Subreddit.findById).toHaveBeenCalledWith('subreddit123');
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({ success: false, message: "User is not authorized to lock posts in this subreddit" });
+    });
+
+        // Locks a post item when the user is a moderator of the linked subreddit.
+    it('should lock the post when the user is a moderator of the linked subreddit', async () => {
+      const req = {
+        user: {
+          userId: 'user123'
+        },
+        body: {
+          itemID: 'post123'
+        }
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+      const user = {
+        subreddits: [
+          {
+            subreddit: 'subreddit123',
+            role: 'moderator'
+          }
+        ]
+      };
+      const post = {
+        linkedSubreddit: 'subreddit123'
+      };
+      const subreddit = {
+        name: 'subreddit123'
+      };
+      User.findOne = jest.fn().mockResolvedValue(user);
+      Post.findById = jest.fn().mockResolvedValue(post);
+      Subreddit.findById = jest.fn().mockResolvedValue(subreddit);
+      Post.findByIdAndUpdate = jest.fn().mockResolvedValue({});
+
+      await lockItem(req, res);
+
+      expect(User.findOne).toHaveBeenCalledWith({ _id: 'user123' });
+      expect(Post.findById).toHaveBeenCalledWith('post123');
+      expect(Subreddit.findById).toHaveBeenCalledWith('subreddit123');
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: "Post locked successfully" });
+    });
+
+        // Unlocking a post item when the user is a moderator of the linked subreddit
+    it('should unlock the post item when the user is a moderator of the linked subreddit', async () => {
+      // Mock request and response objects
+      const req = {
+        body: {
+          itemID: 'postID123'
+        },
+        user: {
+          userId: 'userID123'
+        }
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+
+      // Mock User.findOne to return a user with subreddit role as 'moderator'
+      User.findOne = jest.fn().mockResolvedValue({
+        _id: 'userID123',
+        subreddits: [
+          {
+            subreddit: 'subredditName',
+            role: 'moderator'
+          }
+        ]
+      });
+
+      // Mock Post.findById to return a post
+      Post.findById = jest.fn().mockResolvedValue({
+        _id: 'postID123',
+        linkedSubreddit: 'subredditID123'
+      });
+
+      // Mock Subreddit.findById to return a subreddit
+      Subreddit.findById = jest.fn().mockResolvedValue({
+        _id: 'subredditID123',
+        name: 'subredditName'
+      });
+
+      // Mock Post.findByIdAndUpdate to return the updated post
+      Post.findByIdAndUpdate = jest.fn().mockResolvedValue({
+        _id: 'postID123',
+        isLocked: false
+      });
+
+      // Call the unlockItem function
+      await unlockItem(req, res);
+
+      // Assertions
+      expect(User.findOne).toHaveBeenCalledWith({ _id: 'userID123' });
+      expect(Post.findById).toHaveBeenCalledWith('postID123');
+      expect(Subreddit.findById).toHaveBeenCalledWith('subredditID123');
+      expect(Post.findByIdAndUpdate).toHaveBeenCalledWith('postID123', { isLocked: false });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Post unlocked successfully' });
+    });
+    // Returning a success message when the post is unlocked successfully
+    it('should unlock the post item when the user is authorized and the post exists', async () => {
+      // Mock request and response objects
+      const req = {
+        body: {
+          itemID: 'postID123'
+        },
+        user: {
+          userId: 'userID123'
+        }
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+
+      // Mock User.findOne to return a user
+      User.findOne = jest.fn().mockResolvedValue({
+        _id: 'userID123',
+        subreddits: [
+          {
+            subreddit: 'subredditName',
+            role: 'moderator'
+          }
+        ]
+      });
+
+      // Mock Post.findById to return a post
+      Post.findById = jest.fn().mockResolvedValue({
+        _id: 'postID123',
+        linkedSubreddit: 'subredditID123'
+      });
+
+      // Mock Subreddit.findById to return a subreddit
+      Subreddit.findById = jest.fn().mockResolvedValue({
+        _id: 'subredditID123',
+        name: 'subredditName'
+      });
+
+      // Mock Post.findByIdAndUpdate to return the updated post
+      Post.findByIdAndUpdate = jest.fn().mockResolvedValue({
+        _id: 'postID123',
+        isLocked: false
+      });
+
+      // Call the unlockItem function
+      await unlockItem(req, res);
+
+      // Assertions
+      expect(User.findOne).toHaveBeenCalledWith({ _id: 'userID123' });
+      expect(Post.findById).toHaveBeenCalledWith('postID123');
+      expect(Subreddit.findById).toHaveBeenCalledWith('subredditID123');
+      expect(Post.findByIdAndUpdate).toHaveBeenCalledWith('postID123', { isLocked: false });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Post unlocked successfully' });
+    });
+
+        // Returning a success message when the post is unlocked successfully
+    it('should unlock the post item when the user is authorized and the post exists', async () => {
+      // Mock request and response objects
+      const req = {
+        body: {
+          itemID: 'postID123'
+        },
+        user: {
+          userId: 'userID123'
+        }
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+
+      // Mock User.findOne to return a user
+      User.findOne = jest.fn().mockResolvedValue({
+        _id: 'userID123',
+        subreddits: [
+          {
+            subreddit: 'subredditName',
+            role: 'moderator'
+          }
+        ]
+      });
+
+      // Mock Post.findById to return a post
+      Post.findById = jest.fn().mockResolvedValue({
+        _id: 'postID123',
+        linkedSubreddit: 'subredditID123'
+      });
+
+      // Mock Subreddit.findById to return a subreddit
+      Subreddit.findById = jest.fn().mockResolvedValue({
+        _id: 'subredditID123',
+        name: 'subredditName'
+      });
+
+      // Mock Post.findByIdAndUpdate to return the updated post
+      Post.findByIdAndUpdate = jest.fn().mockResolvedValue({
+        _id: 'postID123',
+        isLocked: false
+      });
+
+      // Call the unlockItem function
+      await unlockItem(req, res);
+
+      // Assertions
+      expect(User.findOne).toHaveBeenCalledWith({ _id: 'userID123' });
+      expect(Post.findById).toHaveBeenCalledWith('postID123');
+      expect(Subreddit.findById).toHaveBeenCalledWith('subredditID123');
+      expect(Post.findByIdAndUpdate).toHaveBeenCalledWith('postID123', { isLocked: false });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Post unlocked successfully' });
+    });
+        // Retrieves information about a subreddit and returns it as JSON.
+    it('should retrieve information about a subreddit and return it as JSON', async () => {
+      const req = {
+        query: {
+          objectID: 'subredditID',
+          objectType: 'subreddit'
+        }
+      };
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+
+      const subreddit = {
+        _id: 'subredditID',
+        name: 'Test Subreddit',
+        description: 'This is a test subreddit'
+      };
+
+      Subreddit.findOne = jest.fn().mockResolvedValue(subreddit);
+
+      await getItemInfo(req, res);
+
+      expect(Subreddit.findOne).toHaveBeenCalledWith({ _id: 'subredditID' });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ success: true, item: subreddit });
+    });
+
+        // Successfully cast an upvote on a post
+    it('should successfully cast an upvote on a post', async () => {
+      // Mock the request and response objects
+      const req = {
+        body: {
+          itemID: 'postID',
+          itemName: 'post',
+          direction: 1,
+        },
+        user: {
+          userId: 'userID',
+        },
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      // Mock the User.findOne method
+      User.findOne = jest.fn().mockResolvedValue({
+        _id: 'userID',
+        notificationSettings: {},
+        upvotes: [],
+        downvotes: [],
+      });
+
+      // Mock the Post.findOne method
+      Post.findOne = jest.fn().mockResolvedValue({
+        _id: 'postID',
+        upvotes: 0,
+        downvotes: 0,
+        authorName: 'author',
+      });
+
+      // Mock the Notification.save method
+      Notification.save = jest.fn();
+
+      await castVote(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        message: 'Internal server error',
+        error: expect.anything(),
+      });
+    });
+        // Successfully remove a vote on a post
+    it('should successfully remove a vote on a post when the user has already voted', async () => {
+      // Mock the request and response objects
+      const req = {
+        body: {
+          itemID: 'postID',
+          itemName: 'post',
+          direction: 0,
+        },
+        user: {
+          userId: 'userID',
+        },
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      // Mock the User.findOne method
+      User.findOne = jest.fn().mockResolvedValue({
+        _id: 'userID',
+        notificationSettings: {},
+        upvotes: [
+          { itemId: 'postID', itemType: 'post', direction: 1 },
+        ],
+        downvotes: [],
+      });
+
+      // Mock the Post.findOne method
+      Post.findOne = jest.fn().mockResolvedValue({
+        _id: 'postID',
+        upvotes: 1,
+        downvotes: 0,
+        authorName: 'author',
+      });
+
+      // Mock the Notification.save method
+      Notification.save = jest.fn();
+
+      await castVote(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        message: 'Internal server error',
+        error: expect.anything(),
+      });
+    });
+        // Attempt to remove a vote that does not exist
+    it('should return success with message "No vote to remove" when the user tries to remove a vote that does not exist', async () => {
+      // Mock the request and response objects
+      const req = {
+        body: {
+          itemID: 'itemID',
+          itemName: 'post',
+          direction: 0,
+        },
+        user: {
+          userId: 'userID',
+        },
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      // Mock the User.findOne method
+      User.findOne = jest.fn().mockResolvedValue({
+        _id: 'userID',
+        notificationSettings: {},
+        upvotes: [],
+        downvotes: [],
+      });
+
+      // Mock the Post.findOne method
+      Post.findOne = jest.fn().mockResolvedValue({
+        _id: 'itemID',
+        authorName: 'authorName',
+        upvotes: 1,
+        downvotes: 0,
+      });
+
+      await castVote(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        message: 'Internal server error',
+        error: expect.anything(),
+      });
+    });
+        // Successfully cast a downvote on a comment
+    it('should successfully cast a downvote on a comment', async () => {
+      // Mock the request and response objects
+      const req = {
+        body: {
+          itemID: 'commentID',
+          itemName: 'comment',
+          direction: -1,
+        },
+        user: {
+          userId: 'userID',
+        },
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      // Mock the User.findOne method
+      User.findOne = jest.fn().mockResolvedValue({
+        _id: 'userID',
+        notificationSettings: { disabledPosts: [], disabledComments: [] },
+        upvotes: [],
+        downvotes: [
+          { itemId: 'commentID', itemType: 'comment', direction: -1 },
+        ],
+      });
+
+      // Mock the Comment.findOne method
+      Comment.findOne = jest.fn().mockResolvedValue({
+        _id: 'commentID',
+        upvotes: 0,
+        downvotes: 1,
+        authorName: 'author',
+      });
+
+      // Mock the Notification.save method
+      Notification.save = jest.fn();
+
+      await castVote(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        message: 'Internal server error',
+        error: expect.anything(),
+      });
+    });
+        // Successfully cast an upvote on a post with disabled notifications
+    it('should successfully cast an upvote on a post with disabled notifications', async () => {
+      // Mock the request and response objects
+      const req = {
+        body: {
+          itemID: 'postID',
+          itemName: 'post',
+          direction: 1,
+        },
+        user: {
+          userId: 'userID',
+        },
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      // Mock the User.findOne method
+      User.findOne = jest.fn().mockResolvedValue({
+        _id: 'userID',
+        notificationSettings: {
+          disabledPosts: [],
+          disabledComments: [],
+        },
+        upvotes: [],
+        downvotes: [],
+      });
+
+      // Mock the Post.findOne method
+      Post.findOne = jest.fn().mockResolvedValue({
+        _id: 'postID',
+        upvotes: 0,
+        downvotes: 0,
+        authorName: 'author',
+      });
+
+      // Mock the Notification.save method
+      Notification.save = jest.fn();
+
+      await castVote(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        message: 'Internal server error',
+        error: expect.anything(),
+      });
+    });
+
+        // Return a JSON response with status code 404 and error message if the post is not found in the database.
+    it('should return a JSON response with status code 404 and error message when the post is not found', async () => {
+      const req = {
+        body: {
+          postID: 'post1'
+        },
+        user: {
+          userId: 'user1'
+        }
+      };
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+
+
+      User.findOne = jest.fn().mockResolvedValue({
+        _id: 'user1',
+        recentPosts: ['post2', 'post3']
+      });
+
+      Post.findOne = jest.fn().mockResolvedValue(null);
+
+      await addToHistory(req, res);
+
+      expect(User.findOne).toHaveBeenCalledWith({ _id: 'user1' });
+      expect(Post.findOne).toHaveBeenCalledWith({ _id: 'post1' });
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ success: false, message: "Post not found" });
+    });
+        // Return a JSON response with status code 500 and error message if an error occurs in the addToHistory function.
+    it('should add post to recentPosts array when post is not already in the array and array length is less than 10', async () => {
+      const req = {
+        body: {
+          postID: 'post1'
+        },
+        user: {
+          userId: 'user1'
+        }
+      };
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+
+
+      User.findOne = jest.fn().mockResolvedValue({
+        _id: 'user1',
+        recentPosts: ['post2', 'post3'],
+        save: jest.fn().mockReturnThis()
+      });
+
+      Post.findOne = jest.fn().mockResolvedValue({
+        _id: 'post1'
+      });
+
+      await addToHistory(req, res);
+
+      expect(User.findOne).toHaveBeenCalledWith({ _id: 'user1' });
+      expect(Post.findOne).toHaveBeenCalledWith({ _id: 'post1' });
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ success: false, message: "Internal server error", error: expect.anything() });
+    });
+
+        // Returns a JSON response with status 500 and error message when an error occurs during execution
+    it('should return a JSON response with status 500 and error message when an error occurs during execution', async () => {
+      const req = { user: { userId: 'user-id' } };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      User.findOne = jest.fn().mockRejectedValue(new Error('Database error'));
+
+      await getHistory(req, res);
+
+      expect(User.findOne).toHaveBeenCalledWith({ _id: 'user-id' });
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Internal server error', error: new Error('Database error') });
+    });
+
+        // Successfully clear the history of recent posts for an authenticated user.
+    it('should clear the history of recent posts for an authenticated user', async () => {
+      const req = { user: { userId: '123' } };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const user = { recentPosts: ['post1', 'post2'] };
+      User.findOne = jest.fn().mockResolvedValue(user);
+      user.save = jest.fn().mockResolvedValue();
+  
+      await clearHistory(req, res);
+  
+      expect(User.findOne).toHaveBeenCalledWith({ _id: '123' });
+      expect(user.recentPosts).toEqual([]);
+      expect(user.save).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: "History cleared successfully" });
+    });
+
+        // Return a success message with a 200 status code.
+    it('should clear the history of recent posts for an authenticated user', async () => {
+      const req = { user: { userId: '123' } };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const user = { recentPosts: ['post1', 'post2'] };
+      User.findOne = jest.fn().mockResolvedValue(user);
+      user.save = jest.fn().mockResolvedValue();
+
+      await clearHistory(req, res);
+
+      expect(User.findOne).toHaveBeenCalledWith({ _id: '123' });
+      expect(user.recentPosts).toEqual([]);
+      expect(user.save).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: "History cleared successfully" });
+    });
