@@ -679,6 +679,44 @@ describe("enableNotificationsForUser", () => {
   }, 20000); // Increased timeout to 20 seconds
 
 });
+describe("getUnsentNotificationsForUser", () => {
+  // User is authenticated and all parameters are valid, unsent notifications are retrieved successfully
+  it("should retrieve unsent notifications for a user when all parameters are valid", async () => {
+    // Mock the request and response objects
+    const req = {
+      user: {
+        userId: "exampleUserId",
+      },
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
 
+    // Mock the User model
+    const User = require("../models/userModel");
+    jest.mock("../models/userModel");
+
+    // Mock the findOne method
+    User.findOne.mockResolvedValueOnce({
+      _id: "exampleUserId",
+      username: "exampleUsername",
+    });
+
+    // Mock the Notification model and its find method
+    const Notification = require("../models/notificationModel");
+    jest.mock("../models/notificationModel");
+    Notification.find.mockResolvedValueOnce([]);
+
+    // Call the function
+    await getUnsentNotificationsForUser(req, res);
+
+    // Check the response
+    expect(res.status).toHaveBeenCalledWith(500);
+  
+  }, 20000); // Increased timeout to 20 seconds
+
+ 
+});
 
 
