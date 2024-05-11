@@ -9,6 +9,7 @@ const Subreddit = require("../models/subredditModel");
 const UserReports = require("../models/reportModel");
 const Block = require("../models/blockModel");
 const UserPreferences = require("../models/userPreferencesModel");
+const CommunitySettings = require("../models/communitySettingsModel");
 
 async function seedUsers(n = 10) {
   const users = [];
@@ -95,165 +96,285 @@ async function seedBlock(n = 5, users) {
   const blocks = [];
   const userCount = users.length;
 
-  // Generate unique pairs of user IDs for blockerId and blockedId
   const uniquePairs = new Set();
 
   while (uniquePairs.size < n) {
-    const blockerIndex = faker.datatype.number({ min: 0, max: userCount - 1 });
-    const blockedIndex = faker.datatype.number({ min: 0, max: userCount - 1 });
+      const blockerIndex = faker.datatype.number({ min: 0, max: userCount - 1 });
+      const blockedIndex = faker.datatype.number({ min: 0, max: userCount - 1 });
 
-    // Ensure blockerId and blockedId are different
-    if (blockerIndex !== blockedIndex) {
-      uniquePairs.add(`${blockerIndex}-${blockedIndex}`);
-    }
+      if (blockerIndex !== blockedIndex) {
+          uniquePairs.add(`${blockerIndex}-${blockedIndex}`);
+      }
   }
 
-  // Create blocks using unique pairs
   for (const pair of uniquePairs) {
-    const [blockerIndex, blockedIndex] = pair.split("-");
-    const block = new Block({
-      blockerId: users[blockerIndex]._id,
-      blockedId: users[blockedIndex]._id,
-      unblockTimestamp: faker.date.past(),
-    });
-    await block.save();
-    blocks.push(block);
+      const [blockerIndex, blockedIndex] = pair.split("-");
+
+      const block = new Block({
+          blockerId: users[blockerIndex]._id,
+          blockedId: users[blockedIndex]._id,
+          unblockTimestamp: faker.date.past(),
+          blockedUsername: users[blockedIndex].username, // Add blocked username
+      });
+
+      await block.save();
+      blocks.push(block);
   }
 
   return blocks;
 }
 
-async function seedPreferences(n = 5, users, subreddits) {
-  const preferences = [];
-  for (let i = 0; i < n; i++) {
-    const userIndex = faker.datatype.number({
-      min: 0,
-      max: users.length - 1,
-    });
-    const preference = new UserPreferences({
-      username: users[userIndex].username,
-      gender: faker.random.arrayElement([
-        "woman",
-        "man",
-        "i prefer not to say",
-      ]),
-      language: faker.random.arrayElement([
-        "Deutsch",
-        "English(us)",
-        "Espanol(es)",
-        "Espanol(mx)",
-        "Francias",
-        "Italiano",
-        "portugues(br)",
-        "portugues(pt)",
-      ]),
-      locationCustomization: faker.address.city(),
-      displayName: faker.name.findName(),
-      about: faker.lorem.sentence(),
-      socialLinks: [
-        {
-          displayName: faker.random.word(),
-          platform: faker.random.arrayElement([
-            "facebook",
-            "instagram",
-            "linkedin",
-            "github",
-            "twitter",
-          ]),
-          url: faker.internet.url(),
-        },
-      ],
-      images: {
-        pfp: faker.image.avatar(),
-        banner: faker.image.imageUrl(),
-      },
-      NSFW: faker.datatype.boolean(),
-      allowFollow: faker.datatype.boolean(),
-      contentVisibility: faker.datatype.boolean(),
-      activeInCommunityVisibility: faker.datatype.boolean(),
-      clearHistory: faker.datatype.boolean(),
-      block: [
-        { username: faker.internet.userName() },
-        { username: faker.internet.userName() },
-      ],
-      viewBlockedPeople: [
-        {
-          username: faker.internet.userName(),
-          blockTimestamp: faker.date.past(),
-        },
-        {
-          username: faker.internet.userName(),
-          blockTimestamp: faker.date.past(),
-        },
-      ],
-      viewMutedCommunities: [
-        { communityName: faker.lorem.words(2).substring(0, 20) },
-        { communityName: faker.lorem.words(2).substring(0, 20) },
-      ],
-      adultContent: faker.datatype.boolean(),
-      autoplayMedia: faker.datatype.boolean(),
-      communityThemes: faker.datatype.boolean(),
-      communityContentSort: faker.random.arrayElement([
-        "hot",
-        "new",
-        "top",
-        "rising",
-      ]),
-      globalContentView: faker.random.arrayElement(["card", "classic"]),
-      rememberPerCommunity: {
-        rememberContentSort: faker.datatype.boolean(),
-        rememberContentView: faker.datatype.boolean(),
-      },
-      openPostsInNewTab: faker.datatype.boolean(),
-      mentions: faker.datatype.boolean(),
-      comments: faker.datatype.boolean(),
-      upvotesPosts: faker.datatype.boolean(),
-      upvotesComments: faker.datatype.boolean(),
-      replies: faker.datatype.boolean(),
-      newFollowers: faker.datatype.boolean(),
-      postsYouFollow: faker.datatype.boolean(),
-      newFollowerEmail: faker.datatype.boolean(),
-      chatRequestEmail: faker.datatype.boolean(),
-      unsubscribeFromAllEmails: faker.datatype.boolean(),
-    });
-    // Link viewMutedCommunities array with existing communities
-    const mutedCommunityIndex1 = faker.datatype.number({
-      min: 0,
-      max: subreddits.length - 1,
-    });
-    const mutedCommunityIndex2 = faker.datatype.number({
-      min: 0,
-      max: subreddits.length - 1,
-    });
-    preference.viewMutedCommunities = [
-      { communityName: subreddits[mutedCommunityIndex1].name },
-      { communityName: subreddits[mutedCommunityIndex2].name },
-    ];
+async function seedCommunitySettings(n = 5, subreddits, users) {
+  const communitySettingsList = [];
 
-    // Link viewBlockedPeople array with existing users
-    const blockedUserIndex1 = faker.datatype.number({
-      min: 0,
-      max: users.length - 1,
-    });
-    const blockedUserIndex2 = faker.datatype.number({
-      min: 0,
-      max: users.length - 1,
-    });
-    preference.viewBlockedPeople = [
-      {
-        username: users[blockedUserIndex1].username,
-        blockTimestamp: faker.date.past(),
-      },
-      {
-        username: users[blockedUserIndex2].username,
-        blockTimestamp: faker.date.past(),
-      },
-    ];
-    await preference.save();
-    preferences.push(preference);
+  for (let i = 0; i < n; i++) {
+      const subredditIndex = faker.datatype.number({ min: 0, max: subreddits.length - 1 });
+      const subreddit = subreddits[subredditIndex];
+
+      const communitySettings = new CommunitySettings({
+          name: subreddit.name,
+          description: subreddit.description,
+          welcomeMessage: faker.datatype.boolean(),
+          privacyMode: faker.random.arrayElement(["private", "public", "restricted"]),
+          isNSFW: faker.datatype.boolean(),
+          posts: faker.random.arrayElement(["Any", "Links Only", "Text Posts Only"]),
+          isSpoiler: faker.datatype.boolean(),
+          allowsCrossposting: faker.datatype.boolean(),
+          archivePosts: faker.datatype.boolean(),
+          allowImages: faker.datatype.boolean(),
+          allowMultipleImages: faker.datatype.boolean(),
+          allowPolls: faker.datatype.boolean(),
+          postSpamFilterStrength: faker.random.arrayElement(["Low", "High", "All"]),
+          commentSpamFilterStrength: faker.random.arrayElement(["Low", "High", "All"]),
+          linksSpamFilterStrength: faker.random.arrayElement(["Low", "High", "All"]),
+          commentsSort: faker.random.arrayElement(["None", "Best", "Old", "Q&A", "New", "Top", "Controversial"]),
+          collapseDeletedComments: faker.datatype.boolean(),
+          commentScoreHide: faker.datatype.number({ min: 0, max: 100 }),
+          allowGifComment: faker.datatype.boolean(),
+          allowImageComment: faker.datatype.boolean(),
+          allowCollectibleExpressions: faker.datatype.boolean(),
+          createdAt: faker.date.past(),
+          banner: faker.image.imageUrl(),
+          avatar: faker.image.imageUrl(),
+          creator: [users[faker.datatype.number({ min: 0, max: users.length - 1 })]._id],
+      });
+
+      await communitySettings.save();
+      communitySettingsList.push(communitySettings);
   }
-  return preferences;
+
+  return communitySettingsList;
 }
+
+async function seedPreferences(n = 5, users) {
+  const userPreferencesList = [];
+
+  for (let i = 0; i < n; i++) {
+      const userIndex = faker.datatype.number({ min: 0, max: users.length - 1 });
+      const user = users[userIndex];
+
+      const userPreferences = new UserPreferences({
+          username: user.username,
+          gender: faker.random.arrayElement(["woman", "man", "i prefer not to say"]),
+          language: faker.random.arrayElement(["Deutsch", "English(us)", "Espanol(es)", "Espanol(mx)", "Francias", "Italiano", "portugues(br)", "portugues(pt)"]),
+          locationCustomization: faker.address.country(),
+          displayName: faker.name.findName(),
+          about: faker.lorem.paragraph(),
+          socialLinks: Array.from({ length: faker.datatype.number({ min: 0, max: 3 }) }, () => ({
+              displayName: faker.name.jobTitle(),
+              url: faker.internet.url(),
+              platform: faker.random.word()
+          })),
+          banner: faker.image.imageUrl(),
+          profilePicture: faker.image.imageUrl(),
+          NSFW: faker.datatype.boolean(),
+          allowFollow: faker.datatype.boolean(),
+          contentVisibility: faker.datatype.boolean(),
+          activeInCommunityVisibility: faker.datatype.boolean(),
+          clearHistory: faker.datatype.boolean(),
+          viewBlockedPeople: [],
+          viewMutedCommunities: [],
+          adultContent: faker.datatype.boolean(),
+          autoplayMedia: faker.datatype.boolean(),
+          communityThemes: faker.datatype.boolean(),
+          communityContentSort: faker.random.arrayElement(["hot", "new", "top"]),
+          globalContentView: faker.random.arrayElement(["card", "classic"]),
+          rememberPerCommunity: {
+              rememberContentSort: faker.datatype.boolean(),
+              rememberContentView: faker.datatype.boolean()
+          },
+          openPostsInNewTab: faker.datatype.boolean(),
+          mentions: faker.datatype.boolean(),
+          comments: faker.datatype.boolean(),
+          posts: faker.datatype.boolean(),
+          subreddit: faker.datatype.boolean(),
+          upvotesPosts: faker.datatype.boolean(),
+          upvotesComments: faker.datatype.boolean(),
+          replies: faker.datatype.boolean(),
+          newFollowers: faker.datatype.boolean(),
+          postsYouFollow: faker.datatype.boolean(),
+          newFollowerEmail: faker.datatype.boolean(),
+          chatRequestEmail: faker.datatype.boolean(),
+          unsubscribeFromAllEmails: faker.datatype.boolean(),
+          allowPrivateMessages: faker.datatype.boolean(),
+          allowChatRequests: faker.datatype.boolean(),
+          allowChatNotifications: faker.datatype.boolean(),
+          // Add other fields as needed
+      });
+
+      // Add viewBlockedPeople data
+      for (let j = 0; j < faker.datatype.number({ min: 0, max: 3 }); j++) {
+          userPreferences.viewBlockedPeople.push({
+              blockedUsername: users[faker.datatype.number({ min: 0, max: users.length - 1 })].username,
+              blockTimestamp: faker.date.past()
+          });
+      }
+
+      // Add viewMutedCommunities data
+      for (let k = 0; k < faker.datatype.number({ min: 0, max: 3 }); k++) {
+          userPreferences.viewMutedCommunities.push({
+              communityName: faker.random.word()
+          });
+      }
+
+      await userPreferences.save();
+      userPreferencesList.push(userPreferences);
+  }
+
+  return userPreferencesList;
+}
+
+// async function seedPreferences(n = 5, users, subreddits) {
+//   const preferences = [];
+//   for (let i = 0; i < n; i++) {
+//     const userIndex = faker.datatype.number({
+//       min: 0,
+//       max: users.length - 1,
+//     });
+//     const preference = new UserPreferences({
+//       username: users[userIndex].username,
+//       gender: faker.random.arrayElement([
+//         "woman",
+//         "man",
+//         "i prefer not to say",
+//       ]),
+//       language: faker.random.arrayElement([
+//         "Deutsch",
+//         "English(us)",
+//         "Espanol(es)",
+//         "Espanol(mx)",
+//         "Francias",
+//         "Italiano",
+//         "portugues(br)",
+//         "portugues(pt)",
+//       ]),
+//       locationCustomization: faker.address.city(),
+//       displayName: faker.name.findName(),
+//       about: faker.lorem.sentence(),
+//       socialLinks: [
+//         {
+//           displayName: faker.random.word(),
+//           platform: faker.random.arrayElement([
+//             "facebook",
+//             "instagram",
+//             "linkedin",
+//             "github",
+//             "twitter",
+//           ]),
+//           url: faker.internet.url(),
+//         },
+//       ],
+//       images: {
+//         pfp: faker.image.avatar(),
+//         banner: faker.image.imageUrl(),
+//       },
+//       NSFW: faker.datatype.boolean(),
+//       allowFollow: faker.datatype.boolean(),
+//       contentVisibility: faker.datatype.boolean(),
+//       activeInCommunityVisibility: faker.datatype.boolean(),
+//       clearHistory: faker.datatype.boolean(),
+//       block: [
+//         { username: faker.internet.userName() },
+//         { username: faker.internet.userName() },
+//       ],
+//       viewBlockedPeople: [
+//         {
+//           username: faker.internet.userName(),
+//           blockTimestamp: faker.date.past(),
+//         },
+//         {
+//           username: faker.internet.userName(),
+//           blockTimestamp: faker.date.past(),
+//         },
+//       ],
+//       viewMutedCommunities: [
+//         { communityName: faker.lorem.words(2).substring(0, 20) },
+//         { communityName: faker.lorem.words(2).substring(0, 20) },
+//       ],
+//       adultContent: faker.datatype.boolean(),
+//       autoplayMedia: faker.datatype.boolean(),
+//       communityThemes: faker.datatype.boolean(),
+//       communityContentSort: faker.random.arrayElement([
+//         "hot",
+//         "new",
+//         "top",
+//         "rising",
+//       ]),
+//       globalContentView: faker.random.arrayElement(["card", "classic"]),
+//       rememberPerCommunity: {
+//         rememberContentSort: faker.datatype.boolean(),
+//         rememberContentView: faker.datatype.boolean(),
+//       },
+//       openPostsInNewTab: faker.datatype.boolean(),
+//       mentions: faker.datatype.boolean(),
+//       comments: faker.datatype.boolean(),
+//       upvotesPosts: faker.datatype.boolean(),
+//       upvotesComments: faker.datatype.boolean(),
+//       replies: faker.datatype.boolean(),
+//       newFollowers: faker.datatype.boolean(),
+//       postsYouFollow: faker.datatype.boolean(),
+//       newFollowerEmail: faker.datatype.boolean(),
+//       chatRequestEmail: faker.datatype.boolean(),
+//       unsubscribeFromAllEmails: faker.datatype.boolean(),
+//     });
+//     // Link viewMutedCommunities array with existing communities
+//     const mutedCommunityIndex1 = faker.datatype.number({
+//       min: 0,
+//       max: subreddits.length - 1,
+//     });
+//     const mutedCommunityIndex2 = faker.datatype.number({
+//       min: 0,
+//       max: subreddits.length - 1,
+//     });
+//     preference.viewMutedCommunities = [
+//       { communityName: subreddits[mutedCommunityIndex1].name },
+//       { communityName: subreddits[mutedCommunityIndex2].name },
+//     ];
+
+//     // Link viewBlockedPeople array with existing users
+//     const blockedUserIndex1 = faker.datatype.number({
+//       min: 0,
+//       max: users.length - 1,
+//     });
+//     const blockedUserIndex2 = faker.datatype.number({
+//       min: 0,
+//       max: users.length - 1,
+//     });
+//     preference.viewBlockedPeople = [
+//       {
+//         username: users[blockedUserIndex1].username,
+//         blockTimestamp: faker.date.past(),
+//       },
+//       {
+//         username: users[blockedUserIndex2].username,
+//         blockTimestamp: faker.date.past(),
+//       },
+//     ];
+//     await preference.save();
+//     preferences.push(preference);
+//   }
+//   return preferences;
+// }
 
 async function seedReports(n = 5, users) {
   const reports = [];
@@ -559,33 +680,33 @@ function generatePostContent(subreddit) {
     return faker.lorem.paragraph();
   }
 }
-
-async function seedComments(n = 40, users, posts, subreddits) {
+async function seedComments(n = 5, users, posts, subreddits) {
   const comments = [];
-  for (let i = 0; i < n; i++) {
-    const userIndex = faker.datatype.number({
-      min: 0,
-      max: users.length - 1,
-    });
-    const postIndex = faker.datatype.number({ min: 0, max: posts.length - 1 });
-    const subredditIndex = faker.datatype.number({
-      min: 0,
-      max: subreddits.length - 1,
-    });
 
-    const comment = new Comment({
-      content: generateCommentContent(subreddits[subredditIndex]),
-      authorName: users[userIndex].username,
-      linkedPost: posts[postIndex]._id,
-      createdAt: faker.date.past(),
-      upvotes: faker.datatype.number(),
-      downvotes: faker.datatype.number(),
-      linkedSubreddit: new mongoose.Types.ObjectId(),
-      awards: faker.datatype.number(),
-    });
-    await comment.save();
-    comments.push(comment);
+  for (let i = 0; i < n; i++) {
+      const authorIndex = faker.datatype.number({ min: 0, max: users.length - 1 });
+      const postIndex = faker.datatype.number({ min: 0, max: posts.length - 1 });
+      const subredditIndex = faker.datatype.number({ min: 0, max: subreddits.length - 1 });
+
+      const comment = new Comment({
+          content:generateCommentContent(subreddits[subredditIndex]),
+          authorName: users[authorIndex].username,
+          createdAt: faker.date.past(),
+          upvotes: faker.datatype.number({ min: 0, max: 100 }),
+          downvotes: faker.datatype.number({ min: 0, max: 100 }),
+          linkedPost: posts[postIndex]._id,
+          linkedSubreddit: subreddits[subredditIndex]._id,
+          awards: faker.datatype.number(),
+          isEdited: faker.datatype.boolean(),
+          isReportApproved: faker.datatype.boolean(),
+          isRemoved: faker.datatype.boolean(),
+          // Add other fields as needed
+      });
+
+      await comment.save();
+      comments.push(comment);
   }
+
   return comments;
 }
 // Function to generate comment content based on subreddit theme
@@ -623,6 +744,7 @@ async function clearCollections() {
   await UserReports.deleteMany({});
   await Block.deleteMany({});
   await UserPreferences.deleteMany({});
+  await CommunitySettings.deleteMany({});
   // Add any other collections you need to clear
 }
 
@@ -756,6 +878,7 @@ async function seedData() {
     await seedBlock(5, users);
     await seedReports(5, users);
     await updateUserData(users, posts, comments, subreddits);
+    await seedCommunitySettings(5, subreddits, users);
 
     console.log("Data seeded successfully");
   } catch (error) {
