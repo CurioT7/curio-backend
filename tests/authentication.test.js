@@ -7,6 +7,8 @@ const {
   forgotUsername,
 } = require("../controller/Auth/userController");
 
+const bcrypt = require("bcrypt");
+
 const {
   validatePassword,
   authenticate,
