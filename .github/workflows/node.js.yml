@@ -47,6 +47,9 @@ jobs:
         fail_on_empty: true
         sort_keys: false
     - run: npm test
+    - name: Deleting node_modules
+      #This is deleted since we dont want to copy the node_modules into the dcoker container
+      run: rm -r node_modules
     - name: Build & push Docker image
       uses: mr-smithers-excellent/docker-build-push@v6
       with:
