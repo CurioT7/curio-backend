@@ -33,9 +33,9 @@ async function seedUsers(n = 10) {
       language: faker.random.locale(),
       cakeDay: formattedCakeDay,
       goldAmount: faker.datatype.number(),
-      banner: faker.internet.url(),
-      profilePicture: faker.internet.avatar(),
-      bio: faker.lorem.sentences(),
+      banner: faker.internet.url(), //TODO s3 bucket
+      profilePicture: faker.internet.avatar(), //TODO s3 bucket
+      about: faker.lorem.sentences(),
       socialLinks: [
         {
           displayName: faker.random.word(),
@@ -56,34 +56,70 @@ async function seedUsers(n = 10) {
       upvotes: [
         {
           itemId: new mongoose.Types.ObjectId(),
-          itemType: faker.random.arrayElement(["Post", "Comment"]),
+          itemType: faker.random.arrayElement(["post", "comment"]),
         },
-      ],
+      ], //TODO link with posts/comments
       downvotes: [
         {
           itemId: new mongoose.Types.ObjectId(),
-          itemType: faker.random.arrayElement(["Post", "Comment"]),
+          itemType: faker.random.arrayElement(["post", "comment"]),
         },
-      ],
-      followers: [faker.internet.userName()],
+      ], //TODO link with posts/comments
+      followers: [faker.internet.userName()], //TODO link with users
       followings: [faker.internet.userName()],
       subreddits: [
         {
-          subreddit: new mongoose.Types.ObjectId(),
+          subreddit: faker.random.word(),
           role: faker.random.arrayElement(["moderator", "creator", "member"]),
         },
-      ],
+      ], //TODO link with subreddits
       member: [
         {
-          subreddit: new mongoose.Types.ObjectId(),
+          subreddit: faker.random.word(),
         },
       ],
       moderators: [
         {
-          subreddit: new mongoose.Types.ObjectId(),
+          subreddit: faker.random.word(),
           role: faker.random.arrayElement(["creator", "moderator"]),
+          manageUsers: faker.datatype.boolean(),
+          createLiveChats: faker.datatype.boolean(),
+          manageSettings: faker.datatype.boolean(),
+          managePostsAndComments: faker.datatype.boolean(),
+          everything: faker.datatype.boolean(),
         },
       ],
+      hiddenPosts: [ new mongoose.Types.ObjectId() ], //TODO link with posts
+      savedItems: [
+         new mongoose.Types.ObjectId() ,
+         new mongoose.Types.ObjectId() ,
+      ], //TODO link with posts/comments
+      reset_token: faker.random.uuid(),
+      recentPosts: [new mongoose.Types.ObjectId()],//TODO link with posts
+      karma: faker.datatype.number(),
+      notificationSettings: {
+        disabledSubreddits:  [faker.random.word()],//TODO link with subreddits
+        disabledPosts:  [new mongoose.Types.ObjectId()],//TODO link with posts
+        disabledComments:  [new mongoose.Types.ObjectId()],//TODO link with comments
+      },
+      hiddenNotifications: [ new mongoose.Types.ObjectId() ], //TODO link with notifications
+      pollVotes: [
+        {
+          pollId: new mongoose.Types.ObjectId(),
+          option: faker.lorem.word(),
+        },
+      ],//TODO link with posts
+      sentPrivateMessages: [ new mongoose.Types.ObjectId() ], //TODO link with messages
+      receivedPrivateMessages: [ new mongoose.Types.ObjectId() ],//TODO link with messages
+      mentions: [new mongoose.Types.ObjectId()],//TODO link with messages
+      media: faker.random.image(),
+      pendingChatRequests: [
+        {
+          chat: new mongoose.Types.ObjectId(),
+        },
+      ], //TODO link with chat
+      access: faker.random.arrayElement(["user", "admin"]),
+      isBanned: faker.datatype.boolean(),
     });
     await user.save();
     users.push(user);
@@ -284,8 +320,11 @@ async function seedReports(n = 5, users) {
         "profile image",
         "banner image",
         "bio",
+        "post",
+        "comment",
       ]),
       reportReason: faker.random.arrayElement([
+        "rule break",
         "harassment",
         "threatening violence",
         "hate",
@@ -298,8 +337,14 @@ async function seedReports(n = 5, users) {
         "trademark violation",
         "self-harm or suicide",
         "spam",
+        "contributer program violation",
       ]),
-      reportDetails: faker.random.word(),
+      reportDetails: faker.random.arrayElement(["you","someone else"]),
+      isIgnored: faker.datatype.boolean(),
+      isViewed: faker.datatype.boolean(),
+      linkedItemType: faker.random.arrayElement(["Post", "Comment", "User"]),
+      linkedItem: new mongoose.Types.ObjectId(),
+      linkedSubreddit: faker.datatype.uuid(), //TODO link yto subreddit
     });
     await report.save();
     reports.push(report);
@@ -307,6 +352,36 @@ async function seedReports(n = 5, users) {
 
   return reports;
 }
+
+async function seedBans(n = 5, users) {
+  const bans = [];
+  const userCount = users.length;
+
+  // Generate bans for random users
+  for (let i = 0; i < n; i++) {
+    const bannedIndex = faker.datatype.number({ min: 0, max: userCount - 1 });
+
+    const ban = new Ban({
+      bannedUsername: users[bannedIndex].username,
+      linkedSubreddit: faker.datatype.uuid(), //TODO link yto subreddit
+      violation: faker.random.arrayElement([
+        "Rule 1",
+        "Rule 2",
+        "Rule 3",
+        "Other",
+      ]),
+      modNote: faker.lorem.sentence(),
+      userMessage: faker.lorem.sentence(),
+      bannedBy: faker.random.arrayElement(["moderator", "admin"]),
+    });
+
+    await ban.save();
+    bans.push(ban);
+  }
+
+  return bans;
+}
+
 
 async function seedSubreddits(n = 5, users) {
   const subreddits = [];
@@ -744,8 +819,6 @@ async function updatePostsWithComments(posts, comments) {
 
 async function seedData() {
   try {
-    await clearCollections(); // Caution: This clears the entire database
-
     const users = await seedUsers(10);
     const subreddits = await seedSubreddits(20, users);
     const posts = await seedPosts(20, users, subreddits);
@@ -755,6 +828,7 @@ async function seedData() {
     await seedPreferences(5, users, subreddits);
     await seedBlock(5, users);
     await seedReports(5, users);
+    await seedBans(5, users);
     await updateUserData(users, posts, comments, subreddits);
 
     console.log("Data seeded successfully");
