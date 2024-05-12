@@ -499,7 +499,7 @@ async function seedPosts(n = 20, users, subreddits) {
       options:
         type === "poll" ? [{ name: "Option 1" }, { name: "Option 2" }] : null,
       voteLength: type === "poll" ? faker.datatype.number() : null,
-      link: faker.internet.url(),
+      link: type === "link" ? faker.internet.url() : null,
       isSaved: faker.datatype.boolean(),
       isDraft: faker.datatype.boolean(),
     });
