@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config(); // Ensure this is at the top if you're using dotenv for environment variables
 const mongoose = require("mongoose");
 const faker = require("faker");
 
@@ -9,9 +9,6 @@ const Subreddit = require("../models/subredditModel");
 const UserReports = require("../models/reportModel");
 const Block = require("../models/blockModel");
 const UserPreferences = require("../models/userPreferencesModel");
-const Message = require("../models/messageModel");
-const Chat = require("../models/chatModel");
-const { options } = require("../router/profileRouter");
 
 async function seedUsers(n = 10) {
   const users = [];
@@ -445,7 +442,7 @@ async function seedSubreddits(n = 5, users) {
 }
 
 async function seedPosts(n = 20, users, subreddits) {
-  mediaOpts = [
+  media = [
     "32e2de5799f518da18c7ecda0ef0c1c965e5222b5559b05af451bb12a5936d9d.jpeg",
     "a2478b5086771649fbe27a0d786329b815a9e4354d28e22c9567120277aea914.png",
     "8cb3df5f2211d4bb9801e695520bd88c51890d048a01acab738e97796657ed68.jpeg",
@@ -473,12 +470,11 @@ async function seedPosts(n = 20, users, subreddits) {
     // Generate title and content based on subreddit theme
     const title = generatePostTitle(subreddit);
     const content = generatePostContent(subreddit);
-    const type = faker.random.arrayElement(["post", "poll", "media", "link"]);
 
     const post = new Post({
       title: title,
       content: content,
-      type: type,
+      type: faker.random.arrayElement(["post", "poll", "media", "link"]),
       authorName: users[userIndex].username,
       linkedSubreddit: subreddit._id,
       views: faker.datatype.number(),
@@ -492,13 +488,7 @@ async function seedPosts(n = 20, users, subreddits) {
       isOC: faker.datatype.boolean(),
       isCrosspost: faker.datatype.boolean(),
       awards: faker.datatype.number(),
-      media:
-        type === "media"
-          ? mediaOpts[Math.floor(Math.random() * mediaOpts.length)]
-          : null,
-      options:
-        type === "poll" ? [{ name: "Option 1" }, { name: "Option 2" }] : null,
-      voteLength: type === "poll" ? faker.datatype.number() : null,
+      media: type === "media" ? faker.random.arrayElement(media) : "",
       link: faker.internet.url(),
       isSaved: faker.datatype.boolean(),
       isDraft: faker.datatype.boolean(),
@@ -767,18 +757,12 @@ async function updatePostsWithComments(posts, comments) {
 
 async function seedData() {
   try {
-    await mongoose.connect(
-      "mongodb+srv://curio:GxJ8q0oDWobkCqxw@curio.vnjpefq.mongodb.net/Curio",
-      {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      }
-    );
     //await clearCollections(); // Caution: This clears the entire database
 
-    const users = await User.find({}).limit(10);
-    const subreddits = await Subreddit.find({}).limit(5);
-    const posts = await seedPosts(10, users, subreddits);
+    //get random users from db
+    const users = await User.find().limit(20);
+    const subreddits = await seedSubreddits(20, users);
+    const posts = await seedPosts(20, users, subreddits);
     // const comments = await seedComments(40, users, posts, subreddits);
     // await updateSubredditsWithPosts(subreddits, posts);
     // await updatePostsWithComments(posts, comments);
