@@ -10,6 +10,8 @@ const UserReports = require("../models/reportModel");
 const Block = require("../models/blockModel");
 const UserPreferences = require("../models/userPreferencesModel");
 const CommunitySettings = require("../models/communitySettingsModel");
+const invitation = require("../models/invitationModel");
+const notification = require("../models/notificationModel");
 
 async function seedUsers(n = 10) {
   const users = [];
@@ -244,137 +246,6 @@ async function seedPreferences(n = 5, users) {
   return userPreferencesList;
 }
 
-// async function seedPreferences(n = 5, users, subreddits) {
-//   const preferences = [];
-//   for (let i = 0; i < n; i++) {
-//     const userIndex = faker.datatype.number({
-//       min: 0,
-//       max: users.length - 1,
-//     });
-//     const preference = new UserPreferences({
-//       username: users[userIndex].username,
-//       gender: faker.random.arrayElement([
-//         "woman",
-//         "man",
-//         "i prefer not to say",
-//       ]),
-//       language: faker.random.arrayElement([
-//         "Deutsch",
-//         "English(us)",
-//         "Espanol(es)",
-//         "Espanol(mx)",
-//         "Francias",
-//         "Italiano",
-//         "portugues(br)",
-//         "portugues(pt)",
-//       ]),
-//       locationCustomization: faker.address.city(),
-//       displayName: faker.name.findName(),
-//       about: faker.lorem.sentence(),
-//       socialLinks: [
-//         {
-//           displayName: faker.random.word(),
-//           platform: faker.random.arrayElement([
-//             "facebook",
-//             "instagram",
-//             "linkedin",
-//             "github",
-//             "twitter",
-//           ]),
-//           url: faker.internet.url(),
-//         },
-//       ],
-//       images: {
-//         pfp: faker.image.avatar(),
-//         banner: faker.image.imageUrl(),
-//       },
-//       NSFW: faker.datatype.boolean(),
-//       allowFollow: faker.datatype.boolean(),
-//       contentVisibility: faker.datatype.boolean(),
-//       activeInCommunityVisibility: faker.datatype.boolean(),
-//       clearHistory: faker.datatype.boolean(),
-//       block: [
-//         { username: faker.internet.userName() },
-//         { username: faker.internet.userName() },
-//       ],
-//       viewBlockedPeople: [
-//         {
-//           username: faker.internet.userName(),
-//           blockTimestamp: faker.date.past(),
-//         },
-//         {
-//           username: faker.internet.userName(),
-//           blockTimestamp: faker.date.past(),
-//         },
-//       ],
-//       viewMutedCommunities: [
-//         { communityName: faker.lorem.words(2).substring(0, 20) },
-//         { communityName: faker.lorem.words(2).substring(0, 20) },
-//       ],
-//       adultContent: faker.datatype.boolean(),
-//       autoplayMedia: faker.datatype.boolean(),
-//       communityThemes: faker.datatype.boolean(),
-//       communityContentSort: faker.random.arrayElement([
-//         "hot",
-//         "new",
-//         "top",
-//         "rising",
-//       ]),
-//       globalContentView: faker.random.arrayElement(["card", "classic"]),
-//       rememberPerCommunity: {
-//         rememberContentSort: faker.datatype.boolean(),
-//         rememberContentView: faker.datatype.boolean(),
-//       },
-//       openPostsInNewTab: faker.datatype.boolean(),
-//       mentions: faker.datatype.boolean(),
-//       comments: faker.datatype.boolean(),
-//       upvotesPosts: faker.datatype.boolean(),
-//       upvotesComments: faker.datatype.boolean(),
-//       replies: faker.datatype.boolean(),
-//       newFollowers: faker.datatype.boolean(),
-//       postsYouFollow: faker.datatype.boolean(),
-//       newFollowerEmail: faker.datatype.boolean(),
-//       chatRequestEmail: faker.datatype.boolean(),
-//       unsubscribeFromAllEmails: faker.datatype.boolean(),
-//     });
-//     // Link viewMutedCommunities array with existing communities
-//     const mutedCommunityIndex1 = faker.datatype.number({
-//       min: 0,
-//       max: subreddits.length - 1,
-//     });
-//     const mutedCommunityIndex2 = faker.datatype.number({
-//       min: 0,
-//       max: subreddits.length - 1,
-//     });
-//     preference.viewMutedCommunities = [
-//       { communityName: subreddits[mutedCommunityIndex1].name },
-//       { communityName: subreddits[mutedCommunityIndex2].name },
-//     ];
-
-//     // Link viewBlockedPeople array with existing users
-//     const blockedUserIndex1 = faker.datatype.number({
-//       min: 0,
-//       max: users.length - 1,
-//     });
-//     const blockedUserIndex2 = faker.datatype.number({
-//       min: 0,
-//       max: users.length - 1,
-//     });
-//     preference.viewBlockedPeople = [
-//       {
-//         username: users[blockedUserIndex1].username,
-//         blockTimestamp: faker.date.past(),
-//       },
-//       {
-//         username: users[blockedUserIndex2].username,
-//         blockTimestamp: faker.date.past(),
-//       },
-//     ];
-//     await preference.save();
-//     preferences.push(preference);
-//   }
-//   return preferences;
-// }
 
 async function seedReports(n = 5, users) {
   const reports = [];
@@ -533,7 +404,19 @@ async function seedSubreddits(n = 5, users) {
       isSpoiler: faker.datatype.boolean(),
       isOC: faker.datatype.boolean(),
       isCrosspost: faker.datatype.boolean(),
-      rules: [faker.lorem.sentence()],
+      rules: [
+        {
+          appliesTo: "All",
+          reportReason: "Breaking Rules",
+          fullDescription: "Breaking subreddit rules.",
+        },
+      ],
+      removalReasons: [
+        {
+          title: "Spam",
+          reasonMessage: "This post/comment is considered spam.",
+        },
+      ],
       category: faker.random.word(),
       language: faker.random.locale(),
       allowImages: faker.datatype.boolean(),
@@ -553,7 +436,33 @@ async function seedSubreddits(n = 5, users) {
         {
           username: faker.internet.userName(),
           role: faker.random.arrayElement(["creator", "moderator"]),
+          manageUsers: faker.datatype.boolean(),
+          createLiveChats: faker.datatype.boolean(),
+          manageSettings: faker.datatype.boolean(),
+          managePostsAndComments: faker.datatype.boolean(),
+          everything: faker.datatype.boolean(),
         },
+      ],
+      suggestedSort: faker.random.arrayElement([
+        "hot",
+        "new",
+        "top",
+        "mostComments",
+      ]),
+      sentPrivateMessages: [new mongoose.Types.ObjectId()],
+      receivedPrivateMessages: [new mongoose.Types.ObjectId()],
+      mutedUsers: [
+        {
+          username: faker.internet.userName(),
+        },
+      ],
+      bannedUsers: [
+        {
+          username: faker.internet.userName(),
+        },
+      ],
+      removedItems: [
+        { _id: new mongoose.Types.ObjectId(), linkedItemType: "Post" },
       ],
     });
     await subreddit.save();
@@ -863,22 +772,134 @@ async function updatePostsWithComments(posts, comments) {
     }
   }
 }
+async function seedNotifications(n = 10, users, posts, comments) {
+  const notifications = [];
+
+  for (let i = 0; i < n; i++) {
+    const recipientIndex = faker.datatype.number({
+      min: 0,
+      max: users.length - 1,
+    });
+
+    const type = faker.random.arrayElement(["message", "comment", "post"]);
+
+    let notification = {};
+
+    switch (type) {
+      case "message":
+        notification = new Notification({
+          title: "New Message",
+          message: faker.lorem.sentences(),
+          timestamp: faker.date.past(),
+          recipient: users[recipientIndex].username,
+          isRead: faker.datatype.boolean(),
+          isSent: true,
+          type: type,
+          media: faker.image.imageUrl(),
+        });
+        break;
+      case "comment":
+        const commentIndex = faker.datatype.number({
+          min: 0,
+          max: comments.length - 1,
+        });
+        notification = new Notification({
+          title: "New Comment",
+          message: faker.lorem.sentences(),
+          timestamp: faker.date.past(),
+          recipient: users[recipientIndex].username,
+          isRead: faker.datatype.boolean(),
+          isSent: true,
+          type: type,
+          commentId: comments[commentIndex]._id,
+          media: faker.image.imageUrl(),
+        });
+        break;
+      case "post":
+        const postIndex = faker.datatype.number({
+          min: 0,
+          max: posts.length - 1,
+        });
+        notification = new Notification({
+          title: "New Post",
+          message: faker.lorem.sentences(),
+          timestamp: faker.date.past(),
+          recipient: users[recipientIndex].username,
+          isRead: faker.datatype.boolean(),
+          isSent: true,
+          type: type,
+          postId: posts[postIndex]._id,
+          media: faker.image.imageUrl(),
+        });
+        break;
+      default:
+        break;
+    }
+
+    await notification.save();
+    notifications.push(notification);
+  }
+
+  return notifications;
+}
+
+async function seedInvitations(n = 5, users) {
+  const invitations = [];
+
+  for (let i = 0; i < n; i++) {
+    const senderIndex = faker.datatype.number({
+      min: 0,
+      max: users.length - 1,
+    });
+    const recipientIndex = faker.datatype.number({
+      min: 0,
+      max: users.length - 1,
+    });
+
+    const invitation = new Invitation({
+      sender: users[senderIndex]._id,
+      recipient: users[recipientIndex]._id,
+      subreddit: faker.lorem.word(),
+      role: faker.random.arrayElement(["admin", "moderator", "member"]),
+      createdAt: faker.date.past(),
+      manageUsers: faker.datatype.boolean(),
+      createLiveChats: faker.datatype.boolean(),
+      manageSettings: faker.datatype.boolean(),
+      managePostsAndComments: faker.datatype.boolean(),
+      everything: faker.datatype.boolean(),
+    });
+
+    await invitation.save();
+    invitations.push(invitation);
+  }
+
+  return invitations;
+}
+
 
 async function seedData() {
   try {
-    await clearCollections(); // Caution: This clears the entire database
-
-    const users = await seedUsers(10);
-    const subreddits = await seedSubreddits(20, users);
-    const posts = await seedPosts(20, users, subreddits);
-    const comments = await seedComments(40, users, posts, subreddits);
+    // await clearCollections(); // Caution: This clears the entire database
+ await mongoose.connect(
+   "mongodb+srv://curio:GxJ8q0oDWobkCqxw@curio.vnjpefq.mongodb.net/Curio",
+   {
+     useNewUrlParser: true,
+     useUnifiedTopology: true,
+   }
+ );
+    const users = await seedUsers(5);
+    const subreddits = await seedSubreddits(2, users);
+    const posts = await seedPosts(2, users, subreddits);
+    const comments = await seedComments(2, users, posts, subreddits);
     await updateSubredditsWithPosts(subreddits, posts);
     await updatePostsWithComments(posts, comments);
-    await seedPreferences(5, users, subreddits);
-    await seedBlock(5, users);
-    await seedReports(5, users);
+    await seedPreferences(2, users, subreddits);
+    await seedBlock(2, users);
+    await seedReports(2, users);
     await updateUserData(users, posts, comments, subreddits);
-    await seedCommunitySettings(5, subreddits, users);
+    await seedCommunitySettings(2, subreddits, users);
+    await seedInvitations(2, users); 
+    await seedNotifications(2, users); 
 
     console.log("Data seeded successfully");
   } catch (error) {
