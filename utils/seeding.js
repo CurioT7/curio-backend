@@ -9,7 +9,7 @@ const Subreddit = require("../models/subredditModel");
 const UserReports = require("../models/reportModel");
 const Block = require("../models/blockModel");
 const UserPreferences = require("../models/userPreferencesModel");
-
+const Ban = require("../models/banModel");
 async function seedUsers(n = 10) {
   const users = [];
   for (let i = 0; i < n; i++) {
@@ -26,8 +26,8 @@ async function seedUsers(n = 10) {
       googleId: faker.datatype.uuid(),
       isVerified: faker.datatype.boolean(),
       gender: faker.random.arrayElement([
-        "male",
-        "female",
+        "woman",
+        "man",
         "i prefer not to say",
       ]),
       language: faker.random.locale(),
@@ -89,29 +89,29 @@ async function seedUsers(n = 10) {
           everything: faker.datatype.boolean(),
         },
       ],
-      hiddenPosts: [ new mongoose.Types.ObjectId() ], //TODO link with posts
+      hiddenPosts: [new mongoose.Types.ObjectId()], //TODO link with posts
       savedItems: [
-         new mongoose.Types.ObjectId() ,
-         new mongoose.Types.ObjectId() ,
+        new mongoose.Types.ObjectId(),
+        new mongoose.Types.ObjectId(),
       ], //TODO link with posts/comments
       reset_token: faker.random.uuid(),
-      recentPosts: [new mongoose.Types.ObjectId()],//TODO link with posts
+      recentPosts: [new mongoose.Types.ObjectId()], //TODO link with posts
       karma: faker.datatype.number(),
       notificationSettings: {
-        disabledSubreddits:  [faker.random.word()],//TODO link with subreddits
-        disabledPosts:  [new mongoose.Types.ObjectId()],//TODO link with posts
-        disabledComments:  [new mongoose.Types.ObjectId()],//TODO link with comments
+        disabledSubreddits: [faker.random.word()], //TODO link with subreddits
+        disabledPosts: [new mongoose.Types.ObjectId()], //TODO link with posts
+        disabledComments: [new mongoose.Types.ObjectId()], //TODO link with comments
       },
-      hiddenNotifications: [ new mongoose.Types.ObjectId() ], //TODO link with notifications
+      hiddenNotifications: [new mongoose.Types.ObjectId()], //TODO link with notifications
       pollVotes: [
         {
           pollId: new mongoose.Types.ObjectId(),
           option: faker.lorem.word(),
         },
-      ],//TODO link with posts
-      sentPrivateMessages: [ new mongoose.Types.ObjectId() ], //TODO link with messages
-      receivedPrivateMessages: [ new mongoose.Types.ObjectId() ],//TODO link with messages
-      mentions: [new mongoose.Types.ObjectId()],//TODO link with messages
+      ], //TODO link with posts
+      sentPrivateMessages: [new mongoose.Types.ObjectId()], //TODO link with messages
+      receivedPrivateMessages: [new mongoose.Types.ObjectId()], //TODO link with messages
+      mentions: [new mongoose.Types.ObjectId()], //TODO link with messages
       media: faker.random.image(),
       pendingChatRequests: [
         {
@@ -291,7 +291,7 @@ async function seedPreferences(n = 5, users, subreddits) {
   return preferences;
 }
 
-async function seedReports(n = 5, users) {
+async function seedReports(n = 5, users, subreddits) {
   const reports = [];
   const userCount = users.length;
 
@@ -311,6 +311,11 @@ async function seedReports(n = 5, users) {
   // Create reports using unique pairs
   for (const pair of uniquePairs) {
     const [reporterIndex, reportedIndex] = pair.split("-");
+    const subredditIndex = faker.datatype.number({
+      min: 0,
+      max: subreddits.length - 1,
+    });
+
     const report = new UserReports({
       reporterUsername: users[reporterIndex].username,
       reportedUsername: users[reportedIndex].username,
@@ -339,12 +344,12 @@ async function seedReports(n = 5, users) {
         "spam",
         "contributer program violation",
       ]),
-      reportDetails: faker.random.arrayElement(["you","someone else"]),
+      reportDetails: faker.random.arrayElement(["you", "someone else"]),
       isIgnored: faker.datatype.boolean(),
       isViewed: faker.datatype.boolean(),
       linkedItemType: faker.random.arrayElement(["Post", "Comment", "User"]),
       linkedItem: new mongoose.Types.ObjectId(),
-      linkedSubreddit: faker.datatype.uuid(), //TODO link yto subreddit
+      linkedSubreddit: subreddits[subredditIndex].name,
     });
     await report.save();
     reports.push(report);
@@ -353,17 +358,21 @@ async function seedReports(n = 5, users) {
   return reports;
 }
 
-async function seedBans(n = 5, users) {
+async function seedBans(n = 5, users, subreddits) {
   const bans = [];
   const userCount = users.length;
 
   // Generate bans for random users
   for (let i = 0; i < n; i++) {
     const bannedIndex = faker.datatype.number({ min: 0, max: userCount - 1 });
+    const subredditIndex = faker.datatype.number({
+      min: 0,
+      max: subreddits.length - 1,
+    });
 
     const ban = new Ban({
       bannedUsername: users[bannedIndex].username,
-      linkedSubreddit: faker.datatype.uuid(), //TODO link yto subreddit
+      linkedSubreddit: subreddits[subredditIndex].name, 
       violation: faker.random.arrayElement([
         "Rule 1",
         "Rule 2",
@@ -372,7 +381,7 @@ async function seedBans(n = 5, users) {
       ]),
       modNote: faker.lorem.sentence(),
       userMessage: faker.lorem.sentence(),
-      bannedBy: faker.random.arrayElement(["moderator", "admin"]),
+      bannedBy: "moderator",
     });
 
     await ban.save();
@@ -381,6 +390,7 @@ async function seedBans(n = 5, users) {
 
   return bans;
 }
+
 
 
 async function seedSubreddits(n = 5, users) {
@@ -517,6 +527,19 @@ async function seedSubreddits(n = 5, users) {
 }
 
 async function seedPosts(n = 20, users, subreddits) {
+  mediaOpts = [
+    "32e2de5799f518da18c7ecda0ef0c1c965e5222b5559b05af451bb12a5936d9d.jpeg",
+    "a2478b5086771649fbe27a0d786329b815a9e4354d28e22c9567120277aea914.png",
+    "8cb3df5f2211d4bb9801e695520bd88c51890d048a01acab738e97796657ed68.jpeg",
+    "6879bfadfa873089eab042b7e8596ee640b404cb9b36be1048de165e36aa626c.jpeg",
+    "2d0f97353370869b21aacded91f946ff08948c9897b043ea4fcaedb50ddc7f2f.jpeg",
+    "dcca18215e8c66c2798425ad7a6efe37215cedd8eefa2c44b18234e8189f71e6.jpeg",
+    "50c1b781f8644d6f4b007f72713944008466269d30ec90b666c63c76c7565614.jpeg",
+    "5829d823691d8faf2f619de1cf5f1e6c9c781f5f1bf780b0d1c24c953390ac40.jpeg",
+    "f4e05973f37eef59bfa8cff2a5e152a65c5d2ce845ae6c86b54858a08795e23b.jpeg",
+    "be4fd304acbe96c9bf2cb7abea91e49e4a4a9c19722457c0c452df3ad137a566.png",
+    "88a16e8354b99a0c82cc302176e7d5a8bc2d4dc4765e0e48fcac4d43d1895603.png",
+  ];
   const posts = [];
   for (let i = 0; i < n; i++) {
     const userIndex = faker.datatype.number({
@@ -532,10 +555,12 @@ async function seedPosts(n = 20, users, subreddits) {
     // Generate title and content based on subreddit theme
     const title = generatePostTitle(subreddit);
     const content = generatePostContent(subreddit);
+    const type = faker.random.arrayElement(["post", "poll", "media", "link"]);
 
     const post = new Post({
       title: title,
       content: content,
+      type: type,
       authorName: users[userIndex].username,
       linkedSubreddit: subreddit._id,
       views: faker.datatype.number(),
@@ -549,8 +574,14 @@ async function seedPosts(n = 20, users, subreddits) {
       isOC: faker.datatype.boolean(),
       isCrosspost: faker.datatype.boolean(),
       awards: faker.datatype.number(),
-      media: faker.internet.url(),
-      link: faker.internet.url(),
+      media:
+        type === "media"
+          ? mediaOpts[Math.floor(Math.random() * mediaOpts.length)]
+          : null,
+      options:
+        type === "poll" ? [{ name: "Option 1" }, { name: "Option 2" }] : null,
+      voteLength: type === "poll" ? faker.datatype.number() : null,
+      link: type === "link" ? faker.internet.url() : null,
       isSaved: faker.datatype.boolean(),
       isDraft: faker.datatype.boolean(),
     });
@@ -740,12 +771,24 @@ async function updateUserData(users, posts, comments, subreddits) {
       "_id"
     );
     user.posts = userPosts.map((post) => post._id);
+    user.hiddenPosts = user.hiddenPosts.map((post) => post.id);
+
+    user.savedItems = user.savedItems.map((post) => post._id);
+
+    user.recentPosts = user.recentPosts.map((post) => post._id);
+    user.notificationSettings.disabledPosts =
+      user.notificationSettings.disabledPosts.map((post) => post._id);
 
     // Update user comments
     const userComments = await Comment.find({
       authorName: user.username,
     }).select("_id");
     user.comments = userComments.map((comment) => comment._id);
+    user.savedItems = user.savedItems.map((comment) => comment._id);
+    user.notificationSettings.disabledComments =
+      user.notificationSettings.disabledComments.map(
+        (comment) => comment._id
+      );
 
     // Upvotes and downvotes are chosen randomly for demonstration
     const randomPostIndex = faker.datatype.number({
@@ -795,11 +838,26 @@ async function updateUserData(users, posts, comments, subreddits) {
         )
       ) {
         user.subreddits.push({
-          subreddit: selectedSubreddit._id,
+          subreddit: selectedSubreddit.name,
           role: faker.random.arrayElement(["moderator", "member"]),
         });
       }
     }
+
+    // After the loop, you should map the subreddit data to user.member, user.moderators, and user.notificationSettings.disabledSubreddits
+
+    user.member = user.subreddits.map((sub) => ({
+      subreddit: sub.subreddit,
+    }));
+
+    user.moderators = user.subreddits.map((sub) => ({
+      subreddit: sub.subreddit,
+      role: sub.role,
+    }));
+
+    user.notificationSettings.disabledSubreddits = user.subreddits.map(
+      (sub) => sub.subreddit
+    );
 
     await user.save();
   }
@@ -825,10 +883,10 @@ async function seedData() {
     const comments = await seedComments(40, users, posts, subreddits);
     await updateSubredditsWithPosts(subreddits, posts);
     await updatePostsWithComments(posts, comments);
-    await seedPreferences(5, users, subreddits);
+    // await seedPreferences(5, users, subreddits);
     await seedBlock(5, users);
-    await seedReports(5, users);
-    await seedBans(5, users);
+    await seedReports(5, users, subreddits);
+    await seedBans(5, users, subreddits);
     await updateUserData(users, posts, comments, subreddits);
 
     console.log("Data seeded successfully");
