@@ -323,6 +323,28 @@ async function seedReports(n = 5, users, subreddits) {
       max: subreddits.length - 1,
     });
 
+    let linkedItem;
+    const linkedItemType = faker.random.arrayElement([
+      "Post",
+      "User",
+    ]);
+
+    if (linkedItemType === "Post") {
+      // Select a random post from the subreddit
+      const postIndex = faker.datatype.number({
+        min: 0,
+        max: subreddits[subredditIndex].posts.length - 1,
+      });
+      linkedItem = subreddits[subredditIndex].posts[postIndex];
+    } else {
+      // Select a random user
+      const userIndex = faker.datatype.number({
+        min: 0,
+        max: userCount - 1,
+      });
+      linkedItem = users[userIndex]._id;
+    }
+
     const report = new UserReports({
       reporterUsername: users[reporterIndex].username,
       reportedUsername: users[reportedIndex].username,
@@ -354,8 +376,8 @@ async function seedReports(n = 5, users, subreddits) {
       reportDetails: faker.random.arrayElement(["you", "someone else"]),
       isIgnored: faker.datatype.boolean(),
       isViewed: faker.datatype.boolean(),
-      linkedItemType: faker.random.arrayElement(["Post", "Comment", "User"]),
-      linkedItem: new mongoose.Types.ObjectId(),
+      linkedItemType: linkedItemType,
+      linkedItem: linkedItem,
       linkedSubreddit: subreddits[subredditIndex].name,
     });
     await report.save();
@@ -369,6 +391,25 @@ async function seedBans(n = 5, users, subreddits) {
   const bans = [];
   const userCount = users.length;
 
+  // Map to store banned usernames for each subreddit
+  const bannedUsernamesMap = new Map();
+  // Predefined templates for mod notes and user messages
+  const modNoteTemplates = [
+    "This user has repeatedly violated subreddit rules.",
+    "Banned for inappropriate behavior towards other users.",
+    "Spamming content across multiple threads.",
+    "Harassment towards other community members.",
+    "Violation of subreddit guidelines.",
+  ];
+
+  const userMessageTemplates = [
+    "You have been banned from the subreddit due to repeated violations of community guidelines.",
+    "Your behavior towards other users has been found to be inappropriate. As a result, you have been banned.",
+    "Your posts have been identified as spam and have resulted in a ban from the subreddit.",
+    "Your actions have constituted harassment towards other community members, leading to a ban.",
+    "You have violated the subreddit guidelines, resulting in a ban from the community.",
+  ];
+
   // Generate bans for random users
   for (let i = 0; i < n; i++) {
     const bannedIndex = faker.datatype.number({ min: 0, max: userCount - 1 });
@@ -377,26 +418,43 @@ async function seedBans(n = 5, users, subreddits) {
       max: subreddits.length - 1,
     });
 
-    const ban = new Ban({
-      bannedUsername: users[bannedIndex].username,
-      linkedSubreddit: subreddits[subredditIndex].name, 
-      violation: faker.random.arrayElement([
-        "Rule 1",
-        "Rule 2",
-        "Rule 3",
-        "Other",
-      ]),
-      modNote: faker.lorem.sentence(),
-      userMessage: faker.lorem.sentence(),
-      bannedBy: "moderator",
-    });
+    const bannedUsername = users[bannedIndex].username;
+    const subredditName = subreddits[subredditIndex].name;
 
-    await ban.save();
-    bans.push(ban);
+    // Check if the banned username is already banned in the selected subreddit
+    if (!bannedUsernamesMap.has(subredditName)) {
+      bannedUsernamesMap.set(subredditName, new Set());
+    }
+
+    const bannedUsernames = bannedUsernamesMap.get(subredditName);
+
+    if (!bannedUsernames.has(bannedUsername)) {
+      const modNote = faker.random.arrayElement(modNoteTemplates);
+      const userMessage = faker.random.arrayElement(userMessageTemplates);
+      const ban = new Ban({
+        bannedUsername: bannedUsername,
+        linkedSubreddit: subredditName,
+        violation: faker.random.arrayElement([
+          "Rule 1",
+          "Rule 2",
+          "Rule 3",
+          "Other",
+        ]),
+        modNote: modNote,
+        userMessage: userMessage,
+        bannedBy: "moderator",
+      });
+
+      await ban.save();
+      bans.push(ban);
+
+      bannedUsernames.add(bannedUsername);
+    }
   }
 
   return bans;
 }
+
 
 async function seedSubreddits(n = 5, users) {
   const subreddits = [];
@@ -873,7 +931,7 @@ async function updateUserData(users, posts, comments, subreddits) {
       "_id"
     );
     user.posts = userPosts.map((post) => post._id);
-    user.hiddenPosts = user.hiddenPosts.map((post) => post.id);
+    user.hiddenPosts = user.hiddenPosts.map((post) => post._id);
 
     user.savedItems = user.savedItems.map((post) => post._id);
 
@@ -954,7 +1012,6 @@ async function updateUserData(users, posts, comments, subreddits) {
 
     user.moderators = user.subreddits.map((sub) => ({
       subreddit: sub.subreddit,
-      role: sub.role,
     }));
 
     user.notificationSettings.disabledSubreddits = user.subreddits.map(
@@ -979,16 +1036,16 @@ async function updatePostsWithComments(posts, comments) {
 
 async function seedData() {
   try {
-    const users = await seedUsers(10);
-    const subreddits = await seedSubreddits(20, users);
-    const posts = await seedPosts(20, users, subreddits);
-    const comments = await seedComments(40, users, posts, subreddits);
+    const users = await seedUsers(2);
+    const subreddits = await seedSubreddits(2, users);
+    const posts = await seedPosts(2, users, subreddits);
+    const comments = await seedComments(2, users, posts, subreddits);
     await updateSubredditsWithPosts(subreddits, posts);
     await updatePostsWithComments(posts, comments);
     // await seedPreferences(5, users, subreddits);
-    await seedBlock(5, users);
-    await seedReports(5, users, subreddits);
-    await seedBans(5, users, subreddits);
+    await seedBlock(2, users);
+    await seedReports(2, users, subreddits);
+    await seedBans(2, users, subreddits);
     await updateUserData(users, posts, comments, subreddits);
 
     console.log("Data seeded successfully");
