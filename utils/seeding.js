@@ -10,6 +10,13 @@ const UserReports = require("../models/reportModel");
 const Block = require("../models/blockModel");
 const UserPreferences = require("../models/userPreferencesModel");
 const Ban = require("../models/banModel");
+const Message = require("../models/messageModel");
+const Chat = require("../models/chatModel");
+const { options } = require("../router/profileRouter");
+const Invitation = require("../models/invitationModel");
+const Notification = require("../models/notificationModel");
+
+
 async function seedUsers(n = 10) {
   const users = [];
   for (let i = 0; i < n; i++) {
@@ -94,7 +101,7 @@ async function seedUsers(n = 10) {
         new mongoose.Types.ObjectId(),
         new mongoose.Types.ObjectId(),
       ], //TODO link with posts/comments
-      reset_token: faker.random.uuid(),
+      reset_token: faker.datatype.uuid(),
       recentPosts: [new mongoose.Types.ObjectId()], //TODO link with posts
       karma: faker.datatype.number(),
       notificationSettings: {
@@ -391,8 +398,6 @@ async function seedBans(n = 5, users, subreddits) {
   return bans;
 }
 
-
-
 async function seedSubreddits(n = 5, users) {
   const subreddits = [];
   const themes = [
@@ -497,7 +502,19 @@ async function seedSubreddits(n = 5, users) {
       isSpoiler: faker.datatype.boolean(),
       isOC: faker.datatype.boolean(),
       isCrosspost: faker.datatype.boolean(),
-      rules: [faker.lorem.sentence()],
+      rules: [
+        {
+          appliesTo: "All",
+          reportReason: "Breaking Rules",
+          fullDescription: "Breaking subreddit rules.",
+        },
+      ],
+      removalReasons: [
+        {
+          title: "Spam",
+          reasonMessage: "This post/comment is considered spam.",
+        },
+      ],
       category: faker.random.word(),
       language: faker.random.locale(),
       allowImages: faker.datatype.boolean(),
@@ -517,13 +534,98 @@ async function seedSubreddits(n = 5, users) {
         {
           username: faker.internet.userName(),
           role: faker.random.arrayElement(["creator", "moderator"]),
+          manageUsers: faker.datatype.boolean(),
+          createLiveChats: faker.datatype.boolean(),
+          manageSettings: faker.datatype.boolean(),
+          managePostsAndComments: faker.datatype.boolean(),
+          everything: faker.datatype.boolean(),
         },
+      ],
+      suggestedSort: faker.random.arrayElement([
+        "hot",
+        "new",
+        "top",
+        "mostComments",
+      ]),
+      sentPrivateMessages: [new mongoose.Types.ObjectId()],
+      receivedPrivateMessages: [new mongoose.Types.ObjectId()],
+      mutedUsers: [
+        {
+          username: faker.internet.userName(),
+        },
+      ],
+      bannedUsers: [
+        {
+          username: faker.internet.userName(),
+        },
+      ],
+      removedItems: [
+        { _id: new mongoose.Types.ObjectId(), linkedItemType: "Post" },
       ],
     });
     await subreddit.save();
     subreddits.push(subreddit);
   }
   return subreddits;
+}
+
+async function seedInvitations(n = 5, users) {
+  const invitations = [];
+
+  for (let i = 0; i < n; i++) {
+    const senderIndex = faker.datatype.number({
+      min: 0,
+      max: users.length - 1,
+    });
+    const recipientIndex = faker.datatype.number({
+      min: 0,
+      max: users.length - 1,
+    });
+
+    const invitation = new Invitation({
+      sender: users[senderIndex]._id,
+      recipient: users[recipientIndex]._id,
+      subreddit: faker.lorem.word(),
+      role: faker.random.arrayElement(["admin", "moderator", "member"]),
+      createdAt: faker.date.past(),
+      manageUsers: faker.datatype.boolean(),
+      createLiveChats: faker.datatype.boolean(),
+      manageSettings: faker.datatype.boolean(),
+      managePostsAndComments: faker.datatype.boolean(),
+      everything: faker.datatype.boolean(),
+    });
+
+    await invitation.save();
+    invitations.push(invitation);
+  }
+
+  return invitations;
+}
+async function seedNotifications(n = 10, users) {
+  const notifications = [];
+
+  for (let i = 0; i < n; i++) {
+    const recipientIndex = faker.datatype.number({
+      min: 0,
+      max: users.length - 1,
+    });
+
+    const notification = new Notification({
+      title: faker.lorem.words(),
+      message: faker.lorem.sentences(),
+      timestamp: faker.date.past(),
+      recipient: users[recipientIndex].username,
+      isRead: faker.datatype.boolean(),
+      isHidden: faker.datatype.boolean(),
+      isSent: faker.datatype.boolean(),
+      // Add other fields as needed
+    });
+
+    await notification.save();
+    notifications.push(notification);
+  }
+
+  return notifications;
 }
 
 async function seedPosts(n = 20, users, subreddits) {
@@ -801,11 +903,11 @@ async function updateUserData(users, posts, comments, subreddits) {
     });
     user.upvotes.push({
       itemId: posts[randomPostIndex]._id,
-      itemType: "Post",
+      itemType: "post",
     });
     user.downvotes.push({
       itemId: comments[randomCommentIndex]._id,
-      itemType: "Comment",
+      itemType: "comment",
     });
 
     // For followers and followings, use existing users randomly
