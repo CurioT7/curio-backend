@@ -14,11 +14,20 @@ const Message = require("../models/messageModel");
 const Chat = require("../models/chatModel");
 const { options } = require("../router/profileRouter");
 const Invitation = require("../models/invitationModel");
+const CommunitySettings = require("../models/CommunitySettingsModel");
+const ScheduledPost = require("../models/scheduledPostModel");
+
 const Notification = require("../models/notificationModel");
 
-
+ const gender = faker.random.arrayElement([
+   "woman",
+   "man",
+   "i prefer not to say",
+ ]);
 async function seedUsers(n = 10) {
   const users = [];
+  const existingUsers = await User.find();
+  const existingSubreddits = await Subreddit.find().select("name");
   for (let i = 0; i < n; i++) {
     const cakeDay = faker.date.past(); // Generate a random past date
     const formattedCakeDay = cakeDay.toLocaleDateString("en-US", {
@@ -32,17 +41,13 @@ async function seedUsers(n = 10) {
       password: faker.internet.password(),
       googleId: faker.datatype.uuid(),
       isVerified: faker.datatype.boolean(),
-      gender: faker.random.arrayElement([
-        "woman",
-        "man",
-        "i prefer not to say",
-      ]),
+      gender: gender,
       language: faker.random.locale(),
       cakeDay: formattedCakeDay,
       goldAmount: faker.datatype.number(),
-      banner: faker.internet.url(), //TODO s3 bucket
-      profilePicture: faker.internet.avatar(), //TODO s3 bucket
-      about: faker.lorem.sentences(),
+      banner: faker.internet.url(),
+      profilePicture: faker.internet.avatar(),
+      about: generateAbout(),
       socialLinks: [
         {
           displayName: faker.random.word(),
@@ -65,69 +70,97 @@ async function seedUsers(n = 10) {
           itemId: new mongoose.Types.ObjectId(),
           itemType: faker.random.arrayElement(["post", "comment"]),
         },
-      ], //TODO link with posts/comments
+      ],
       downvotes: [
         {
           itemId: new mongoose.Types.ObjectId(),
           itemType: faker.random.arrayElement(["post", "comment"]),
         },
-      ], //TODO link with posts/comments
-      followers: [faker.internet.userName()], //TODO link with users
+      ],
+      followers: [faker.internet.userName()],
       followings: [faker.internet.userName()],
-      subreddits: [
-        {
-          subreddit: faker.random.word(),
-          role: faker.random.arrayElement(["moderator", "creator", "member"]),
-        },
-      ], //TODO link with subreddits
-      member: [
-        {
-          subreddit: faker.random.word(),
-        },
-      ],
-      moderators: [
-        {
-          subreddit: faker.random.word(),
-          role: faker.random.arrayElement(["creator", "moderator"]),
-          manageUsers: faker.datatype.boolean(),
-          createLiveChats: faker.datatype.boolean(),
-          manageSettings: faker.datatype.boolean(),
-          managePostsAndComments: faker.datatype.boolean(),
-          everything: faker.datatype.boolean(),
-        },
-      ],
-      hiddenPosts: [new mongoose.Types.ObjectId()], //TODO link with posts
+      subreddits: [],
+      member: [],
+      moderators: [],
+      hiddenPosts: [new mongoose.Types.ObjectId()],
       savedItems: [
         new mongoose.Types.ObjectId(),
         new mongoose.Types.ObjectId(),
-      ], //TODO link with posts/comments
+      ],
       reset_token: faker.datatype.uuid(),
-      recentPosts: [new mongoose.Types.ObjectId()], //TODO link with posts
+      recentPosts: [new mongoose.Types.ObjectId()],
       karma: faker.datatype.number(),
       notificationSettings: {
-        disabledSubreddits: [faker.random.word()], //TODO link with subreddits
-        disabledPosts: [new mongoose.Types.ObjectId()], //TODO link with posts
-        disabledComments: [new mongoose.Types.ObjectId()], //TODO link with comments
+        disabledSubreddits: [],
+        disabledPosts: [new mongoose.Types.ObjectId()],
+        disabledComments: [new mongoose.Types.ObjectId()],
       },
-      hiddenNotifications: [new mongoose.Types.ObjectId()], //TODO link with notifications
+      hiddenNotifications: [new mongoose.Types.ObjectId()],
       pollVotes: [
         {
           pollId: new mongoose.Types.ObjectId(),
           option: faker.lorem.word(),
         },
-      ], //TODO link with posts
-      sentPrivateMessages: [new mongoose.Types.ObjectId()], //TODO link with messages
-      receivedPrivateMessages: [new mongoose.Types.ObjectId()], //TODO link with messages
-      mentions: [new mongoose.Types.ObjectId()], //TODO link with messages
+      ],
+      sentPrivateMessages: [new mongoose.Types.ObjectId()],
+      receivedPrivateMessages: [new mongoose.Types.ObjectId()],
+      mentions: [new mongoose.Types.ObjectId()],
       media: faker.random.image(),
       pendingChatRequests: [
         {
           chat: new mongoose.Types.ObjectId(),
         },
-      ], //TODO link with chat
+      ],
       access: faker.random.arrayElement(["user", "admin"]),
       isBanned: faker.datatype.boolean(),
     });
+    const randomFollowerIndex = faker.datatype.number({
+      min: 0,
+      max: existingUsers.length - 1,
+    });
+    const randomFollowingIndex = faker.datatype.number({
+      min: 0,
+      max: existingUsers.length - 1,
+    });
+
+    user.followers = [existingUsers[randomFollowerIndex]._id];
+    user.followings = [existingUsers[randomFollowingIndex]._id];
+
+    // Randomly assign subreddits to roles and notification settings
+    const numSubreddits = faker.datatype.number({ min: 1, max: 5 });
+    for (let j = 0; j < numSubreddits && existingSubreddits.length > 0; j++) {
+      const index = faker.datatype.number({
+        min: 0,
+        max: existingSubreddits.length - 1,
+      });
+      const subredditName = existingSubreddits[index].name;
+      const role = faker.random.arrayElement([
+        "moderator",
+        "member",
+        "creator",
+      ]);
+
+      user.subreddits.push({ subreddit: subredditName, role });
+
+      if (role === "member") {
+        user.member.push({ subreddit: subredditName });
+      } else if (role === "moderator") {
+        user.moderators.push({
+          subreddit: subredditName,
+          manageUsers: faker.datatype.boolean(),
+          createLiveChats: faker.datatype.boolean(),
+          manageSettings: faker.datatype.boolean(),
+          managePostsAndComments: faker.datatype.boolean(),
+          everything: faker.datatype.boolean(),
+        });
+      }
+
+      // Randomly disable notifications for some subreddits
+      if (faker.datatype.boolean()) {
+        user.notificationSettings.disabledSubreddits.push(subredditName);
+      }
+    }
+
     await user.save();
     users.push(user);
   }
@@ -157,7 +190,8 @@ async function seedBlock(n = 5, users) {
     const block = new Block({
       blockerId: users[blockerIndex]._id,
       blockedId: users[blockedIndex]._id,
-      unblockTimestamp: faker.date.past(),
+      unblockTimestamp: null, // Initially set to null
+      blockedUsername: users[blockedIndex].username, // Add blockedUsername based on user
     });
     await block.save();
     blocks.push(block);
@@ -166,6 +200,7 @@ async function seedBlock(n = 5, users) {
   return blocks;
 }
 
+ 
 async function seedPreferences(n = 5, users, subreddits) {
   const preferences = [];
   for (let i = 0; i < n; i++) {
@@ -173,13 +208,10 @@ async function seedPreferences(n = 5, users, subreddits) {
       min: 0,
       max: users.length - 1,
     });
+
     const preference = new UserPreferences({
       username: users[userIndex].username,
-      gender: faker.random.arrayElement([
-        "woman",
-        "man",
-        "i prefer not to say",
-      ]),
+      gender: gender,
       language: faker.random.arrayElement([
         "Deutsch",
         "English(us)",
@@ -192,7 +224,7 @@ async function seedPreferences(n = 5, users, subreddits) {
       ]),
       locationCustomization: faker.address.city(),
       displayName: faker.name.findName(),
-      about: faker.lorem.sentence(),
+      about: generateAbout(),
       socialLinks: [
         {
           displayName: faker.random.word(),
@@ -206,32 +238,30 @@ async function seedPreferences(n = 5, users, subreddits) {
           url: faker.internet.url(),
         },
       ],
-      images: {
-        pfp: faker.image.avatar(),
-        banner: faker.image.imageUrl(),
-      },
+      banner: faker.image.imageUrl(),
+      profilePicture: faker.image.avatar(),
       NSFW: faker.datatype.boolean(),
       allowFollow: faker.datatype.boolean(),
       contentVisibility: faker.datatype.boolean(),
       activeInCommunityVisibility: faker.datatype.boolean(),
       clearHistory: faker.datatype.boolean(),
-      block: [
-        { username: faker.internet.userName() },
-        { username: faker.internet.userName() },
-      ],
       viewBlockedPeople: [
         {
-          username: faker.internet.userName(),
+          blockedUsername: users[userIndex].username,
           blockTimestamp: faker.date.past(),
         },
         {
-          username: faker.internet.userName(),
+          blockedUsername: users[userIndex].username,
           blockTimestamp: faker.date.past(),
         },
       ],
       viewMutedCommunities: [
-        { communityName: faker.lorem.words(2).substring(0, 20) },
-        { communityName: faker.lorem.words(2).substring(0, 20) },
+        {
+          communityName: subreddits[userIndex % subreddits.length].name,
+        },
+        {
+          communityName: subreddits[(userIndex + 1) % subreddits.length].name,
+        },
       ],
       adultContent: faker.datatype.boolean(),
       autoplayMedia: faker.datatype.boolean(),
@@ -250,6 +280,8 @@ async function seedPreferences(n = 5, users, subreddits) {
       openPostsInNewTab: faker.datatype.boolean(),
       mentions: faker.datatype.boolean(),
       comments: faker.datatype.boolean(),
+      posts: faker.datatype.boolean(),
+      subreddit: faker.datatype.boolean(),
       upvotesPosts: faker.datatype.boolean(),
       upvotesComments: faker.datatype.boolean(),
       replies: faker.datatype.boolean(),
@@ -258,45 +290,17 @@ async function seedPreferences(n = 5, users, subreddits) {
       newFollowerEmail: faker.datatype.boolean(),
       chatRequestEmail: faker.datatype.boolean(),
       unsubscribeFromAllEmails: faker.datatype.boolean(),
+      allowPrivateMessages: faker.datatype.boolean(),
+      allowChatRequests: faker.datatype.boolean(),
+      allowChatNotifications: faker.datatype.boolean(),
     });
-    // Link viewMutedCommunities array with existing communities
-    const mutedCommunityIndex1 = faker.datatype.number({
-      min: 0,
-      max: subreddits.length - 1,
-    });
-    const mutedCommunityIndex2 = faker.datatype.number({
-      min: 0,
-      max: subreddits.length - 1,
-    });
-    preference.viewMutedCommunities = [
-      { communityName: subreddits[mutedCommunityIndex1].name },
-      { communityName: subreddits[mutedCommunityIndex2].name },
-    ];
 
-    // Link viewBlockedPeople array with existing users
-    const blockedUserIndex1 = faker.datatype.number({
-      min: 0,
-      max: users.length - 1,
-    });
-    const blockedUserIndex2 = faker.datatype.number({
-      min: 0,
-      max: users.length - 1,
-    });
-    preference.viewBlockedPeople = [
-      {
-        username: users[blockedUserIndex1].username,
-        blockTimestamp: faker.date.past(),
-      },
-      {
-        username: users[blockedUserIndex2].username,
-        blockTimestamp: faker.date.past(),
-      },
-    ];
     await preference.save();
     preferences.push(preference);
   }
   return preferences;
 }
+
 
 async function seedReports(n = 5, users, subreddits) {
   const reports = [];
@@ -627,7 +631,166 @@ async function seedSubreddits(n = 5, users) {
   return subreddits;
 }
 
-async function seedInvitations(n = 5, users) {
+async function seedCommunitySettings(n = 5, subreddits, users) {
+  const communitySettings = [];
+
+  for (let i = 0; i < n; i++) {
+    const subredditIndex = faker.datatype.number({
+      min: 0,
+      max: subreddits.length - 1,
+    });
+    const creatorIndex = faker.datatype.number({
+      min: 0,
+      max: users.length - 1,
+    });
+
+    const settings = new CommunitySettings({
+      name: subreddits[subredditIndex].name,
+      description: subreddits[subredditIndex].description,
+      welcomeMessage: faker.datatype.boolean(),
+      privacyMode: faker.random.arrayElement([
+        "private",
+        "public",
+        "restricted",
+      ]),
+      isNSFW: faker.datatype.boolean(),
+      posts: faker.random.arrayElement([
+        "Any",
+        "Links Only",
+        "Text Posts Only",
+      ]),
+      isSpoiler: faker.datatype.boolean(),
+      allowsCrossposting: faker.datatype.boolean(),
+      archivePosts: faker.datatype.boolean(),
+      allowImages: faker.datatype.boolean(),
+      allowMultipleImages: faker.datatype.boolean(),
+      allowPolls: faker.datatype.boolean(),
+      postSpamFilterStrength: faker.random.arrayElement(["Low", "High", "All"]),
+      commentSpamFilterStrength: faker.random.arrayElement([
+        "Low",
+        "High",
+        "All",
+      ]),
+      linksSpamFilterStrength: faker.random.arrayElement([
+        "Low",
+        "High",
+        "All",
+      ]),
+      commentsSort: faker.random.arrayElement([
+        "None",
+        "Best",
+        "Old",
+        "Q&A",
+        "New",
+        "Top",
+        "Controversial",
+      ]),
+      collapseDeletedComments: faker.datatype.boolean(),
+      commentScoreHide: faker.datatype.number(),
+      allowGifComment: faker.datatype.boolean(),
+      allowImageComment: faker.datatype.boolean(),
+      allowCollectibleExpressions: faker.datatype.boolean(),
+      createdAt: faker.date.past(),
+      banner: faker.image.imageUrl(),
+      avatar: faker.image.avatar(),
+      creator: [users[creatorIndex]._id],
+    });
+
+    await settings.save();
+    communitySettings.push(settings);
+  }
+
+  return communitySettings;
+}
+
+async function seedScheduledPosts(n = 5, users, subreddits) {
+  const scheduledPosts = [];
+
+  for (let i = 0; i < n; i++) {
+    const authorIndex = faker.datatype.number({
+      min: 0,
+      max: users.length - 1,
+    });
+    const subredditIndex = faker.datatype.number({
+      min: 0,
+      max: subreddits.length - 1,
+    });
+
+    const post = new ScheduledPost({
+      title: faker.lorem.sentence(),
+      type: faker.random.arrayElement(["post", "poll", "media", "link"]),
+      content: faker.lorem.paragraph(),
+      authorName: users[authorIndex].username,
+      views: faker.datatype.number(),
+      searchCount: faker.datatype.number(),
+      upvotes: faker.datatype.number(),
+      downvotes: faker.datatype.number(),
+      linkedSubreddit: subreddits[subredditIndex]._id,
+      shares: faker.datatype.number(),
+      isNSFW: faker.datatype.boolean(),
+      isSpoiler: faker.datatype.boolean(),
+      isOC: faker.datatype.boolean(),
+      isCrosspost: faker.datatype.boolean(),
+      awards: faker.datatype.number(),
+      media: faker.internet.url(),
+      link: faker.internet.url(),
+      isDraft: faker.datatype.boolean(),
+      isSaved: faker.datatype.boolean(),
+      originalPostId: new mongoose.Types.ObjectId(),
+      sendReplies: faker.datatype.boolean(),
+      options: [
+        { name: faker.lorem.word(), votes: faker.datatype.number() },
+        { name: faker.lorem.word(), votes: faker.datatype.number() },
+      ],
+      voteLength: faker.datatype.number(),
+      isLocked: faker.datatype.boolean(),
+      isScheduled: true,
+      scheduledPublishDate: faker.date.future(),
+      repeatOption: faker.random.arrayElement([
+        "does_not_repeat",
+        "hourly",
+        "daily",
+        "weekly",
+        "monthly",
+        "custom",
+      ]),
+      contestMode: faker.datatype.boolean(),
+      isEdited: faker.datatype.boolean(),
+      scheduledTime: faker.date.future(),
+      timeToPublish: faker.datatype.number(),
+    });
+
+    await post.save();
+    scheduledPosts.push(post);
+  }
+
+  return scheduledPosts;
+}
+
+
+const ABOUT_PHRASES = [
+  "Passionate about technology and innovation.",
+  "Avid reader and aspiring writer.",
+  "Nature enthusiast and outdoor adventurer.",
+  "Food lover and amateur chef.",
+  "Travel junkie always seeking new adventures.",
+  "Music aficionado and concert-goer.",
+  "Fitness enthusiast and gym rat.",
+  "Art lover and aspiring artist.",
+  "Animal lover and pet enthusiast.",
+  "Social activist working towards positive change.",
+];
+
+function generateAbout() {
+  const numSentences = faker.datatype.number({ min: 1, max: 3 }); // Generate 1 to 3 sentences
+  const aboutSentences = [];
+  for (let i = 0; i < numSentences; i++) {
+    const phrase = faker.random.arrayElement(ABOUT_PHRASES);
+    aboutSentences.push(phrase);
+  }
+  return aboutSentences.join(" ");
+}
+async function seedInvitations(n = 5, users, subreddits) {
   const invitations = [];
 
   for (let i = 0; i < n; i++) {
@@ -639,11 +802,14 @@ async function seedInvitations(n = 5, users) {
       min: 0,
       max: users.length - 1,
     });
-
+    const subredditIndex = faker.datatype.number({
+      min: 0,
+      max: subreddits.length - 1,
+    });
     const invitation = new Invitation({
-      sender: users[senderIndex]._id,
-      recipient: users[recipientIndex]._id,
-      subreddit: faker.lorem.word(),
+      sender: users[senderIndex].username,
+      recipient: users[recipientIndex].username,
+      subreddit: subreddits[subredditIndex].name,
       role: faker.random.arrayElement(["admin", "moderator", "member"]),
       createdAt: faker.date.past(),
       manageUsers: faker.datatype.boolean(),
@@ -854,6 +1020,172 @@ async function seedComments(n = 40, users, posts, subreddits) {
   }
   return comments;
 }
+
+async function seedMessages(n = 10, users, subreddits, posts, comments) {
+  const messages = [];
+
+  for (let i = 0; i < n; i++) {
+    const senderIndex = faker.datatype.number({
+      min: 0,
+      max: users.length - 1,
+    });
+    const recipientIndex = faker.datatype.number({
+      min: 0,
+      max: users.length - 1,
+    });
+    const recipientSubredditIndex = faker.datatype.number({
+      min: 0,
+      max: subreddits.length - 1,
+    });
+    const linkedSubredditIndex = faker.datatype.number({
+      min: 0,
+      max: subreddits.length - 1,
+    });
+    const postIdIndex = faker.datatype.number({
+      min: 0,
+      max: posts.length - 1,
+    });
+    const commentIdIndex = faker.datatype.number({
+      min: 0,
+      max: comments.length - 1,
+    });
+
+    const message = new Message({
+      sender: users[senderIndex]._id,
+      recipient: users[recipientIndex]._id,
+      recipientSubreddit: subreddits[recipientSubredditIndex]._id,
+      linkedSubreddit: subreddits[linkedSubredditIndex]._id,
+      postId: posts[postIdIndex]._id,
+      commentId: comments[commentIdIndex]._id,
+      commentNumber: faker.datatype.number({ min: 1, max: 1000 }),
+      senderSubreddit: subreddits[linkedSubredditIndex]._id, // Assuming sender's subreddit is the same as linked subreddit
+      type: faker.random.arrayElement(["message", "userMention", "postReply"]),
+      subject: generateSubject(),
+      message: generateMessage(),
+      timestamp: faker.date.past(),
+      isRead: faker.datatype.boolean(),
+    });
+
+    await message.save();
+    messages.push(message);
+  }
+
+  return messages;
+}
+
+async function seedChats(n = 5, users) {
+  const chats = [];
+
+  for (let i = 0; i < n; i++) {
+    const participantIndices = [];
+    // Generate unique participant indices to ensure no duplicates
+    while (participantIndices.length < 2) {
+      const participantIndex = faker.datatype.number({
+        min: 0,
+        max: users.length - 1,
+      });
+      if (!participantIndices.includes(participantIndex)) {
+        participantIndices.push(participantIndex);
+      }
+    }
+
+    const participants = participantIndices.map((index) => users[index]._id);
+
+    const messages = [];
+    const numMessages = faker.datatype.number({ min: 1, max: 20 });
+    for (let j = 0; j < numMessages; j++) {
+      const senderIndex = faker.datatype.number({
+        min: 0,
+        max: participantIndices.length - 1,
+      });
+      const senderId = users[participantIndices[senderIndex]]._id;
+
+      const message = {
+        sender: senderId,
+        message: generateMessage(),
+        media: faker.datatype.boolean() ? faker.image.imageUrl() : null,
+        timestamp: faker.date.past(),
+        status: faker.random.arrayElement(["sent", "delivered", "read"]),
+      };
+
+      messages.push(message);
+    }
+
+    const chat = new Chat({
+      participants,
+      messages,
+      timestamp: faker.date.past(),
+      isGroupChat: faker.datatype.boolean(),
+      isPendingRequest: faker.datatype.boolean(),
+    });
+
+    await chat.save();
+    chats.push(chat);
+  }
+
+  return chats;
+}
+
+function generateSubject() {
+  const subjects = [
+    "Meeting Tomorrow",
+    "Weekend Plans",
+    "Project Updates",
+    "Important Announcement",
+    "Travel Itinerary",
+    "Party Invitation",
+    "Follow-up Discussion",
+    "Training Session",
+    "Budget Proposal",
+    "Client Meeting",
+  ];
+  return faker.random.arrayElement(subjects);
+}
+
+function generateMessage() {
+  const intros = [
+    "Hi there,",
+    "Hello,",
+    "Dear team,",
+    "Hey,",
+    "Greetings,",
+    "Good day,",
+    "Hi everyone,",
+    "To whom it may concern,",
+    "Hey folks,",
+    "Good morning,",
+  ];
+  const mainMessages = [
+    "I hope this email finds you well.",
+    "I'm writing to provide an update on...",
+    "Could you please confirm your availability for...",
+    "Attached is the agenda for our upcoming meeting.",
+    "I wanted to discuss the progress we've made on...",
+    "Let's plan a brainstorming session to...",
+    "I have a question regarding...",
+    "Please review the document I've shared.",
+    "It's time to finalize the details for...",
+    "Thanks for your hard work on...",
+  ];
+  const closings = [
+    "Looking forward to your response.",
+    "Let me know if you have any questions.",
+    "Feel free to reach out if you need further clarification.",
+    "Looking forward to hearing from you soon.",
+    "Thanks in advance for your cooperation.",
+    "Your prompt attention to this matter is appreciated.",
+    "Best regards,",
+    "Kind regards,",
+    "Thanks and regards,",
+    "Sincerely,",
+  ];
+  const randomIntro = faker.random.arrayElement(intros);
+  const randomMainMessage = faker.random.arrayElement(mainMessages);
+  const randomClosing = faker.random.arrayElement(closings);
+
+  return `${randomIntro} ${randomMainMessage} ${randomClosing}`;
+}
+
 // Function to generate comment content based on subreddit theme
 function generateCommentContent(subreddit) {
   if (subreddit.name.toLowerCase().includes("technology")) {
@@ -889,8 +1221,16 @@ async function clearCollections() {
   await UserReports.deleteMany({});
   await Block.deleteMany({});
   await UserPreferences.deleteMany({});
-  // Add any other collections you need to clear
+  await Invitation.deleteMany({}); 
+  await Notification.deleteMany({}); 
+  await Chat.deleteMany({}); 
+  await Report.deleteMany({});
+  await CommunitySettings.deleteMany({}); 
+  await Ban.deleteMany({}); 
+  await ScheduledPost.deleteMany({}); 
+  await Message.deleteMany({}); 
 }
+
 
 async function updateSubredditsWithPosts(subreddits, posts) {
   for (const subreddit of subreddits) {
@@ -926,6 +1266,30 @@ async function updateUserData(users, posts, comments, subreddits) {
       return;
     }
 
+    // Generate chat messages
+    const chatMessages = Array.from({ length: 5 }, () => ({
+      sender: user._id, // User is the sender
+      message: faker.lorem.sentence(), // Generate a random message
+      media: faker.datatype.boolean() ? faker.image.imageUrl() : undefined, // Randomly include media
+      timestamp: faker.date.recent(), // Random timestamp
+      status: faker.random.arrayElement(["sent", "delivered", "read"]), // Random status
+    }));
+
+    // Create a chat object using the chat schema
+    const chat = new Chat({
+      participants: [user._id], // User is one of the participants
+      messages: chatMessages,
+      timestamp: faker.date.recent(), // Random timestamp for the chat
+      isGroupChat: false, // Not a group chat
+      isPendingRequest: true, // Mark as pending request
+    });
+
+    // Save the chat object to the database
+    await chat.save();
+
+    // Assign the chat ID to the user's pendingChatRequests field
+    user.pendingChatRequests.push(chat._id);
+
     // Update user posts
     const userPosts = await Post.find({ authorName: user.username }).select(
       "_id"
@@ -946,9 +1310,7 @@ async function updateUserData(users, posts, comments, subreddits) {
     user.comments = userComments.map((comment) => comment._id);
     user.savedItems = user.savedItems.map((comment) => comment._id);
     user.notificationSettings.disabledComments =
-      user.notificationSettings.disabledComments.map(
-        (comment) => comment._id
-      );
+      user.notificationSettings.disabledComments.map((comment) => comment._id);
 
     // Upvotes and downvotes are chosen randomly for demonstration
     const randomPostIndex = faker.datatype.number({
@@ -980,43 +1342,15 @@ async function updateUserData(users, posts, comments, subreddits) {
     user.followers.push(users[randomFollowerIndex]._id);
     user.followings.push(users[randomFollowingIndex]._id);
 
-    // Clear existing user subreddits before adding new ones to avoid duplicates
-    user.subreddits = [];
-
-    // Assign user to multiple subreddits (e.g., 2 for this example) with different roles
-    for (let i = 0; i < 2; i++) {
-      const randomSubredditIndex = faker.datatype.number({
-        min: 0,
-        max: subreddits.length - 1,
-      });
-      const selectedSubreddit = subreddits[randomSubredditIndex];
-
-      // Prevent duplicate subreddit assignments
-      if (
-        !user.subreddits.some(
-          (sub) => sub.subreddit.toString() === selectedSubreddit._id.toString()
-        )
-      ) {
-        user.subreddits.push({
-          subreddit: selectedSubreddit.name,
-          role: faker.random.arrayElement(["moderator", "member"]),
-        });
-      }
-    }
-
-    // After the loop, you should map the subreddit data to user.member, user.moderators, and user.notificationSettings.disabledSubreddits
-
-    user.member = user.subreddits.map((sub) => ({
-      subreddit: sub.subreddit,
-    }));
-
-    user.moderators = user.subreddits.map((sub) => ({
-      subreddit: sub.subreddit,
-    }));
-
-    user.notificationSettings.disabledSubreddits = user.subreddits.map(
-      (sub) => sub.subreddit
+    // Generate message IDs and link them
+    const messageIds = Array.from(
+      { length: 5 },
+      () => new mongoose.Types.ObjectId()
     );
+
+    user.sentPrivateMessages = messageIds;
+    user.receivedPrivateMessages = messageIds.slice(0, 3); // Assign some of the message IDs
+    user.mentions = messageIds.slice(3); // Assign remaining message IDs for mentions
 
     await user.save();
   }
@@ -1042,10 +1376,16 @@ async function seedData() {
     const comments = await seedComments(2, users, posts, subreddits);
     await updateSubredditsWithPosts(subreddits, posts);
     await updatePostsWithComments(posts, comments);
-    // await seedPreferences(5, users, subreddits);
+    await seedPreferences(2, users, subreddits);
     await seedBlock(2, users);
+    await seedInvitations(2, users, subreddits);
+    await seedNotifications(2, users);
+    await seedChats(2, users);
     await seedReports(2, users, subreddits);
+    await seedCommunitySettings(2, subreddits, users);
     await seedBans(2, users, subreddits);
+    await seedScheduledPosts(2, users, subreddits);
+    await seedMessages(2, users, subreddits, posts, comments);
     await updateUserData(users, posts, comments, subreddits);
 
     console.log("Data seeded successfully");
